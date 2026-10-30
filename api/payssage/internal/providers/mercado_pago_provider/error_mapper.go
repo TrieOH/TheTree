@@ -34,7 +34,7 @@ var knownMPErrorCodes = map[int]string{
 // mapMPError converts a MercadoPago error response into an
 // errs.ProviderError. statusCode is the HTTP status MP returned; resultErr
 // is whatever was populated via resty's SetResultError (map[string]any or
-// similar). Payssage's status is derived from statusCode in the error map
+// similar). Payssage's problem is picked from statusCode by the problem switch
 // (internal/app).
 func mapMPError(statusCode int, resultErr any) error {
 	var body mpErrorBody

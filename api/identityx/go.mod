@@ -3,6 +3,7 @@ module IdentityX
 go 1.27.3
 
 require (
+	github.com/MintzyG/problematic v1.1.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.3

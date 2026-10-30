@@ -26,37 +26,26 @@ info:
     an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
     items later.
 
-    A failed response's body is an `Error`:
+    A failed response's body is an RFC 9457 problem, served as
+    `application/problem+json`:
 
     ```json
     {
-      "code": "VALIDATION_ERROR",
-      "message": "invalid request body: name: this field is required",
-      "fields": [{ "field": "name", "message": "this field is required" }]
+      "type": "https://api.payssage.trieoh.com/problems/validation",
+      "status": 400,
+      "title": "Validation Failed",
+      "detail": "invalid request body: name: this field is required",
+      "instance": "/namespaces",
+      "errors": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    `fields` is present only when the failure names request fields.
-
-    ## Error codes → HTTP status
-
-    The `code` sentinel maps to the HTTP status:
-
-    | code | status |
-    |---|---|
-    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
-    | `UNAUTHORIZED` | 401 |
-    | `PAYMENT_REQUIRED` | 402 |
-    | `FORBIDDEN` | 403 |
-    | `NOT_FOUND` | 404 |
-    | `METHOD_NOT_ALLOWED` | 405 |
-    | `CONFLICT` | 409 |
-    | `UNPROCESSABLE_ENTITY` | 422 |
-    | `TOO_MANY_REQUESTS` | 429 |
-    | `INTERNAL_ERROR` | 500 |
-    | `NOT_IMPLEMENTED` | 501 |
-    | `BAD_GATEWAY` | 502 |
-    | `SERVICE_UNAVAILABLE` | 503 |
+    `type` identifies the problem and resolves to its documentation;
+    `title` and `status` are fixed per problem, `detail` says what went
+    wrong this time, and `instance` is the request path. `errors` is
+    present only when the failure names request fields. Each operation
+    lists the problems it can answer with; a 500 reads `Internal Server
+    Error`.
 
     ## Amounts
 
@@ -202,6 +191,7 @@ paths:
         Lists the organizations the authenticated actor belongs to.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Organizations the actor belongs to
@@ -215,10 +205,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Organization'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [orgs]
       operationId: createOrganization
@@ -236,6 +222,7 @@ paths:
             example:
               name: TrieOH Labs
               slug: trieoh-labs
+      x-problems: [400, 401, 500]
       responses:
         '201':
           description: Organization created
@@ -243,12 +230,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Organization'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/members:
     get:
@@ -262,6 +243,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Organization members
@@ -275,14 +257,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/OrganizationMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [orgs]
       operationId: addOrganizationMember
@@ -303,21 +277,10 @@ paths:
             example:
               actor_email: user@example.com
               role: member
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [orgs]
       operationId: removeOrganizationMember
@@ -337,19 +300,10 @@ paths:
               $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
             example:
               actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/member/{member_id}:
     get:
@@ -368,6 +322,7 @@ paths:
           description: Member (actor) ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The requested organization member row
@@ -375,14 +330,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/member/{member_email}:by_email:
     get:
@@ -404,6 +351,7 @@ paths:
             x-go-type: string
             type: string
             format: email
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The requested organization member row
@@ -411,14 +359,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets:
     get:
@@ -431,6 +371,7 @@ paths:
         implementation) — documented as-is.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '201':
           description: Wallets owned by the actor
@@ -444,10 +385,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Wallet'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [wallets]
       operationId: createWallet
@@ -468,6 +405,7 @@ paths:
             example:
               name: Main Wallet
               organization_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 500]
       responses:
         '201':
           description: Wallet created
@@ -475,12 +413,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Wallet'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}:
     get:
@@ -496,6 +428,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 404, 500]
       responses:
         '201':
           description: The requested wallet
@@ -503,12 +436,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Wallet'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/fee:
     patch:
@@ -531,19 +458,10 @@ paths:
               $ref: '#/components/schemas/SetFeeBPSRequest'
             example:
               fee_bps: 100
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Fee updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/sandbox:
     patch:
@@ -566,19 +484,10 @@ paths:
               $ref: '#/components/schemas/SetSandboxRequest'
             example:
               sandbox: true
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Sandbox state updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/collector:
     post:
@@ -601,17 +510,10 @@ paths:
               $ref: '#/components/schemas/BindCollectorRequest'
             example:
               collector_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Collector bound
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [wallets]
       operationId: unbindCollector
@@ -623,17 +525,10 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Collector unbound
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/wallets:
     get:
@@ -647,6 +542,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '201':
           description: Organization wallets
@@ -660,14 +556,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Wallet'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /collectors:
     get:
@@ -679,6 +567,7 @@ paths:
         owned by the authenticated actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Collectors owned by the actor
@@ -692,10 +581,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Collector'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /collectors/{collector_id}:
     get:
@@ -713,6 +598,7 @@ paths:
           description: Collector ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The requested collector
@@ -720,12 +606,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Collector'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/collectors:
     get:
@@ -739,6 +619,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Organization collectors
@@ -752,14 +633,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Collector'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/sellers:
     get:
@@ -774,6 +647,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Wallet sellers
@@ -787,14 +661,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Seller'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /intents:
     get:
@@ -805,6 +671,7 @@ paths:
         Lists the payment intents created by the authenticated actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Intents created by the actor
@@ -818,10 +685,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /intents/{intent_id}:
     get:
@@ -835,6 +698,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The requested intent
@@ -842,12 +706,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /intents/{intent_id}/cancel:
     post:
@@ -863,6 +721,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 409, 500]
       responses:
         '200':
           description: Intent cancelled
@@ -870,14 +729,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /intents/{intent_id}/refund:
     post:
@@ -897,6 +748,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 409, 500]
       responses:
         '200':
           description: Intent refunded (or refund initiated)
@@ -904,14 +756,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/intents:
     get:
@@ -925,6 +769,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Wallet intents
@@ -938,14 +783,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [intents]
       operationId: checkout
@@ -979,6 +816,7 @@ paths:
                   last_name: Doe
               metadata:
                 order_id: "1234"
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Intent created
@@ -986,16 +824,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /organizations/{organization_id}/intents:
     get:
@@ -1009,6 +837,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Organization intents
@@ -1022,14 +851,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Intent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /testmode/intents/create:
     post:
@@ -1060,6 +881,7 @@ paths:
               provider: mercadopago
               status: succeeded
               provider_data: {}
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Intent created
@@ -1067,16 +889,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /testmode/intents/{intent_id}/refund:
     post:
@@ -1093,6 +905,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Intent refunded (simulated)
@@ -1100,16 +913,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Intent'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /providers/{provider}/connect:
     post:
@@ -1139,6 +942,7 @@ paths:
               flow: collector
               final_redirect_url: https://app.trieoh.com/settings/payments
               wallet_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 500]
       responses:
         '200':
           description: Redirect URL for the provider consent screen
@@ -1147,12 +951,6 @@ paths:
               schema:
                 type: string
                 format: uri
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /providers/{provider}/callback:
     get:
@@ -1180,6 +978,7 @@ paths:
           description: CSRF state issued at connect time.
           schema:
             type: string
+      x-problems: [400]
       responses:
         '200':
           description: |
@@ -1191,8 +990,6 @@ paths:
               schema:
                 type: string
                 format: uri
-        '400':
-          $ref: '#/components/responses/BadRequest'
 
   /providers/{provider}/revoke:
     post:
@@ -1214,17 +1011,10 @@ paths:
             example:
               flow: collector
               id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 404, 500]
       responses:
         '204':
           description: Connection revoked
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/{provider}:
     post:
@@ -1251,13 +1041,10 @@ paths:
             schema:
               type: object
               additionalProperties: true
+      x-problems: [400, 404]
       responses:
         '204':
           description: Webhook acknowledged (processed or expected-ignored)
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
 
   /wallets/{wallet_id}/webhooks/endpoints:
     get:
@@ -1271,6 +1058,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Wallet webhook endpoints
@@ -1284,14 +1072,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebhookEndpoint'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [webhooks]
       operationId: createWebhookEndpoint
@@ -1317,6 +1097,7 @@ paths:
             example:
               name: Payment events
               url: https://app.example.com/webhooks/payments
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Webhook endpoint created
@@ -1324,16 +1105,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WebhookEndpoint'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/endpoints/{endpoint_id}:
     get:
@@ -1346,6 +1117,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The requested endpoint
@@ -1353,12 +1125,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WebhookEndpoint'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [webhooks]
       operationId: deleteWebhookEndpoint
@@ -1369,15 +1135,10 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
       responses:
         '204':
           description: Endpoint deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /wallets/{wallet_id}/webhooks/events:
     get:
@@ -1391,6 +1152,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Wallet webhook events
@@ -1404,14 +1166,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebhookEvent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/events/{event_id}:
     get:
@@ -1430,6 +1184,7 @@ paths:
           description: Webhook event ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The requested event
@@ -1437,12 +1192,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WebhookEvent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/endpoints/{endpoint_id}/deliveries:
     get:
@@ -1457,6 +1206,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: Endpoint deliveries
@@ -1470,12 +1220,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebhookDelivery'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/deliveries/{delivery_id}:
     get:
@@ -1494,6 +1238,7 @@ paths:
           description: Webhook delivery ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The requested delivery
@@ -1501,12 +1246,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WebhookDelivery'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
@@ -1558,49 +1297,6 @@ components:
       schema:
         type: string
 
-  responses:
-    BadRequest:
-      description: Invalid request payload or parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Missing or invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Forbidden:
-      description: Insufficient permissions for the requested operation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    NotFound:
-      description: The requested resource does not exist
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Conflict:
-      description: The request conflicts with the current state of the resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    InternalServerError:
-      description: Unexpected server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
   schemas:
     UUID:
       type: string
@@ -1616,46 +1312,6 @@ components:
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
         path: github.com/google/uuid
-
-    Error:
-      type: object
-      title: AppError
-      description: |
-        The body of every error response. `code` is a machine-readable
-        sentinel whose mapping to the HTTP status is documented in the
-        top-level description.
-      required: [code, message]
-      properties:
-        code:
-          type: string
-          enum:
-            - BAD_REQUEST
-            - VALIDATION_ERROR
-            - UNAUTHORIZED
-            - PAYMENT_REQUIRED
-            - FORBIDDEN
-            - NOT_FOUND
-            - METHOD_NOT_ALLOWED
-            - CONFLICT
-            - UNPROCESSABLE_ENTITY
-            - TOO_MANY_REQUESTS
-            - INTERNAL_ERROR
-            - NOT_IMPLEMENTED
-            - BAD_GATEWAY
-            - SERVICE_UNAVAILABLE
-        message:
-          type: string
-        fields:
-          type: array
-          description: Per-field validation errors (validation failures only).
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field:
-                type: string
-              message:
-                type: string
 
     Organization:
       x-go-type: models.Organization

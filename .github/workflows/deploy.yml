@@ -124,10 +124,10 @@ jobs:
     steps:
       - uses: useblacksmith/checkout@v1
 
-      # ── Go toolchain (services) ────────────────────────────────────────
+      # ── Go toolchain (services; fronts run tools/problemgen for orval) ──
       - name: Setup Go
         id: setup-go
-        if: ${{ env.TYPE == 'service' }}
+        if: ${{ env.TYPE == 'service' || env.TYPE == 'front' }}
         uses: ./.github/actions/setup-go
 
       - name: Setup Go tools
@@ -150,8 +150,9 @@ jobs:
           set -euo pipefail
           cd "api/$ARTIFACT"
           sqlc generate
-          oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
-          oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+          go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
+          oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml
+          oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
           go run tools/strictmount internal/openapi/mount.gen.go
           go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
 
@@ -159,7 +160,12 @@ jobs:
       #    are gitignored too — same recipe as `just gen-ts` ───────────────
       - name: R0 generate TS clients
         if: ${{ env.TYPE == 'front' }}
-        run: pnpm orval
+        run: |
+          set -euo pipefail
+          for svc in identityx informd payssage univents; do
+            (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
+          done
+          pnpm orval
 
       # worker-configuration.d.ts is gitignored too — same as `just gen-cf`
       - name: R0 generate Workers types
@@ -382,10 +388,20 @@ jobs:
         with:
           install: 'true'
 
+      # orval reads the bundled specs that tools/problemgen writes
+      - name: Setup Go (fronts)
+        if: ${{ env.TYPE == 'front' }}
+        uses: ./.github/actions/setup-go
+
       # the orval TS clients are gitignored — regenerate before building
       - name: Generate TS clients
         if: ${{ env.TYPE == 'front' }}
-        run: pnpm orval
+        run: |
+          set -euo pipefail
+          for svc in identityx informd payssage univents; do
+            (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
+          done
+          pnpm orval
 
       - name: Build & upload version (identityx)
         id: identityx

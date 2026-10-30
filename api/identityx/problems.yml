@@ -1,0 +1,466 @@
+# This Backend's own problems (ADR-0019); the shared ones are in
+# api/problems.yml, which documents the shape. tools/problemgen generates
+# them into internal/problems and bundles them into api-spec.gen.yml.
+components:
+  schemas:
+    # identity and tokens
+    PlatformOnly:
+      x-problem:
+        slug: platform-only
+        status: 401
+        title: Platform Only
+        description: "Platform-level authentication required."
+    InvalidAccessToken:
+      x-problem:
+        slug: invalid-access-token
+        status: 401
+        title: Invalid Access Token
+        description: "Invalid access token."
+    MissingKID:
+      x-problem:
+        slug: missing-kid
+        status: 401
+        title: Missing KID
+        description: "Missing kid."
+    InvalidKID:
+      x-problem:
+        slug: invalid-kid
+        status: 401
+        title: Invalid KID
+        description: "Invalid kid."
+    OutdatedToken:
+      x-problem:
+        slug: outdated-token
+        status: 401
+        title: Outdated Token
+        description: "Outdated token."
+    SigningKeyRevoked:
+      x-problem:
+        slug: signing-key-revoked
+        status: 401
+        title: Signing Key Revoked
+        description: "Token signing key revoked."
+    SigningKeyRetired:
+      x-problem:
+        slug: signing-key-retired
+        status: 401
+        title: Signing Key Retired
+        description: "Token signing key retired."
+    TokenRevoked:
+      x-problem:
+        slug: token-revoked
+        status: 401
+        title: Token Revoked
+        description: "Token has been revoked."
+
+    # api keys
+    APIKeyExpired:
+      x-problem:
+        slug: api-key-expired
+        status: 401
+        title: API Key Expired
+        description: "Api key expired."
+    InvalidCapabilities:
+      x-problem:
+        slug: invalid-capabilities
+        status: 400
+        title: Invalid Capabilities
+        description: "Invalid capabilities."
+
+    # login, registration and setup
+    InvalidCredentials:
+      x-problem:
+        slug: invalid-credentials
+        status: 401
+        title: Invalid Credentials
+        description: "Invalid email or password."
+    PasswordOnlyForHumans:
+      x-problem:
+        slug: password-only-for-humans
+        status: 400
+        title: Password Only For Humans
+        description: "Only human actors can authenticate via password."
+    SetupComplete:
+      x-problem:
+        slug: setup-complete
+        status: 409
+        title: Setup Complete
+        description: "Setup already complete."
+    SetupRequired:
+      x-problem:
+        slug: setup-required
+        status: 503
+        title: Setup Required
+        description: "Please setup IDX first on /auth/setup."
+    SetupCheckFailed:
+      x-problem:
+        slug: setup-check-failed
+        status: 503
+        title: Setup Check Failed
+        description: "Could not check setup state."
+
+    # action tokens
+    ActionTokenInvalid:
+      x-problem:
+        slug: action-token-invalid
+        status: 400
+        title: Action Token Invalid
+        description: "Invalid or expired token."
+    ActionTokenExpired:
+      x-problem:
+        slug: action-token-expired
+        status: 400
+        title: Action Token Expired
+        description: "Token expired."
+    ActionTokenUsed:
+      x-problem:
+        slug: action-token-used
+        status: 400
+        title: Action Token Used
+        description: "Token already used."
+
+    # access
+    ActorOutsideProject:
+      x-problem:
+        slug: actor-outside-project
+        status: 403
+        title: Actor Outside Project
+        description: "Insufficient permissions."
+    NotProfileOwner:
+      x-problem:
+        slug: not-profile-owner
+        status: 403
+        title: Not Profile Owner
+        description: "Insufficient permissions."
+    ActorNotInProject:
+      x-problem:
+        slug: actor-not-in-project
+        status: 403
+        title: Actor Not In Project
+        description: "Actor does not belong to this project."
+
+    # membership
+    AddSelfToProject:
+      x-problem:
+        slug: add-self-to-project
+        status: 400
+        title: Add Self To Project
+        description: "Users can't add themselves to projects."
+    AddOwnerToProject:
+      x-problem:
+        slug: add-owner-to-project
+        status: 400
+        title: Add Owner To Project
+        description: "Owners can't be added to projects they own."
+    AlreadyProjectMember:
+      x-problem:
+        slug: already-project-member
+        status: 400
+        title: Already Project Member
+        description: "User is already a member of the project."
+    RemoveSelfFromProject:
+      x-problem:
+        slug: remove-self-from-project
+        status: 400
+        title: Remove Self From Project
+        description: "Cannot remove yourself from the project."
+    RemoveProjectOwner:
+      x-problem:
+        slug: remove-project-owner
+        status: 400
+        title: Remove Project Owner
+        description: "Cannot remove the owner of the project."
+    NotProjectMember:
+      x-problem:
+        slug: not-project-member
+        status: 400
+        title: Not Project Member
+        description: "User is not a member of the project."
+    OrgOwnerAlreadyInProject:
+      x-problem:
+        slug: org-owner-already-in-project
+        status: 400
+        title: Org Owner Already In Project
+        description: "Owner of the organization is already a member of the project."
+    OrgMemberAlreadyInProject:
+      x-problem:
+        slug: org-member-already-in-project
+        status: 400
+        title: Org Member Already In Project
+        description: "Organization member is already a member of the project."
+    RemoveOrgOwnerFromProject:
+      x-problem:
+        slug: remove-org-owner-from-project
+        status: 400
+        title: Remove Org Owner From Project
+        description: "Cannot remove the owner of the organization from the project."
+    RemoveOrgMemberFromProject:
+      x-problem:
+        slug: remove-org-member-from-project
+        status: 400
+        title: Remove Org Member From Project
+        description: "Cannot remove organization member from project."
+    AddSelfToOrg:
+      x-problem:
+        slug: add-self-to-org
+        status: 400
+        title: Add Self To Org
+        description: "Users can't add themselves to organizations."
+    AddOwnerToOrg:
+      x-problem:
+        slug: add-owner-to-org
+        status: 400
+        title: Add Owner To Org
+        description: "Owners can't be added to organizations they own."
+    AlreadyOrgMember:
+      x-problem:
+        slug: already-org-member
+        status: 400
+        title: Already Org Member
+        description: "User is already a member of the organization."
+    RemoveSelfFromOrg:
+      x-problem:
+        slug: remove-self-from-org
+        status: 400
+        title: Remove Self From Org
+        description: "Cannot remove yourself from the organization."
+    RemoveOrgOwner:
+      x-problem:
+        slug: remove-org-owner
+        status: 400
+        title: Remove Org Owner
+        description: "Cannot remove the owner of the organization."
+    NotOrgMember:
+      x-problem:
+        slug: not-org-member
+        status: 400
+        title: Not Org Member
+        description: "User is not a member of the organization."
+
+    # oauth
+    MissingOAuthCode:
+      x-problem:
+        slug: missing-oauth-code
+        status: 400
+        title: Missing OAuth Code
+        description: "Missing code."
+    MissingOAuthState:
+      x-problem:
+        slug: missing-oauth-state
+        status: 400
+        title: Missing OAuth State
+        description: "Missing state."
+    OAuthStateNotFound:
+      x-problem:
+        slug: oauth-state-not-found
+        status: 400
+        title: OAuth State Not Found
+        description: "Invalid or expired OAuth state; start a new login."
+    OAuthStateMismatch:
+      x-problem:
+        slug: oauth-state-mismatch
+        status: 400
+        title: OAuth State Mismatch
+        description: "Invalid OAuth state."
+    OAuthStateExpired:
+      x-problem:
+        slug: oauth-state-expired
+        status: 400
+        title: OAuth State Expired
+        description: "OAuth state expired; start a new login."
+    OAuthCodeExchange:
+      x-problem:
+        slug: oauth-code-exchange
+        status: 401
+        title: OAuth Code Exchange
+        description: "Failed to exchange code."
+    OAuthEmptyToken:
+      x-problem:
+        slug: oauth-empty-token
+        status: 401
+        title: OAuth Empty Token
+        description: "Empty token from provider."
+    OAuthUserinfo:
+      x-problem:
+        slug: oauth-userinfo
+        status: 401
+        title: OAuth Userinfo
+        description: "Userinfo request failed."
+    OAuthIncompleteUserinfo:
+      x-problem:
+        slug: oauth-incomplete-userinfo
+        status: 401
+        title: OAuth Incomplete Userinfo
+        description: "Incomplete userinfo from provider."
+    OAuthGitHubEmail:
+      x-problem:
+        slug: oauth-github-email
+        status: 401
+        title: OAuth GitHub Email
+        description: "Could not fetch github email."
+    UnsupportedProvider:
+      x-problem:
+        slug: unsupported-provider
+        status: 400
+        title: Unsupported Provider
+        description: "IdentityX has no OAuth provider by this name."
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+    ProviderNotConfigured:
+      x-problem:
+        slug: provider-not-configured
+        status: 400
+        title: Provider Not Configured
+        description: "The OAuth provider has no credentials, for the project or the platform."
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+    ProviderDisabled:
+      x-problem:
+        slug: provider-disabled
+        status: 403
+        title: Provider Disabled
+        description: "The project has disabled login with this OAuth provider."
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+    ProviderRemoved:
+      x-problem:
+        slug: provider-removed
+        status: 400
+        title: Provider Removed
+        description: "The OAuth provider was removed from the project while the login was under way."
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+
+    # email templates, terms of service, profiles
+    TemplateRender:
+      x-problem:
+        slug: template-render
+        status: 400
+        title: Template Does Not Render
+        description: "The email template does not render; `detail` says why."
+    TosExists:
+      x-problem:
+        slug: tos-exists
+        status: 409
+        title: ToS Exists
+        description: "Project already has terms of service; update them instead."
+    ProfileSchemaViolation:
+      x-problem:
+        slug: profile-schema-violation
+        status: 400
+        title: Profile Schema Violation
+        description: "The profile breaks its project's profile schema; `errors` names the offending fields."
+
+    # not found
+
+    # constraints
+    EmailTakenForScope:
+      x-problem:
+        slug: email-taken-for-scope
+        status: 409
+        title: Email Taken For Scope
+        description: "An account with this email already exists for this scope and auth method."
+    ExternalIdentityTaken:
+      x-problem:
+        slug: external-identity-taken
+        status: 409
+        title: External Identity Taken
+        description: "This external identity is already linked to this account."
+    OrgSlugTaken:
+      x-problem:
+        slug: org-slug-taken
+        status: 409
+        title: Org Slug Taken
+        description: "An organization with this slug already exists."
+    ProjectSlugTaken:
+      x-problem:
+        slug: project-slug-taken
+        status: 409
+        title: Project Slug Taken
+        description: "A project with this slug already exists."
+    DomainTaken:
+      x-problem:
+        slug: domain-taken
+        status: 409
+        title: Domain Taken
+        description: "This domain is already verified by another project."
+    OAuthProviderConfigured:
+      x-problem:
+        slug: oauth-provider-configured
+        status: 409
+        title: OAuth Provider Configured
+        description: "This OAuth provider is already configured for this project."
+    DuplicateOAuthState:
+      x-problem:
+        slug: duplicate-oauth-state
+        status: 409
+        title: Duplicate OAuth State
+        description: "Duplicate OAuth login state."
+    APIKeyPrefixTaken:
+      x-problem:
+        slug: api-key-prefix-taken
+        status: 409
+        title: API Key Prefix Taken
+        description: "An API key with this display prefix already exists."
+    CapabilityExists:
+      x-problem:
+        slug: capability-exists
+        status: 409
+        title: Capability Exists
+        description: "A capability with this resource and action already exists for this scope."
+    ProjectProfileSchemaExists:
+      x-problem:
+        slug: project-profile-schema-exists
+        status: 409
+        title: Project Profile Schema Exists
+        description: "A profile schema already exists for this project."
+    ProfileSchemaVersionExists:
+      x-problem:
+        slug: profile-schema-version-exists
+        status: 409
+        title: Profile Schema Version Exists
+        description: "This profile schema version already exists for the scope."
+    PlatformSchemaVersionExists:
+      x-problem:
+        slug: platform-schema-version-exists
+        status: 409
+        title: Platform Schema Version Exists
+        description: "A platform profile schema version already exists."
+    HandleTaken:
+      x-problem:
+        slug: handle-taken
+        status: 409
+        title: Handle Taken
+        description: "This handle is already in use by another profile."
+    EmailTemplateExists:
+      x-problem:
+        slug: email-template-exists
+        status: 409
+        title: Email Template Exists
+        description: "This project already has an email template of this kind."
+    TosAlreadyExists:
+      x-problem:
+        slug: tos-already-exists
+        status: 409
+        title: ToS Already Exists
+        description: "This project already has terms of service."
+    TosAlreadyAccepted:
+      x-problem:
+        slug: tos-already-accepted
+        status: 409
+        title: ToS Already Accepted
+        description: "This actor has already accepted this terms version."
+    AlreadyBlacklisted:
+      x-problem:
+        slug: already-blacklisted
+        status: 409
+        title: Already Blacklisted
+        description: "This target is already blacklisted for this scope."

@@ -53,6 +53,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		var apiErr APIError
 		_ = json.Unmarshal(res.Bytes(), &apiErr)
 		apiErr.StatusCode = res.StatusCode()
+		if apiErr.Message == "" {
+			apiErr.Message = apiErr.Title
+		}
 		return &apiErr
 	}
 
@@ -71,10 +74,15 @@ type list[T any] struct {
 	Items []T `json:"items"`
 }
 
+// APIError is returned when Payssage responds with a failure status.
+// StatusCode is the HTTP status; the rest is the decoded RFC 9457 problem,
+// which may be empty when the body was not a problem. Message is the
+// problem's detail.
 type APIError struct {
 	StatusCode int    `json:"-"`
-	Code       string `json:"code"`
-	Message    string `json:"message"`
+	Type       string `json:"type"`
+	Title      string `json:"title"`
+	Message    string `json:"detail"`
 }
 
 func (e *APIError) Error() string {

@@ -35,37 +35,26 @@ info:
     an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
     items later.
 
-    A failed response's body is an `Error`:
+    A failed response's body is an RFC 9457 problem, served as
+    `application/problem+json`:
 
     ```json
     {
-      "code": "VALIDATION_ERROR",
-      "message": "invalid request body: name: this field is required",
-      "fields": [{ "field": "name", "message": "this field is required" }]
+      "type": "https://api.univents.com.br/problems/validation",
+      "status": 400,
+      "title": "Validation Failed",
+      "detail": "invalid request body: name: this field is required",
+      "instance": "/namespaces",
+      "errors": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    `fields` is present only when the failure names request fields.
-
-    ## Error codes → HTTP status
-
-    The `code` sentinel maps to the HTTP status:
-
-    | code | status |
-    |---|---|
-    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
-    | `UNAUTHORIZED` | 401 |
-    | `PAYMENT_REQUIRED` | 402 |
-    | `FORBIDDEN` | 403 |
-    | `NOT_FOUND` | 404 |
-    | `METHOD_NOT_ALLOWED` | 405 |
-    | `CONFLICT` | 409 |
-    | `UNPROCESSABLE_ENTITY` | 422 |
-    | `TOO_MANY_REQUESTS` | 429 |
-    | `INTERNAL_ERROR` | 500 |
-    | `NOT_IMPLEMENTED` | 501 |
-    | `BAD_GATEWAY` | 502 |
-    | `SERVICE_UNAVAILABLE` | 503 |
+    `type` identifies the problem and resolves to its documentation;
+    `title` and `status` are fixed per problem, `detail` says what went
+    wrong this time, and `instance` is the request path. `errors` is
+    present only when the failure names request fields. Each operation
+    lists the problems it can answer with; a 500 reads `Internal Server
+    Error`.
 
     ## Custom methods
 
@@ -252,6 +241,7 @@ paths:
         Lists publicly visible events (active events with published
         editions). Public.
       security: []
+      x-problems: [500]
       responses:
         '200':
           description: Public events
@@ -265,8 +255,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Event'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [events]
       operationId: createEvent
@@ -288,6 +276,7 @@ paths:
               slug: trieoh-dev-conf
               description: A yearly gathering of TrieOH developers.
               contact_email: events@trieoh.com
+      x-problems: [400, 401, 500]
       responses:
         '201':
           description: Event created
@@ -295,12 +284,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_slug}:by-slug:
     get:
@@ -318,6 +301,7 @@ paths:
           description: Event slug.
           schema:
             type: string
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested event
@@ -325,10 +309,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/owned:
     get:
@@ -339,6 +319,7 @@ paths:
         Lists the events owned by the authenticated actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Events owned by the actor
@@ -352,10 +333,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Event'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/joined:
     get:
@@ -367,6 +344,7 @@ paths:
         role: owner, admin, or staff).
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Events the actor belongs to
@@ -380,10 +358,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Event'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}:
     patch:
@@ -403,6 +377,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchEventRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Event updated
@@ -410,16 +385,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/payments/connect:
     post:
@@ -442,6 +407,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ConnectEventPaymentsRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Provider consent URL and event wallet
@@ -449,16 +415,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConnectEventPaymentsResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/payments/complete:
     post:
@@ -480,6 +436,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompleteEventPaymentsRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Event updated
@@ -487,16 +444,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/payments:
     delete:
@@ -511,17 +458,10 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Seller unlinked
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/publish:
     post:
@@ -535,17 +475,10 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Event published
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/discontinue:
     post:
@@ -559,17 +492,10 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Event discontinued
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/members:
     get:
@@ -583,6 +509,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Event members
@@ -596,14 +523,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EventMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [events]
       operationId: addEventMember
@@ -624,6 +543,7 @@ paths:
             example:
               email: user@example.com
               role: staff
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Member added
@@ -631,18 +551,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventMember'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/members/{user_id}:
     delete:
@@ -678,17 +586,10 @@ paths:
                   x-go-type: string
                   x-oapi-codegen-extra-tags:
                     validate: "required,email"
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Member removed
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_slug}:by-slug/editions/{edition_slug}:by-slug:
     get:
@@ -712,6 +613,7 @@ paths:
           description: Edition slug.
           schema:
             type: string
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested edition
@@ -719,10 +621,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Edition'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions:
     get:
@@ -734,6 +632,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Public editions
@@ -747,10 +646,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Edition'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [editions]
       operationId: createEdition
@@ -774,6 +669,7 @@ paths:
               slug: "2026"
               starts_at: '2026-05-04T09:00:00Z'
               ends_at: '2026-05-06T18:00:00Z'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Edition created
@@ -781,16 +677,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Edition'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/active:
     get:
@@ -803,6 +689,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The active edition
@@ -810,10 +697,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Edition'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/past:
     get:
@@ -825,6 +708,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Past editions
@@ -838,10 +722,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Edition'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/upcoming:
     get:
@@ -853,6 +733,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Upcoming editions
@@ -866,10 +747,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Edition'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/draft:
     get:
@@ -883,6 +760,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Draft editions
@@ -896,14 +774,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Edition'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/{edition_id}:
     patch:
@@ -924,6 +794,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchEditionRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Edition updated
@@ -931,16 +802,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Edition'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /events/{event_id}/editions/{edition_id}/publish:
     post:
@@ -956,17 +817,10 @@ paths:
       parameters:
         - $ref: '#/components/parameters/EventID'
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Edition published
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/store/stock:
     get:
@@ -982,6 +836,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Current stock per purchasable item
@@ -995,10 +850,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/StoreStockItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/checkout:
     post:
@@ -1081,6 +932,7 @@ paths:
                 - item_type: product
                   item_id: 5fa85f64-5717-4562-b3fc-2c963f66afa6
                   quantity: 2
+      x-problems: [400, 401, 404, 409, 500]
       responses:
         '201':
           description: Purchase created
@@ -1088,16 +940,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckoutResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/ticket-types:
     get:
@@ -1109,6 +951,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition ticket types
@@ -1122,10 +965,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TicketType'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [ticket_types]
       operationId: createTicketType
@@ -1150,6 +989,7 @@ paths:
               access_level: 0
               price_cents: 15000
               max_quantity: 500
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Ticket type created
@@ -1157,16 +997,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TicketType'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /ticket-types/{ticket_type_id}:
     get:
@@ -1182,6 +1012,7 @@ paths:
           description: Ticket type ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested ticket type
@@ -1189,10 +1020,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TicketType'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [ticket_types]
       operationId: patchTicketType
@@ -1215,6 +1042,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchTicketTypeRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Ticket type updated
@@ -1222,16 +1050,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TicketType'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/products:
     get:
@@ -1244,6 +1062,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition products
@@ -1257,10 +1076,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Product'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [products]
       operationId: createInitialProduct
@@ -1286,6 +1101,7 @@ paths:
               description: Black, size M.
               price: 8900
               stock: 100
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Product created
@@ -1293,16 +1109,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/products/{vendor_code}:by-code:
     get:
@@ -1321,6 +1127,7 @@ paths:
           description: Product vendor code.
           schema:
             type: string
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested product
@@ -1328,10 +1135,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/variants/{vendor_code}:by-code:
     get:
@@ -1350,6 +1153,7 @@ paths:
           description: Variant vendor code.
           schema:
             type: string
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested variant
@@ -1357,10 +1161,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductVariant'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /products/{product_id}:
     get:
@@ -1376,6 +1176,7 @@ paths:
           description: Product ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested product
@@ -1383,10 +1184,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [products]
       operationId: patchProduct
@@ -1409,6 +1206,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchProductRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Product updated
@@ -1416,16 +1214,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [products]
       operationId: deleteProduct
@@ -1442,17 +1230,10 @@ paths:
           description: Product ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Product deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /products/{product_id}/variants:
     get:
@@ -1468,6 +1249,7 @@ paths:
           description: Product ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Product variants
@@ -1481,10 +1263,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProductVariant'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [products]
       operationId: createProductVariant
@@ -1513,6 +1291,7 @@ paths:
               description: White, size L.
               price: 8900
               stock: 50
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Variant created
@@ -1520,16 +1299,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductVariant'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /variants/{variant_id}:
     patch:
@@ -1554,6 +1323,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchProductVariantRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Variant updated
@@ -1561,16 +1331,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductVariant'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [products]
       operationId: deleteProductVariant
@@ -1587,17 +1347,10 @@ paths:
           description: Variant ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Variant deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/programs:
     get:
@@ -1610,6 +1363,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition programs
@@ -1623,10 +1377,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Program'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [programs]
       operationId: createProgram
@@ -1651,6 +1401,7 @@ paths:
               min_access_level: 0
               staff_only: false
               price: 0
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Program created
@@ -1658,16 +1409,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Program'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /programs/{program_id}:
     get:
@@ -1683,6 +1424,7 @@ paths:
           description: Program ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested program
@@ -1690,10 +1432,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Program'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [programs]
       operationId: patchProgram
@@ -1716,6 +1454,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchProgramRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Program updated
@@ -1723,16 +1462,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Program'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [programs]
       operationId: deleteProgram
@@ -1749,6 +1478,7 @@ paths:
           description: Program ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The deleted program
@@ -1756,14 +1486,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Program'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /programs/{program_id}/occurrences:
     get:
@@ -1780,6 +1502,7 @@ paths:
           description: Program ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Program occurrences
@@ -1793,10 +1516,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProgramOccurrence'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [programs]
       operationId: createProgramOccurrence
@@ -1823,6 +1542,7 @@ paths:
               starts_at: '2026-05-04T09:00:00Z'
               ends_at: '2026-05-04T10:30:00Z'
               max_capacity: 200
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Occurrence created
@@ -1830,16 +1550,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramOccurrence'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /programs/{program_id}/certifications/emit:
     post:
@@ -1863,6 +1573,7 @@ paths:
           description: Program ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Grant job enqueued
@@ -1870,14 +1581,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramCertEmissionResult'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/occurrences:
     get:
@@ -1889,6 +1592,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition occurrences
@@ -1902,10 +1606,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProgramOccurrence'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /occurrences/{occurrence_id}:
     get:
@@ -1921,6 +1621,7 @@ paths:
           description: Occurrence ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested occurrence
@@ -1928,10 +1629,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramOccurrence'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [programs]
       operationId: patchOccurrence
@@ -1954,6 +1651,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchProgramOccurrenceRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Occurrence updated
@@ -1961,16 +1659,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramOccurrence'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [programs]
       operationId: deleteOccurrence
@@ -1987,6 +1675,7 @@ paths:
           description: Occurrence ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The deleted occurrence
@@ -1994,14 +1683,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramOccurrence'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /occurrences/{occurrence_id}/registration:
     post:
@@ -2029,6 +1710,7 @@ paths:
           description: Occurrence ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '201':
           description: The created participation
@@ -2036,16 +1718,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramParticipation'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [programs]
       operationId: deregisterOccurrence
@@ -2066,6 +1738,7 @@ paths:
           description: Occurrence ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: The cancelled participation
@@ -2073,16 +1746,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramParticipation'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /occurrences/{occurrence_id}/participants:
     get:
@@ -2103,6 +1766,7 @@ paths:
           description: Occurrence ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Occurrence participants
@@ -2116,14 +1780,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProgramParticipant'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /occurrences/{occurrence_id}/check-in:
     post:
@@ -2158,6 +1814,7 @@ paths:
               $ref: '#/components/schemas/CheckInRequest'
             example:
               attendee_id: 2e6c6b0e-9c2a-4c1e-8d4f-9e1b7f3a5c2d
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: The attendance participation
@@ -2165,16 +1822,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramParticipation'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /participations/{participation_id}/mark-attended:
     post:
@@ -2197,6 +1844,7 @@ paths:
           description: Participation ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: The updated participation
@@ -2204,16 +1852,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProgramParticipation'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/my-participations:
     get:
@@ -2231,6 +1869,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The caller's participations, or null without a ticket
@@ -2244,12 +1883,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/MyParticipation'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/badges:
     get:
@@ -2263,6 +1896,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Edition badge templates
@@ -2276,14 +1910,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BadgeTemplate'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [badges]
       operationId: createBadgeTemplate
@@ -2308,6 +1934,7 @@ paths:
               name: Standard Badge
               design_data:
                 background: "#1b2a4a"
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Badge template created
@@ -2315,16 +1942,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadgeTemplate'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /badges/{template_id}:
     get:
@@ -2343,6 +1960,7 @@ paths:
           description: Badge template ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The requested badge template
@@ -2350,14 +1968,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadgeTemplate'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [badges]
       operationId: deleteBadgeTemplate
@@ -2374,17 +1984,10 @@ paths:
           description: Badge template ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Badge template deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [badges]
       operationId: updateBadgeTemplate
@@ -2414,6 +2017,7 @@ paths:
               name: Standard Badge v2
               design_data:
                 background: "#123456"
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Badge template updated
@@ -2421,16 +2025,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadgeTemplate'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /users/{user_id}/badges:
     get:
@@ -2449,6 +2043,7 @@ paths:
           description: User (actor) ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [500]
       responses:
         '200':
           description: The user's badges grouped by origin
@@ -2456,8 +2051,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadgeProfileGroups'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/badges/emissions:
     get:
@@ -2473,6 +2066,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Edition badge emissions
@@ -2486,14 +2080,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BadgeEditionEmission'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/badges/print:
     get:
@@ -2519,6 +2105,7 @@ paths:
             type: array
             items:
               $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Badge print payload
@@ -2532,14 +2119,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BadgePrintItem'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/signatures:
     get:
@@ -2552,6 +2131,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition signatures
@@ -2565,10 +2145,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Signature'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [signatures]
       operationId: createSignature
@@ -2592,6 +2168,7 @@ paths:
               signatory_title: Head of Education
               signatory_email: jane@trieoh.com
               image_url: https://cdn.trieoh.com/signatures/jane.png
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Signature created
@@ -2599,16 +2176,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Signature'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signatures/{signature_id}:
     get:
@@ -2624,6 +2191,7 @@ paths:
           description: Signature ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested signature
@@ -2631,10 +2199,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Signature'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [signatures]
       operationId: deleteSignature
@@ -2651,17 +2215,10 @@ paths:
           description: Signature ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Signature deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/signature-requests:
     get:
@@ -2673,6 +2230,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition signature requests
@@ -2686,10 +2244,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/SignatureRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [signatures]
       operationId: createSignatureRequest
@@ -2715,6 +2269,7 @@ paths:
               signatory_title: Head of Education
               signatory_email: jane@example.com
               expires_in_days: 14
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Signature request created
@@ -2722,16 +2277,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignatureRequest'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signature-requests/{request_id}:
     get:
@@ -2747,6 +2292,7 @@ paths:
           description: Signature request ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested signature request
@@ -2754,10 +2300,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignatureRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signature-requests/{request_id}/cancel:
     post:
@@ -2786,19 +2328,10 @@ paths:
                 reason:
                   type: [ string, "null" ]
                   description: Why the request was cancelled.
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '204':
           description: Signature request cancelled
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signature-requests/fulfill:
     post:
@@ -2832,6 +2365,7 @@ paths:
                   description: URL of the uploaded signature image.
             example:
               image_url: https://cdn.trieoh.com/signatures/jane.png
+      x-problems: [400, 401, 404, 409, 500]
       responses:
         '201':
           description: Signature created from the fulfilled request
@@ -2839,16 +2373,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Signature'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signature-requests/deny:
     post:
@@ -2879,19 +2403,10 @@ paths:
                   description: Why the request was denied.
             example:
               reason: Signature image no longer available
+      x-problems: [400, 401, 404, 409, 500]
       responses:
         '204':
           description: Signature request denied
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /signatures/revoke:
     post:
@@ -2910,17 +2425,10 @@ paths:
           description: HMAC-signed signature token.
           schema:
             type: string
+      x-problems: [400, 401, 404, 500]
       responses:
         '204':
           description: Signature revoked
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/certifications/templates:
     get:
@@ -2932,6 +2440,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Edition certification templates
@@ -2945,10 +2454,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CertificationTemplate'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [certifications]
       operationId: createCertificationTemplate
@@ -2973,6 +2478,7 @@ paths:
               description: Awarded to attendees of the edition.
               design_data:
                 background: "#ffffff"
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Certification template created
@@ -2980,16 +2486,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CertificationTemplate'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications/templates/{template_id}:
     get:
@@ -3005,6 +2501,7 @@ paths:
           description: Certification template ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The requested template
@@ -3012,10 +2509,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CertificationTemplate'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [certifications]
       operationId: updateCertificationTemplate
@@ -3038,6 +2531,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateCertificationTemplateRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Template updated
@@ -3045,16 +2539,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CertificationTemplate'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [certifications]
       operationId: deleteCertificationTemplate
@@ -3071,17 +2555,10 @@ paths:
           description: Certification template ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Template deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications/templates/{template_id}/link:
     post:
@@ -3109,19 +2586,10 @@ paths:
               $ref: '#/components/schemas/CertTemplateProgramRequest'
             example:
               program_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Program linked to the template
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [certifications]
       operationId: unlinkCertificationTemplate
@@ -3144,19 +2612,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CertTemplateProgramRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Program unlinked from the template
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications/templates/{template_id}/links:
     get:
@@ -3173,6 +2632,7 @@ paths:
           description: Certification template ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Template program links
@@ -3186,10 +2646,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CertificationTemplateProgram'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /verify/{hash}:
     get:
@@ -3207,6 +2663,7 @@ paths:
           description: Certification verification hash.
           schema:
             type: string
+      x-problems: [404, 500]
       responses:
         '200':
           description: Verification result
@@ -3214,10 +2671,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyCertResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications/{cert_id}:
     get:
@@ -3236,6 +2689,7 @@ paths:
           description: Certification ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The requested certification
@@ -3243,14 +2697,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Certification'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/certifications:
     get:
@@ -3264,6 +2710,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Edition certifications
@@ -3277,14 +2724,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Certification'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications:
     get:
@@ -3295,6 +2734,7 @@ paths:
         Lists the certifications issued to the authenticated actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Certifications issued to the actor
@@ -3308,10 +2748,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Certification'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /certifications/{cert_id}/invalidate:
     post:
@@ -3338,19 +2774,10 @@ paths:
               $ref: '#/components/schemas/InvalidCertReason'
             example:
               reason: Erroneous emission
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Certification invalidated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/certifications/emission-errors:
     get:
@@ -3365,6 +2792,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Edition emission errors
@@ -3378,14 +2806,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CertEmissionError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /webhooks/payssage:
     post:
@@ -3422,13 +2842,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReceivePayssageWebhookRequest'
+      x-problems: [400, 500]
       responses:
         '204':
           description: Webhook acknowledged (processed or expected-ignored)
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /checkouts/{purchase_id}:
     get:
@@ -3453,6 +2870,7 @@ paths:
           description: Purchase ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: Purchase state with items
@@ -3460,12 +2878,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Checkout'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /purchases:
     get:
@@ -3479,6 +2891,7 @@ paths:
         no state transitions.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: The caller's purchases
@@ -3486,10 +2899,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyPurchases'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /purchases/{purchase_id}/refund:
     post:
@@ -3507,6 +2916,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/PurchaseID'
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '200':
           description: Refund initiated (purchase still approved until the webhook confirms)
@@ -3514,18 +2924,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Purchase'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/purchases:
     get:
@@ -3543,6 +2941,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: The edition's purchases
@@ -3556,14 +2955,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EditionPurchase'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/my-ticket:
     get:
@@ -3582,6 +2973,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The caller's ticket, or null when they hold none
@@ -3591,12 +2983,6 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/MyTicket'
                 nullable: true
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/attendees/count:
     get:
@@ -3612,6 +2998,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/EditionID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: The confirmed attendee count
@@ -3619,10 +3006,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AttendeeCount'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /ws/token:
     get:
@@ -3647,6 +3030,7 @@ paths:
           description: Purchase to bind the token to.
           schema:
             $ref: '#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
       responses:
         '200':
           description: The one-time handshake token and its expiry
@@ -3654,12 +3038,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WsToken'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
@@ -3693,49 +3071,6 @@ components:
       schema:
         $ref: '#/components/schemas/UUID'
 
-  responses:
-    BadRequest:
-      description: Invalid request payload or parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Missing or invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Forbidden:
-      description: Insufficient permissions for the requested operation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    NotFound:
-      description: The requested resource does not exist
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Conflict:
-      description: The request conflicts with the current state of the resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    InternalServerError:
-      description: Unexpected server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
   schemas:
     UUID:
       type: string
@@ -3751,46 +3086,6 @@ components:
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
         path: github.com/google/uuid
-
-    Error:
-      type: object
-      title: AppError
-      description: |
-        The body of every error response. `code` is a machine-readable
-        sentinel whose mapping to the HTTP status is documented in the
-        top-level description.
-      required: [code, message]
-      properties:
-        code:
-          type: string
-          enum:
-            - BAD_REQUEST
-            - VALIDATION_ERROR
-            - UNAUTHORIZED
-            - PAYMENT_REQUIRED
-            - FORBIDDEN
-            - NOT_FOUND
-            - METHOD_NOT_ALLOWED
-            - CONFLICT
-            - UNPROCESSABLE_ENTITY
-            - TOO_MANY_REQUESTS
-            - INTERNAL_ERROR
-            - NOT_IMPLEMENTED
-            - BAD_GATEWAY
-            - SERVICE_UNAVAILABLE
-        message:
-          type: string
-        fields:
-          type: array
-          description: Per-field validation errors (validation failures only).
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field:
-                type: string
-              message:
-                type: string
 
     EventStatus:
       x-go-type: models.EventStatus

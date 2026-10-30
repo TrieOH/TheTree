@@ -76,7 +76,7 @@ func setupDB(cfg Config, constraints ConstraintErrors, runMigrations bool) (*pgx
 			return nil, fmt.Errorf("migrate: %w", err)
 		}
 	}
-	constraintRegistry = constraints
+	UseConstraints(constraints)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	validateConstraints(ctx, db)

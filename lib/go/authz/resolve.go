@@ -50,7 +50,7 @@ type Options struct {
 	SkipSetupGuard []string
 	// WriteError writes a scope checker's rejection. It is required when
 	// the spec has an x-scope; lib/backend passes lib/httpserver's writer,
-	// which authz cannot import (lib/httpserver maps authz's errors).
+	// which authz cannot import (lib/httpserver imports authz).
 	WriteError func(http.ResponseWriter, *http.Request, error)
 }
 
@@ -59,7 +59,8 @@ type Options struct {
 // where the operation declares none): a list of blocks, each a list of
 // scheme names. Schemes is their flattened sorted union; empty means
 // public. Scope is the operation's x-scope value, empty when it declares
-// none (no scope restriction).
+// none (no scope restriction). Problems is the bundled spec's x-problems,
+// the slugs the operation may answer with (ADR-0019).
 type ResolvedOperation struct {
 	Method      string
 	Path        string
@@ -67,6 +68,7 @@ type ResolvedOperation struct {
 	Blocks      [][]string
 	Schemes     []string
 	Scope       string
+	Problems    []string
 }
 
 type openAPISpec struct {
@@ -88,6 +90,7 @@ type operation struct {
 	OperationID string                `yaml:"operationId"`
 	Security    []map[string][]string `yaml:"security"`
 	Scope       *string               `yaml:"x-scope"`
+	Problems    []string              `yaml:"x-problems"`
 }
 
 // SpecOperations parses the spec and returns every operation with its
@@ -139,6 +142,7 @@ func SpecOperations(spec []byte) ([]ResolvedOperation, error) {
 				Blocks:      names,
 				Schemes:     union,
 				Scope:       scopeOf(m.op.Scope),
+				Problems:    m.op.Problems,
 			})
 		}
 	}

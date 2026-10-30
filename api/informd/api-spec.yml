@@ -28,37 +28,26 @@ info:
     an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
     items later.
 
-    A failed response's body is an `Error`:
+    A failed response's body is an RFC 9457 problem, served as
+    `application/problem+json`:
 
     ```json
     {
-      "code": "VALIDATION_ERROR",
-      "message": "invalid request body: name: this field is required",
-      "fields": [{ "field": "name", "message": "this field is required" }]
+      "type": "https://api.informd.trieoh.com/problems/validation",
+      "status": 400,
+      "title": "Validation Failed",
+      "detail": "invalid request body: name: this field is required",
+      "instance": "/namespaces",
+      "errors": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    `fields` is present only when the failure names request fields.
-
-    ## Error codes → HTTP status
-
-    The `code` sentinel maps to the HTTP status:
-
-    | code | status |
-    |---|---|
-    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
-    | `UNAUTHORIZED` | 401 |
-    | `PAYMENT_REQUIRED` | 402 |
-    | `FORBIDDEN` | 403 |
-    | `NOT_FOUND` | 404 |
-    | `METHOD_NOT_ALLOWED` | 405 |
-    | `CONFLICT` | 409 |
-    | `UNPROCESSABLE_ENTITY` | 422 |
-    | `TOO_MANY_REQUESTS` | 429 |
-    | `INTERNAL_ERROR` | 500 |
-    | `NOT_IMPLEMENTED` | 501 |
-    | `BAD_GATEWAY` | 502 |
-    | `SERVICE_UNAVAILABLE` | 503 |
+    `type` identifies the problem and resolves to its documentation;
+    `title` and `status` are fixed per problem, `detail` says what went
+    wrong this time, and `instance` is the request path. `errors` is
+    present only when the failure names request fields. Each operation
+    lists the problems it can answer with; a 500 reads `Internal Server
+    Error`.
 
     ## Form model
 
@@ -178,6 +167,7 @@ paths:
         Requires a JWT.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Namespaces the actor belongs to
@@ -191,10 +181,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Namespace'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [namespaces]
       operationId: createNamespace
@@ -212,6 +198,7 @@ paths:
               $ref: '#/components/schemas/CreateNamespaceRequest'
             example:
               name: My Workspace
+      x-problems: [400, 401, 500]
       responses:
         '201':
           description: Namespace created
@@ -219,12 +206,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Namespace'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/members:
     get:
@@ -238,6 +219,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Namespace members
@@ -251,14 +233,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/NamespaceMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [namespaces]
       operationId: addNamespaceMember
@@ -279,21 +253,10 @@ paths:
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
               role: member
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [namespaces]
       operationId: removeNamespaceMember
@@ -313,19 +276,10 @@ paths:
               $ref: '#/components/schemas/RemoveNamespaceMemberRequest'
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms:
     get:
@@ -339,6 +293,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Namespace forms
@@ -352,14 +307,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [namespaces]
       operationId: createNamespaceForm
@@ -379,6 +326,7 @@ paths:
               $ref: '#/components/schemas/CreateFormRequest'
             example:
               title: Registration Form
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Form created
@@ -386,16 +334,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/archived:
     get:
@@ -409,6 +347,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Archived namespace forms
@@ -422,14 +361,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms:
     get:
@@ -441,6 +372,7 @@ paths:
         archived). Accepts JWT or API key.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Forms owned by the actor
@@ -454,10 +386,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [forms]
       operationId: createForm
@@ -475,6 +403,7 @@ paths:
               $ref: '#/components/schemas/CreateFormRequest'
             example:
               title: Registration Form
+      x-problems: [400, 401, 500]
       responses:
         '201':
           description: Form created
@@ -482,12 +411,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/archived:
     get:
@@ -498,6 +421,7 @@ paths:
         Lists the archived forms owned by the authenticated actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500]
       responses:
         '200':
           description: Archived forms owned by the actor
@@ -511,10 +435,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/asnwerable:
     get:
@@ -529,6 +449,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [404, 500]
       responses:
         '200':
           description: Answerable form view
@@ -536,10 +457,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FormAnswerable'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/full:
     get:
@@ -554,6 +471,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Full form view
@@ -561,14 +479,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FullForm'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/members:
     get:
@@ -582,6 +492,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Form members
@@ -595,14 +506,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/FormMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [forms]
       operationId: addFormMember
@@ -623,21 +526,10 @@ paths:
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
               role: admin
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [forms]
       operationId: removeFormMember
@@ -657,19 +549,10 @@ paths:
               $ref: '#/components/schemas/RemoveFormMemberRequest'
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/open:
     post:
@@ -683,6 +566,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form opened
@@ -690,16 +574,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/close:
     post:
@@ -713,6 +587,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form closed
@@ -720,16 +595,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/archive:
     post:
@@ -743,6 +608,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form archived
@@ -750,16 +616,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/redraft:
     post:
@@ -773,6 +629,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form redrafted
@@ -780,16 +637,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/responses/count:
     get:
@@ -803,6 +650,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Response count
@@ -817,14 +665,6 @@ paths:
                     description: Number of responses.
               example:
                 count: 42
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/steps:
     get:
@@ -838,6 +678,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Form steps
@@ -851,14 +692,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Step'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [steps]
       operationId: createStep
@@ -880,6 +713,7 @@ paths:
               title: Personal Info
               description: Tell us about yourself.
               position_hint: 1
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Step created
@@ -887,16 +721,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Step'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [steps]
       operationId: bulkEditSteps
@@ -927,19 +751,10 @@ paths:
                 title: Preferences
                 description: Tell us what you like.
                 position_hint: 2
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Steps updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/steps/{step_id}/fields:
     get:
@@ -954,6 +769,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Step fields
@@ -967,14 +783,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Field'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [fields]
       operationId: createField
@@ -1001,6 +809,7 @@ paths:
               position_hint: 1
               required: true
               type: string
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Field created
@@ -1008,16 +817,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Field'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [fields]
       operationId: bulkEditFields
@@ -1039,19 +838,10 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/UpdateFieldRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Fields updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/steps/{step_id}/fields/{field_id}/select:
     get:
@@ -1068,6 +858,7 @@ paths:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Select configuration
@@ -1075,14 +866,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FieldSelectConfig'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [fields]
       operationId: editSelectConfig
@@ -1110,6 +893,7 @@ paths:
                   value: a
                 - label: Option B
                   value: b
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Select configuration updated
@@ -1117,16 +901,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FieldSelectConfig'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/steps/{step_id}/fields/{field_id}:
     delete:
@@ -1142,17 +916,10 @@ paths:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Field deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /forms/{form_id}/responses:
     post:
@@ -1179,17 +946,10 @@ paths:
                 - field_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                   answer:
                     value: Jane Doe
+      x-problems: [400, 404, 409, 500]
       responses:
         '201':
           description: Response submitted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   # ── Namespaced duplicated routes (scheduled for removal; kept for parity) ──
 
@@ -1207,6 +967,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Full form view
@@ -1214,14 +975,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FullForm'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/members:
     get:
@@ -1234,6 +987,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Form members
@@ -1247,14 +1001,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/FormMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [forms]
       operationId: addFormMemberNamespaced
@@ -1271,21 +1017,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddFormMemberRequest'
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [forms]
       operationId: removeFormMemberNamespaced
@@ -1302,19 +1037,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RemoveFormMemberRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/open:
     post:
@@ -1327,6 +1053,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form opened
@@ -1334,16 +1061,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/close:
     post:
@@ -1356,6 +1073,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form closed
@@ -1363,16 +1081,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/archive:
     post:
@@ -1385,6 +1093,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form archived
@@ -1392,16 +1101,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/redraft:
     post:
@@ -1414,6 +1113,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
       responses:
         '200':
           description: Form redrafted
@@ -1421,16 +1121,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Form'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/responses/count:
     get:
@@ -1443,6 +1133,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Response count
@@ -1454,14 +1145,6 @@ paths:
                 properties:
                   count:
                     type: integer
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/steps:
     get:
@@ -1474,6 +1157,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Form steps
@@ -1487,14 +1171,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Step'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [steps]
       operationId: createStepNamespaced
@@ -1511,6 +1187,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateStepRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Step created
@@ -1518,16 +1195,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Step'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [steps]
       operationId: bulkEditStepsNamespaced
@@ -1546,19 +1213,10 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/UpdateStepRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Steps updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields:
     get:
@@ -1572,6 +1230,7 @@ paths:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Step fields
@@ -1585,14 +1244,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Field'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [fields]
       operationId: createFieldNamespaced
@@ -1610,6 +1261,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateFieldRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
           description: Field created
@@ -1617,16 +1269,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Field'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [fields]
       operationId: bulkEditFieldsNamespaced
@@ -1646,19 +1288,10 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/UpdateFieldRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '204':
           description: Fields updated
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}/select:
     get:
@@ -1673,6 +1306,7 @@ paths:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '200':
           description: Select configuration
@@ -1680,14 +1314,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FieldSelectConfig'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     put:
       tags: [fields]
       operationId: editSelectConfigNamespaced
@@ -1706,6 +1332,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/EditSelectConfigRequest'
+      x-problems: [400, 401, 403, 404, 500]
       responses:
         '200':
           description: Select configuration updated
@@ -1713,16 +1340,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FieldSelectConfig'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}:
     delete:
@@ -1737,17 +1354,10 @@ paths:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
       responses:
         '204':
           description: Field deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
@@ -1792,49 +1402,6 @@ components:
       schema:
         $ref: '#/components/schemas/UUID'
 
-  responses:
-    BadRequest:
-      description: Invalid request payload or parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Missing or invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Forbidden:
-      description: Insufficient permissions for the requested operation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    NotFound:
-      description: The requested resource does not exist
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Conflict:
-      description: The request conflicts with the current state of the resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    InternalServerError:
-      description: Unexpected server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
   schemas:
     UUID:
       type: string
@@ -1850,46 +1417,6 @@ components:
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
         path: github.com/google/uuid
-
-    Error:
-      type: object
-      title: AppError
-      description: |
-        The body of every error response. `code` is a machine-readable
-        sentinel whose mapping to the HTTP status is documented in the
-        top-level description.
-      required: [code, message]
-      properties:
-        code:
-          type: string
-          enum:
-            - BAD_REQUEST
-            - VALIDATION_ERROR
-            - UNAUTHORIZED
-            - PAYMENT_REQUIRED
-            - FORBIDDEN
-            - NOT_FOUND
-            - METHOD_NOT_ALLOWED
-            - CONFLICT
-            - UNPROCESSABLE_ENTITY
-            - TOO_MANY_REQUESTS
-            - INTERNAL_ERROR
-            - NOT_IMPLEMENTED
-            - BAD_GATEWAY
-            - SERVICE_UNAVAILABLE
-        message:
-          type: string
-        fields:
-          type: array
-          description: Per-field validation errors (validation failures only).
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field:
-                type: string
-              message:
-                type: string
 
     Namespace:
       x-go-type: models.Namespace

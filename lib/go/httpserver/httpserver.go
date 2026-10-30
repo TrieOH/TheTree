@@ -40,6 +40,9 @@ type Config struct {
 	// service's OpenAPI 3.1 specification (the same content as
 	// api/<svc>/api-spec.yml), for docs tooling to fetch and render.
 	OpenAPISpec []byte
+	// Problems documents the Backend's problem types, served at
+	// GET /problems/{slug} (ADR-0019).
+	Problems []ProblemDoc
 	// Routes receives the chi router and registers the backend's feature
 	// routes, auth middlewares, and any extra mounts (riverui, websockets).
 	Routes func(r *chi.Mux)
@@ -126,6 +129,9 @@ func NewRouter(cfg Config) http.Handler {
 		cfg.Routes(r)
 	}
 	r.Get("/health", health(cfg.AppName))
+	if len(cfg.Problems) > 0 {
+		r.Get("/problems/{slug}", serveProblemDocs(cfg.Problems))
+	}
 
 	if len(cfg.OpenAPISpec) > 0 {
 		spec := cfg.OpenAPISpec

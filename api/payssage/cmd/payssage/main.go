@@ -9,6 +9,7 @@ import (
 	spec "payssage"
 	"payssage/internal/app"
 	"payssage/internal/config"
+	"payssage/internal/problems"
 )
 
 func main() {
@@ -22,7 +23,8 @@ func main() {
 			identityx.Module(cfg.IdentityX, identityx.Debug(true), identityx.AcceptAPIKeys()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:  app.Build(cfg),
-		Errors: app.Errors(),
+		Build:    app.Build(cfg),
+		Errors:   problems.Mapper(app.Problem),
+		Problems: problems.Docs,
 	}), "payssage exited with error")
 }

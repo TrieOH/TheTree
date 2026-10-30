@@ -7,6 +7,7 @@ import (
 	spec "IdentityX"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/openapi"
+	"IdentityX/internal/problems"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
 	"lib/httpserver"
@@ -42,9 +43,13 @@ func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *
 	if err != nil {
 		t.Fatalf("resolve auth chains: %v", err)
 	}
-	// Boot installs the error map before serving; the router under test
-	// answers errors through the same table.
-	httpserver.UseErrorMap(Errors())
+	// Boot installs the problems before serving; the router under test
+	// answers errors through the same mapper.
+	httpserver.UseProblems(problems.Mapper(Problem), "http://identityx.test")
+	err = httpserver.UseOperationProblems(spec.OpenAPISpec, true)
+	if err != nil {
+		t.Fatalf("read x-problems: %v", err)
+	}
 	r := chi.NewRouter()
 	openapi.Mount(r, h, resolver.Chains())
 	return r

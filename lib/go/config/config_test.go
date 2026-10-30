@@ -45,7 +45,7 @@ func TestServerDefaults(t *testing.T) {
 	var cfg struct {
 		Server
 	}
-	parse(t, map[string]string{"APP_NAME": "svc"}, &cfg)
+	parse(t, map[string]string{"APP_NAME": "svc", "API_URL": "https://api.example.com"}, &cfg)
 
 	if cfg.Port != "8080" {
 		t.Errorf("Port default = %q, want 8080", cfg.Port)

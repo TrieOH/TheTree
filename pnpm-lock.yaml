@@ -243,8 +243,8 @@ catalogs:
       specifier: ^0.7.0
       version: 0.7.11
     '@tanstack/react-query':
-      specifier: 5.101.4
-      version: 5.101.4
+      specifier: 5.105.0
+      version: 5.105.0
     '@tanstack/react-query-devtools':
       specifier: ^5.84.2
       version: 5.105.0
@@ -267,11 +267,11 @@ catalogs:
       specifier: ^0.1.5
       version: 0.1.5
     '@trieoh/identityx-access-sdk-ts':
-      specifier: ^0.1.10
-      version: 0.1.10
+      specifier: ^0.1.11
+      version: 0.1.11
     '@trieoh/identityx-sdk-ts':
-      specifier: ^0.16.3
-      version: 0.16.3
+      specifier: ^0.16.4
+      version: 0.16.4
     '@trieoh/identityx-sdk-ts-react':
       specifier: ^0.16.0
       version: 0.16.0
@@ -423,7 +423,7 @@ overrides:
   nanoid: 3.3.18
   esbuild: '>=0.28.1'
   '@opentelemetry/core': 2.12.0
-  '@tanstack/query-core': 5.101.4
+  '@tanstack/query-core': 5.105.0
   '@tanstack/react-router': 1.170.42
   postcss: '>=8.5.23'
   devalue: '>=5.9.2'
@@ -445,7 +445,7 @@ importers:
         version: 9.1.7
       orval:
         specifier: ^8.23.0
-        version: 8.45.0(@tanstack/react-query@5.101.4(react@19.3.1))(effect@4.0.7)(prettier@3.9.10)(typescript@7.0.2)(zod@4.6.7)
+        version: 8.45.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(effect@4.0.7)(prettier@3.9.10)(typescript@7.0.2)(zod@4.6.7)
 
   api/identityx/cloudflare:
     dependencies:
@@ -515,13 +515,13 @@ importers:
         version: 1.33.5(@tanstack/react-start@1.168.61(esbuild@0.28.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.15)(rollup@4.66.0)(supports-color@10.2.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.101.4(react@19.3.1)
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router-ssr-query':
         specifier: 'catalog:'
-        version: 1.167.3(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.167.3(@tanstack/query-core@5.105.0)(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.61(esbuild@0.28.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.15)(rollup@4.66.0)(supports-color@10.2.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -539,7 +539,7 @@ importers:
         version: link:../../lib/ts/identityx
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -648,13 +648,13 @@ importers:
         version: 4.3.3(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.101.4(react@19.3.1)
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router-ssr-query':
         specifier: 'catalog:'
-        version: 1.167.3(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.167.3(@tanstack/query-core@5.105.0)(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.61(esbuild@0.28.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.15)(rollup@4.66.0)(supports-color@10.2.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -672,7 +672,7 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -736,7 +736,7 @@ importers:
         version: 0.7.11(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
-        version: 5.105.0(@tanstack/react-query@5.101.4(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
+        version: 5.105.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-router-devtools':
         specifier: 'catalog:'
         version: 1.167.2(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -784,13 +784,13 @@ importers:
         version: 0.14.0(preact@10.29.8)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.101.4(react@19.3.1)
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router-ssr-query':
         specifier: 'catalog:'
-        version: 1.167.3(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.167.3(@tanstack/query-core@5.105.0)(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.61(esbuild@0.28.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.15)(rollup@4.66.0)(supports-color@10.2.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -805,10 +805,10 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-access-sdk-ts':
         specifier: 'catalog:'
-        version: 0.1.10
+        version: 0.1.11
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -887,7 +887,7 @@ importers:
         version: 0.7.11(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
-        version: 5.105.0(@tanstack/react-query@5.101.4(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
+        version: 5.105.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-router-devtools':
         specifier: 'catalog:'
         version: 1.167.2(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1064,13 +1064,13 @@ importers:
         version: 0.10.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.101.4(react@19.3.1)
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router-ssr-query':
         specifier: 'catalog:'
-        version: 1.167.3(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.167.3(@tanstack/query-core@5.105.0)(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.61(esbuild@0.28.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.15)(rollup@4.66.0)(supports-color@10.2.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -1109,10 +1109,10 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-access-sdk-ts':
         specifier: 'catalog:'
-        version: 0.1.10
+        version: 0.1.11
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -1215,7 +1215,7 @@ importers:
         version: 0.7.11(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
-        version: 5.105.0(@tanstack/react-query@5.101.4(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
+        version: 5.105.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-router-devtools':
         specifier: 'catalog:'
         version: 1.167.2(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1268,8 +1268,8 @@ importers:
         specifier: 'catalog:'
         version: 0.14.0(preact@10.29.8)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@2.0.0-rc.17)
       '@tanstack/query-core':
-        specifier: 5.101.4
-        version: 5.101.4
+        specifier: 5.105.0
+        version: 5.105.0
       '@tanstack/solid-router':
         specifier: catalog:solid
         version: 2.0.0-rc.9(patch_hash=8e4bbdfd571a8ae66c6dd1a78b1bd3baf47e176df0f4da596c9ce85334dc82d3)(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
@@ -1402,7 +1402,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
 
   lib/ts/front-core:
     dependencies:
@@ -1442,7 +1442,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
 
   lib/ts/front-core-react:
     dependencies:
@@ -1452,7 +1452,7 @@ importers:
     devDependencies:
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.101.4(react@19.3.1)
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1464,7 +1464,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -1490,8 +1490,8 @@ importers:
   lib/ts/front-core-solid:
     dependencies:
       '@tanstack/query-core':
-        specifier: 5.101.4
-        version: 5.101.4
+        specifier: 5.105.0
+        version: 5.105.0
     devDependencies:
       '@tanstack/solid-router':
         specifier: catalog:solid
@@ -1501,7 +1501,7 @@ importers:
         version: link:../front-core
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'catalog:'
         version: 0.16.5(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
@@ -1653,7 +1653,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -1705,7 +1705,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
     devDependencies:
       '@solidjs/vite-plugin':
         specifier: 'catalog:'
@@ -4264,8 +4264,8 @@ packages:
     resolution: {integrity: sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w==}
     engines: {node: '>=18'}
 
-  '@tanstack/query-core@5.101.4':
-    resolution: {integrity: sha512-gNwcvOJcRbLWPOLG/2OBm+zM+Yv+MKsXKEOWC57USuZDEsI71hEErQsiEGx5wX9rzWWkfwM0fVSPoiIFSsxfiw==}
+  '@tanstack/query-core@5.105.0':
+    resolution: {integrity: sha512-7p56vRmT/z4UJ6sctGIdl5WRUQyUv53IUpUwEKi2g97zMbO7zh8ZsCLffGAvCPBR4xD72e3VXsDyLwXHhoNTMQ==}
 
   '@tanstack/query-devtools@5.105.0':
     resolution: {integrity: sha512-vRJf9XRHB+P2aMSAEHWtMLsAf1nC9NSsHVqSHiT/FZYU/+5LEo2BOrXKskURQnJEzg6whaBeP6iMn0PS30KJrQ==}
@@ -4314,10 +4314,14 @@ packages:
       '@types/react':
         optional: true
 
-  '@tanstack/react-query@5.101.4':
-    resolution: {integrity: sha512-yRg2pfOCxIs4ZJW3XYYHU/WgtD04FHSnfHlpRT7h7pR77hwkdRG4wxbKe4aq6P0RvXUTBSQpQeadS1SUYUe+KA==}
+  '@tanstack/react-query@5.105.0':
+    resolution: {integrity: sha512-y+hMuDERvgg6ay1da0V1a6ZC0ZONt7dELxSFkqRZuwm7p1TTZs0MoXrPlBRflIpRoYjvzQVYxycnLImpFLhWrw==}
     peerDependencies:
+      '@types/react': ^18 || ^19
       react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@tanstack/react-router-devtools@1.167.2':
     resolution: {integrity: sha512-VuoqB7OhDUrBa4WOFSKiAQ8xI8sJpeZdo9sYE1hQa89iMuVFUQu1iWE4iCiQhB+6TYOZDZ9e+iHKxYjop4ZVYw==}
@@ -4335,7 +4339,7 @@ packages:
     resolution: {integrity: sha512-HA0pxuPuhU+rwoe+z1Xcbytuoo6ZbcROpgNgNSm38s3/hGLmgzOBLzDg+Vyx6ex26QilnPbZ+5Ypet5mImm9bQ==}
     engines: {node: '>=20.19'}
     peerDependencies:
-      '@tanstack/query-core': 5.101.4
+      '@tanstack/query-core': 5.105.0
       '@tanstack/react-query': '>=5.102.0'
       '@tanstack/react-router': 1.170.42
       react: '>=18.0.0 || >=19.0.0'
@@ -4484,7 +4488,7 @@ packages:
     resolution: {integrity: sha512-0EE3mFa753mExMJEfWhZMi+EKViSLmZHoiYADZJzr5+2S/T4T12soHg8fMn67jCvDwL2dpd1mE7aL/XXzDPfhA==}
     engines: {node: '>=20.19'}
     peerDependencies:
-      '@tanstack/query-core': 5.101.4
+      '@tanstack/query-core': 5.105.0
       '@tanstack/router-core': '>=1.171.28'
 
   '@tanstack/router-utils@1.162.3':
@@ -4711,8 +4715,8 @@ packages:
   '@trieoh/envoy-fetch-ts@0.1.5':
     resolution: {integrity: sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ==}
 
-  '@trieoh/identityx-access-sdk-ts@0.1.10':
-    resolution: {integrity: sha512-4V0YluT6G3Uy9gfGB2HZDREy7itXJa48LJ8jp3GRs1tdd+KtRHt0b8oj/js+3lMvrQ8PUnBNaNU/Cx2lyniRxg==}
+  '@trieoh/identityx-access-sdk-ts@0.1.11':
+    resolution: {integrity: sha512-K1gSzgpOfv0g0YtwgkRJFrNZ5kjNgdMzyiWT8Y9yZq+UjfV9MfkjEhvTYLh0v3WYMnJo/eesi9Q0GQTgH4pZCA==}
 
   '@trieoh/identityx-sdk-ts-react@0.16.0':
     resolution: {integrity: sha512-8op3920LUISKJaopCGJgRUbL7jfnyeUZDoKVQXNN30Wj4jeXEgTtREwhfSI/2OEZVEQvTMmnUBJuw59xS4Xiyg==}
@@ -4728,8 +4732,8 @@ packages:
       '@solidjs/web': 2.0.0-rc.17
       solid-js: 2.0.0-rc.17
 
-  '@trieoh/identityx-sdk-ts@0.16.3':
-    resolution: {integrity: sha512-x4B38+TMfAB4NN0Lxw9pDuxA1PjKvCAoaqG8JvGbWc92k8+6MbHf6TrIc4MkZl4vGYB8BnToBys4BSqZu7FqHw==}
+  '@trieoh/identityx-sdk-ts@0.16.4':
+    resolution: {integrity: sha512-9M1XnXXRK0eiInYxgVbGnsdluHzENt6eS1Xd/LvJDn02GE1QASP15yHYy1lhhETqjGoY4qYdfp4xa5wik//qmg==}
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -8532,12 +8536,12 @@ snapshots:
       - '@faker-js/faker'
       - '@modelcontextprotocol/server'
 
-  '@orval/query@8.45.0(@tanstack/react-query@5.101.4(react@19.3.1))':
+  '@orval/query@8.45.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))':
     dependencies:
       '@orval/core': 8.45.0
       '@orval/fetch': 8.45.0
     optionalDependencies:
-      '@tanstack/react-query': 5.101.4(react@19.3.1)
+      '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.1)
     transitivePeerDependencies:
       - '@faker-js/faker'
       - '@modelcontextprotocol/server'
@@ -9617,7 +9621,7 @@ snapshots:
 
   '@tanstack/pacer-lite@0.1.1': {}
 
-  '@tanstack/query-core@5.101.4': {}
+  '@tanstack/query-core@5.105.0': {}
 
   '@tanstack/query-devtools@5.105.0(csstype@3.2.3)':
     dependencies:
@@ -9626,7 +9630,7 @@ snapshots:
       '@solid-primitives/resize-observer': 2.2.0(solid-js@1.9.17)
       '@solid-primitives/storage': 1.3.11(solid-js@1.9.17)
       '@tanstack/match-sorter-utils': 9.2.6
-      '@tanstack/query-core': 5.101.4
+      '@tanstack/query-core': 5.105.0
       clsx: 2.1.1
       goober: 2.1.19(csstype@3.2.3)
       solid-js: 1.9.17
@@ -9676,20 +9680,22 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@tanstack/react-query-devtools@5.105.0(@tanstack/react-query@5.101.4(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)':
+  '@tanstack/react-query-devtools@5.105.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)':
     dependencies:
       '@tanstack/query-devtools': 5.105.0(csstype@3.2.3)
-      '@tanstack/react-query': 5.101.4(react@19.3.1)
+      '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.1)
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
     transitivePeerDependencies:
       - csstype
 
-  '@tanstack/react-query@5.101.4(react@19.3.1)':
+  '@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.101.4
+      '@tanstack/query-core': 5.105.0
       react: 19.3.1
+    optionalDependencies:
+      '@types/react': 19.3.0
 
   '@tanstack/react-router-devtools@1.167.2(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
@@ -9702,12 +9708,12 @@ snapshots:
     transitivePeerDependencies:
       - csstype
 
-  '@tanstack/react-router-ssr-query@1.167.3(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@tanstack/react-router-ssr-query@1.167.3(@tanstack/query-core@5.105.0)(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.101.4
-      '@tanstack/react-query': 5.101.4(react@19.3.1)
+      '@tanstack/query-core': 5.105.0
+      '@tanstack/react-query': 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router': 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@tanstack/router-ssr-query-core': 1.169.3(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.39)
+      '@tanstack/router-ssr-query-core': 1.169.3(@tanstack/query-core@5.105.0)(@tanstack/router-core@1.171.39)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
     transitivePeerDependencies:
@@ -9912,9 +9918,9 @@ snapshots:
       - supports-color
       - unloader
 
-  '@tanstack/router-ssr-query-core@1.169.3(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.39)':
+  '@tanstack/router-ssr-query-core@1.169.3(@tanstack/query-core@5.105.0)(@tanstack/router-core@1.171.39)':
     dependencies:
-      '@tanstack/query-core': 5.101.4
+      '@tanstack/query-core': 5.105.0
       '@tanstack/router-core': 1.171.39
 
   '@tanstack/router-utils@1.162.3(supports-color@10.2.2)':
@@ -10227,7 +10233,7 @@ snapshots:
 
   '@trieoh/envoy-fetch-ts@0.1.5': {}
 
-  '@trieoh/identityx-access-sdk-ts@0.1.10':
+  '@trieoh/identityx-access-sdk-ts@0.1.11':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
 
@@ -10235,7 +10241,7 @@ snapshots:
     dependencies:
       '@hookform/resolvers': 5.9.2(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
       '@trieoh/envoy-fetch-ts': 0.1.5
-      '@trieoh/identityx-sdk-ts': 0.16.3
+      '@trieoh/identityx-sdk-ts': 0.16.4
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       lucide-react: 1.63.0(@types/react@19.3.0)(react@19.3.1)
@@ -10276,10 +10282,10 @@ snapshots:
     dependencies:
       '@solidjs/web': 2.0.0-rc.17(solid-js@2.0.0-rc.17)
       '@trieoh/envoy-fetch-ts': 0.1.5
-      '@trieoh/identityx-sdk-ts': 0.16.3
+      '@trieoh/identityx-sdk-ts': 0.16.4
       solid-js: 2.0.0-rc.17
 
-  '@trieoh/identityx-sdk-ts@0.16.3':
+  '@trieoh/identityx-sdk-ts@0.16.4':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
       ua-parser-js: 2.0.10
@@ -11816,7 +11822,7 @@ snapshots:
 
   orderedmap@2.1.1: {}
 
-  orval@8.45.0(@tanstack/react-query@5.101.4(react@19.3.1))(effect@4.0.7)(prettier@3.9.10)(typescript@7.0.2)(zod@4.6.7):
+  orval@8.45.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))(effect@4.0.7)(prettier@3.9.10)(typescript@7.0.2)(zod@4.6.7):
     dependencies:
       '@commander-js/extra-typings': 15.0.0(commander@15.0.0)
       '@orval/angular': 8.45.0
@@ -11828,7 +11834,7 @@ snapshots:
       '@orval/mcp': 8.45.0(zod@4.6.7)
       '@orval/mock': 8.45.0
       '@orval/pinia-colada': 8.45.0
-      '@orval/query': 8.45.0(@tanstack/react-query@5.101.4(react@19.3.1))
+      '@orval/query': 8.45.0(@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1))
       '@orval/solid-start': 8.45.0
       '@orval/swr': 8.45.0
       '@orval/zod': 8.45.0(zod@4.6.7)

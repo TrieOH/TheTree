@@ -15,10 +15,13 @@ import (
 )
 
 // Server is the process-level block, unprefixed in every backend: PORT,
-// APP_NAME, DEBUG_MODE, and the rate limit knobs.
+// APP_NAME, API_URL, DEBUG_MODE, and the rate limit knobs.
 type Server struct {
-	Port             string  `env:"PORT"               envDefault:"8080"`
-	AppName          string  `env:"APP_NAME,required"`
+	Port    string `env:"PORT"              envDefault:"8080"`
+	AppName string `env:"APP_NAME,required"`
+	// APIURL is the backend's own public base URL; problem type URIs are
+	// {APIURL}/problems/{slug}.
+	APIURL           string  `env:"API_URL,required"`
 	DebugMode        bool    `env:"DEBUG_MODE"`
 	DisableRateLimit bool    `env:"DISABLE_RATE_LIMIT"`
 	RateLimitRPS     float64 `env:"RATE_LIMIT_RPS"     envDefault:"400"`

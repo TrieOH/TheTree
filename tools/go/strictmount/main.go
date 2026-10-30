@@ -24,9 +24,9 @@ import (
 )
 
 // Mount serves the strict server on r through the harness: validation,
-// spec-derived auth dispatch, tracing and the unified error mapping. mws
-// run before the strict server decodes the request (a webhook's raw-body
-// capture).
+// spec-derived auth dispatch, tracing and the unified error mapping,
+// checked against each operation's x-problems. mws run before the strict
+// server decodes the request (a webhook's raw-body capture).
 func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.Handler) http.Handler, mws ...MiddlewareFunc) {
 	httpserver.MountStrict[StrictHandlerFunc](
 		s,
@@ -38,7 +38,7 @@ func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.
 		NewStrictHandlerWithOptions,
 		ChiServerOptions{
 			BaseRouter:       r,
-			Middlewares:      mws,
+			Middlewares:      append([]MiddlewareFunc{httpserver.OperationSlot}, mws...),
 			ErrorHandlerFunc: httpserver.ParamBindingErrorHandler(),
 		},
 		HandlerWithOptions,

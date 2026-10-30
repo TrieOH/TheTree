@@ -52,6 +52,7 @@ services:
       retries: 30
     environment:
       APP_NAME: IdentityX
+      API_URL: http://localhost:18080
       # Links in verify/reset emails point at the e2e front.
       APP_URL: http://localhost:13001
       ISSUER: http://localhost:18080

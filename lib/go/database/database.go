@@ -102,6 +102,13 @@ type ConstraintErrors map[string]error
 // has no entry (see validateConstraints).
 var constraintRegistry map[string]error
 
+// UseConstraints installs the registry the error handlers read. SetupDB
+// calls it at boot; a test that opens its own pool calls it so violations
+// surface as the Backend's named errors, as in production.
+func UseConstraints(constraints ConstraintErrors) {
+	constraintRegistry = constraints
+}
+
 func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 	rows, err := db.Query(ctx, `
 		SELECT con.conname

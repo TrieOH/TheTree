@@ -1,0 +1,173 @@
+# The problems every Backend shares (ADR-0019), and the base schemas their
+# problems build on. tools/problemgen reads it as ../problems.yml from
+# every Backend's spec, generates its problems into each Backend's own
+# package and bundles them into its spec.
+#
+# A problem is a schema with an x-problem block and only its extension
+# members, every one of them required. Its slug, status and title are
+# fixed; its type is {API_URL}/problems/{slug}.
+components:
+  schemas:
+    Problem:
+      type: object
+      description: |
+        An RFC 9457 problem details document, served as
+        application/problem+json. Every standard member is always present.
+      required: [type, status, title, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: |
+            Identifies the problem: {API_URL}/problems/{slug}, which serves
+            its documentation.
+        status:
+          type: integer
+          description: The HTTP status of the response.
+        title:
+          type: string
+          description: The problem's fixed summary.
+        detail:
+          type: string
+          description: |
+            What went wrong this time. A 500 reads `Internal Server Error`.
+        instance:
+          type: string
+          format: uri-reference
+          description: The request path that failed.
+        errors:
+          type: array
+          description: The request fields that caused the problem, when it names any.
+          items:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          description: The offending request field.
+        message:
+          type: string
+          description: What is wrong with it.
+
+    BatchItem:
+      type: object
+      x-problem-go-type: BatchItem
+      required: [id, problem]
+      properties:
+        id:
+          type: string
+          description: The failed item.
+        problem:
+          $ref: '#/components/schemas/Problem'
+
+    NotFound:
+      x-problem:
+        slug: not-found
+        status: 404
+        title: Not Found
+        description: The requested resource does not exist.
+
+    Validation:
+      x-problem:
+        slug: validation
+        status: 400
+        title: Validation Failed
+        description: |
+          The request is malformed or breaks a rule; `errors` names the
+          offending fields.
+
+    BatchFailed:
+      x-problem:
+        slug: batch-failed
+        status: 400
+        title: Batch Failed
+        description: |
+          Some items of a batch failed; each is answered as its own problem.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchItem'
+
+    Unauthenticated:
+      x-problem:
+        slug: unauthenticated
+        status: 401
+        title: Unauthenticated
+        description: |
+          The request carries no credentials: no bearer token and no API
+          key where the operation needs one.
+
+    InvalidToken:
+      x-problem:
+        slug: invalid-token
+        status: 401
+        title: Invalid Token
+        description: |
+          The bearer token does not parse, its signature or issuer is
+          wrong, or it is not valid yet.
+
+    TokenExpired:
+      x-problem:
+        slug: token-expired
+        status: 401
+        title: Token Expired
+        description: The bearer token has expired; refresh it and retry.
+
+    InvalidAPIKey:
+      x-problem:
+        slug: invalid-api-key
+        status: 401
+        title: Invalid API Key
+        description: The API key is unknown, malformed or revoked.
+
+    APIKeysNotAccepted:
+      x-problem:
+        slug: api-keys-not-accepted
+        status: 401
+        title: API Keys Not Accepted
+        description: This API takes bearer tokens only, not API keys.
+
+    EmailNotVerified:
+      x-problem:
+        slug: email-not-verified
+        status: 401
+        title: Email Not Verified
+        description: The caller must verify their email address first.
+
+    IdentityUnavailable:
+      x-problem:
+        slug: identity-unavailable
+        status: 503
+        title: Identity Unavailable
+        description: |
+          IdentityX could not be reached to check the API key; retry
+          later.
+
+    InsufficientRole:
+      x-problem:
+        slug: insufficient-role
+        status: 403
+        title: Insufficient Role
+        description: The caller's role does not allow the operation.
+
+    RateLimited:
+      x-problem:
+        slug: rate-limited
+        status: 429
+        title: Too Many Requests
+        description: The caller exceeded the rate limit; retry later.
+
+    InternalServerError:
+      x-problem:
+        slug: internal-server-error
+        status: 500
+        title: Internal Server Error
+        description: |
+          The server failed unexpectedly. The cause is logged, never
+          returned.

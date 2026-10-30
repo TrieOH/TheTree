@@ -60,7 +60,7 @@ func TestUpsertProjectProfileSchemaAcceptsObjectSchema(t *testing.T) {
 }
 
 // TestUpsertProjectProfileSchemaMalformedJSONCarriesDetail pins that body
-// decode failures surface the underlying cause in the envelope message
+// decode failures surface the underlying cause in the problem's detail
 // instead of a bare "invalid request body".
 func TestUpsertProjectProfileSchemaMalformedJSONCarriesDetail(t *testing.T) {
 	r := schemaTestRouter(t)

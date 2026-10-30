@@ -4,6 +4,7 @@ import (
 	spec "IdentityX"
 	"IdentityX/internal/app"
 	"IdentityX/internal/config"
+	"IdentityX/internal/problems"
 	"lib/backend"
 	"lib/backend/email"
 	"lib/backend/jobs"
@@ -22,7 +23,8 @@ func main() {
 			email.Module(cfg.ToEmailConfig()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:  app.Build(cfg),
-		Errors: app.Errors(),
+		Build:    app.Build(cfg),
+		Errors:   problems.Mapper(app.Problem),
+		Problems: problems.Docs,
 	}), "identityx exited with error")
 }

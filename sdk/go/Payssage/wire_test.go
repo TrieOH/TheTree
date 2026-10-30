@@ -2,8 +2,9 @@ package payssage
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,13 +18,23 @@ func TestNoContent(t *testing.T) {
 	}
 }
 
-func TestAPIErrorReadsTheErrorObject(t *testing.T) {
-	apiErr := &APIError{}
-	err := json.Unmarshal([]byte(`{"code":"NOT_FOUND","message":"wallet not found"}`), apiErr)
-	if err != nil {
-		t.Fatal(err)
+func TestAPIErrorReadsTheProblem(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/problem+json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"type":"https://api.payssage.test/problems/not-found","status":404,` +
+			`"title":"Not Found","detail":"wallet not found","instance":"/wallets"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := New(Config{BaseURL: srv.URL, APIKey: "test-api-key"})
+	_, err := client.CreateWallet(context.Background(), CreateWalletRequest{Name: "x"})
+	if !IsNotFound(err) {
+		t.Fatalf("IsNotFound(%v) = false", err)
 	}
-	if apiErr.Code != "NOT_FOUND" || apiErr.Message != "wallet not found" {
+	apiErr, _ := errors.AsType[*APIError](err)
+	if apiErr.Type != "https://api.payssage.test/problems/not-found" || apiErr.Title != "Not Found" ||
+		apiErr.Message != "wallet not found" {
 		t.Fatalf("APIError = %+v", apiErr)
 	}
 }

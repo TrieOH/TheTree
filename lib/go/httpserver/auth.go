@@ -17,10 +17,13 @@ type Authenticators struct {
 	APIKey func(ctx context.Context, rawKey string) (context.Context, error)
 }
 
+// The auth middlewares' own rejections: a request without the credential
+// its operation needs. An authenticator's error is written as it is; the
+// Backend's mapper answers both (ADR-0019).
 var (
-	errMissingBearer = errors.New("missing or invalid Authorization header")
-	errMissingAPIKey = errors.New("missing X-API-Key header")
-	errNoCredentials = errors.New("no authentication provided: expected X-API-Key or Authorization: Bearer <token>")
+	ErrMissingBearer = errors.New("missing or invalid Authorization header")
+	ErrMissingAPIKey = errors.New("missing X-API-Key header")
+	ErrNoCredentials = errors.New("no authentication provided: expected X-API-Key or Authorization: Bearer <token>")
 )
 
 // Primitives builds the JWT / API key / either middlewares the spec-derived
@@ -30,7 +33,7 @@ func (a Authenticators) Primitives() authz.Primitives {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, ok := bearer(r)
 			if !ok {
-				writeMiddlewareError(w, r, http.StatusUnauthorized, errMissingBearer)
+				WriteError(w, r, ErrMissingBearer)
 				return
 			}
 			a.serve(w, r, next, a.JWT, token)
@@ -40,7 +43,7 @@ func (a Authenticators) Primitives() authz.Primitives {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := r.Header.Get("X-API-Key")
 			if key == "" {
-				writeMiddlewareError(w, r, http.StatusUnauthorized, errMissingAPIKey)
+				WriteError(w, r, ErrMissingAPIKey)
 				return
 			}
 			a.serve(w, r, next, a.APIKey, key)
@@ -58,7 +61,7 @@ func (a Authenticators) Primitives() authz.Primitives {
 				case strings.HasPrefix(r.Header.Get("Authorization"), "Bearer "):
 					viaJWT.ServeHTTP(w, r)
 				default:
-					writeMiddlewareError(w, r, http.StatusUnauthorized, errNoCredentials)
+					WriteError(w, r, ErrNoCredentials)
 				}
 			})
 		},
@@ -70,7 +73,7 @@ func (Authenticators) serve(w http.ResponseWriter, r *http.Request, next http.Ha
 ) {
 	ctx, err := authenticate(r.Context(), credential)
 	if err != nil {
-		writeMiddlewareError(w, r, http.StatusUnauthorized, err)
+		WriteError(w, r, err)
 		return
 	}
 	next.ServeHTTP(w, r.WithContext(ctx))

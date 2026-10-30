@@ -15,10 +15,10 @@ catalogs:
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.16.3
+  '@trieoh/identityx-sdk-ts': ^0.16.4
   '@trieoh/identityx-sdk-ts-react': ^0.16.0
   '@trieoh/identityx-sdk-ts-solid': ^0.16.5
-  '@trieoh/identityx-access-sdk-ts': ^0.1.10
+  '@trieoh/identityx-access-sdk-ts': ^0.1.11
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
   tsup: ^8.5.1
@@ -33,7 +33,7 @@ catalog:
   # === TanStack ===
   '@tanstack/react-router': 1.170.42
   '@tanstack/react-start': ~1.168.60
-  '@tanstack/react-query': 5.101.4
+  '@tanstack/react-query': 5.105.0
   '@tanstack/router-plugin': ^1.168.18
   '@tanstack/react-router-ssr-query': ^1.167.1
   '@tanstack/react-devtools': ^0.7.0
@@ -132,7 +132,7 @@ overrides:
   esbuild: ">=0.28.1"
   # SDK trace 2.x relies on core's otperformance export, removed in core 3.x.
   "@opentelemetry/core": "2.12.0"
-  "@tanstack/query-core": "5.101.4"
+  "@tanstack/query-core": "5.105.0"
   # must be the version @tanstack/react-start pins, or the app and Start
   # end up on two routers with different APIs
   "@tanstack/react-router": "1.170.42"

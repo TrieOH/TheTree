@@ -1,9 +1,12 @@
 package service_test
 
-import "univents/internal/app/errmap"
+import (
+	"univents/internal/app/errmap"
+	"univents/internal/problems"
+)
 
 // statusOf is the HTTP status Univents answers err with — what a client
-// sees, through the one error map (ADR-0016).
+// sees, through its declared problems (ADR-0019).
 func statusOf(err error) int {
-	return errmap.Errors().Status(err)
+	return problems.Mapper(errmap.Problem)(err).Status
 }

@@ -39,7 +39,7 @@ interface RefreshResult {
 async function readRefresh(response: Response): Promise<RefreshResult> {
   try {
     const body: unknown = await response.json();
-    const message = (body as { message?: unknown } | null)?.message;
+    const message = (body as { detail?: unknown } | null)?.detail;
     return {
       code: response.status,
       ...(response.ok ? { data: body as AuthTokens } : {}),

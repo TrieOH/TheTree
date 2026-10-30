@@ -76,12 +76,7 @@ func (c *Client) send(req *resty.Request, method, path string) error {
 		_ = json.Unmarshal(res.Bytes(), apiErr)
 		apiErr.StatusCode = res.StatusCode()
 		if apiErr.Message == "" {
-			// An RFC 9457 problem carries its message in detail.
-			var problem struct {
-				Detail string `json:"detail"`
-			}
-			_ = json.Unmarshal(res.Bytes(), &problem)
-			apiErr.Message = problem.Detail
+			apiErr.Message = apiErr.Title
 		}
 		if apiErr.Message == "" {
 			apiErr.Message = res.String()
