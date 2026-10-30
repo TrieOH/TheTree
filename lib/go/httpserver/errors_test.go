@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"lib/database"
@@ -110,6 +111,59 @@ func TestWriteErrorIsAProblem(t *testing.T) {
 	if fmt.Sprint(body) != fmt.Sprint(want) {
 		t.Fatalf("body = %s, want %v", rec.Body.String(), want)
 	}
+}
+
+// TestWriteErrorChecksXProblems — a problem the answering operation's
+// x-problems doesn't list panics under test; a listed one, or an answer
+// outside an operation, goes out as is.
+func TestWriteErrorChecksXProblems(t *testing.T) {
+	useTestProblems(t, testMapper)
+	err := UseOperationProblems([]byte(`
+paths:
+  /members:
+    post:
+      operationId: addMember
+      x-problems: [add-self]
+`), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = UseOperationProblems(nil, false) })
+
+	// serve answers like the generated strict server: the handler's error
+	// is written with the request the server was handed.
+	serve := func(answer error, operationID string) func() {
+		return func() {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				f := operationMiddleware()(func(context.Context, http.ResponseWriter, *http.Request, any) (any, error) {
+					return nil, answer
+				}, operationID)
+				_, err := f(r.Context(), w, r, nil)
+				WriteError(w, r, err)
+			})
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/members", nil)
+			OperationSlot(handler).ServeHTTP(httptest.NewRecorder(), req)
+		}
+	}
+	mustNotPanic := func(name string, f func()) {
+		t.Helper()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("%s panicked: %v", name, r)
+			}
+		}()
+		f()
+	}
+
+	mustNotPanic("listed", serve(errAddSelf, "AddMember"))
+	mustNotPanic("undeclared operation", serve(errTermsMissing, "Other"))
+	mustNotPanic("outside an operation", func() { writeProblem(t, "/members", errTermsMissing) })
+	defer func() {
+		if r := recover(); r == nil || !strings.Contains(fmt.Sprint(r), "AddMember answered problem validation") {
+			t.Errorf("unlisted: recover() = %v, want the unlisted problem named", r)
+		}
+	}()
+	serve(errTermsMissing, "AddMember")()
 }
 
 // TestWriteErrorUnmappedIsGeneric — an error the mapper doesn't know, or

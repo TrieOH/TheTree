@@ -31,37 +31,26 @@ info:
     an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
     items later.
 
-    A failed response's body is an `Error`:
+    A failed response's body is an RFC 9457 problem, served as
+    `application/problem+json`:
 
     ```json
     {
-      "code": "VALIDATION_ERROR",
-      "message": "invalid request body: name: this field is required",
-      "fields": [{ "field": "name", "message": "this field is required" }]
+      "type": "https://api.identityx.trieoh.com/problems/validation",
+      "status": 400,
+      "title": "Validation Failed",
+      "detail": "invalid request body: name: this field is required",
+      "instance": "/namespaces",
+      "errors": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    `fields` is present only when the failure names request fields.
-
-    ## Error codes → HTTP status
-
-    The `code` sentinel maps to the HTTP status:
-
-    | code | status |
-    |---|---|
-    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
-    | `UNAUTHORIZED` | 401 |
-    | `PAYMENT_REQUIRED` | 402 |
-    | `FORBIDDEN` | 403 |
-    | `NOT_FOUND` | 404 |
-    | `METHOD_NOT_ALLOWED` | 405 |
-    | `CONFLICT` | 409 |
-    | `UNPROCESSABLE_ENTITY` | 422 |
-    | `TOO_MANY_REQUESTS` | 429 |
-    | `INTERNAL_ERROR` | 500 |
-    | `NOT_IMPLEMENTED` | 501 |
-    | `BAD_GATEWAY` | 502 |
-    | `SERVICE_UNAVAILABLE` | 503 |
+    `type` identifies the problem and resolves to its documentation;
+    `title` and `status` are fixed per problem, `detail` says what went
+    wrong this time, and `instance` is the request path. `errors` is
+    present only when the failure names request fields. Each operation
+    lists the problems it can answer with; a 500 reads `Internal Server
+    Error`.
 
     ## Rate limits
 
@@ -182,15 +171,10 @@ paths:
         and 409 once the system has been set up — used by installers to
         decide whether to show the setup form. Public.
       security: []
+      x-problems: [409, 500, 503]
       responses:
         '204':
           description: Setup still pending — the setup form should be shown
-        '409':
-          description: Setup already complete
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     post:
       tags: [authn]
       operationId: postSetup
@@ -210,6 +194,7 @@ paths:
             example:
               email: admin@trieoh.com
               password: S3curePassw0rd!
+      x-problems: [400, 409, 500]
       responses:
         '201':
           description: First account created; token pair issued
@@ -217,12 +202,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserTokensOutput'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 
   /auth/register:
     post:
@@ -252,17 +231,10 @@ paths:
               email: user@example.com
               password: S3curePassw0rd!
               accepted_tos: true
+      x-problems: [400, 409, 500, 503]
       responses:
         '201':
           description: User registered successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/verify-email:
     post:
@@ -284,15 +256,10 @@ paths:
               $ref: '#/components/schemas/VerifyEmailRequest'
             example:
               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      x-problems: [400, 500, 503]
       responses:
         '204':
           description: Email verified
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/resend-verification:
     post:
@@ -313,15 +280,10 @@ paths:
               $ref: '#/components/schemas/ResendVerificationRequest'
             example:
               email: user@example.com
+      x-problems: [400, 500, 503]
       responses:
         '204':
           description: Verification email sent (or silently skipped)
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/forgot-password:
     post:
@@ -342,15 +304,10 @@ paths:
               $ref: '#/components/schemas/ForgotPasswordRequest'
             example:
               email: user@example.com
+      x-problems: [400, 500, 503]
       responses:
         '204':
           description: Reset link emailed (or silently skipped)
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/reset-password:
     post:
@@ -373,15 +330,10 @@ paths:
             example:
               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
               password: S3curePassw0rd!
+      x-problems: [400, 500, 503]
       responses:
         '204':
           description: Password reset
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/login:
     post:
@@ -406,6 +358,7 @@ paths:
             example:
               email: user@example.com
               password: S3curePassw0rd!
+      x-problems: [400, 401, 500, 503]
       responses:
         '200':
           description: Login succeeded; token pair issued
@@ -419,14 +372,6 @@ paths:
                 access_expires_at: '2026-01-01T13:00:00Z'
                 refresh_expires_at: '2026-01-08T12:00:00Z'
                 domain: example.com
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/logout:
     post:
@@ -452,15 +397,10 @@ paths:
           description: The refresh token to blacklist.
           schema:
             type: string
+      x-problems: [401, 500, 503]
       responses:
         '204':
           description: Logged out successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/refresh:
     post:
@@ -479,6 +419,7 @@ paths:
           description: The refresh token to exchange.
           schema:
             type: string
+      x-problems: [401, 500, 503]
       responses:
         '200':
           description: New token pair issued
@@ -486,12 +427,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserTokensOutput'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/{provider}/connect:
     get:
@@ -522,6 +457,7 @@ paths:
           description: Social identity provider
           schema:
             $ref: '#/components/schemas/SupportedOAuthProviders'
+      x-problems: [400, 500, 503]
       responses:
         '200':
           description: Redirect URL for the provider consent screen
@@ -535,12 +471,6 @@ paths:
                     type: string
                     format: uri
                     description: URL to redirect the user to.
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/{provider}/callback:
     get:
@@ -575,6 +505,7 @@ paths:
             is consumed by this callback.
           schema:
             type: string
+      x-problems: [400, 401, 500, 503]
       responses:
         '201':
           description: Social login concluded; token pair issued
@@ -582,14 +513,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserTokensOutput'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/oauth-providers:
     get:
@@ -605,6 +528,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectIDQuery'
+      x-problems: [400, 404, 500, 503]
       responses:
         '200':
           description: Enabled providers for the scope
@@ -618,14 +542,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/OAuthProviderDiscoveryItem'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/introspect:
     get:
@@ -640,6 +556,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyAuth: []
+      x-problems: [401, 500, 503]
       responses:
         '200':
           description: Identity resolved
@@ -647,12 +564,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Identity'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /.well-known/jwks.json:
     get:
@@ -668,6 +579,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectIDQuery'
+      x-problems: [500, 503]
       responses:
         '200':
           description: JWKS document
@@ -688,10 +600,6 @@ paths:
                     crv: Ed25519
                     kid: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                     x: 11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations:
     get:
@@ -705,6 +613,7 @@ paths:
         (non-project-scoped) actor.
       security:
         - bearerAuth: []
+      x-problems: [401, 500, 503]
       responses:
         '200':
           description: Organizations the actor belongs to
@@ -718,12 +627,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Organization'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [organizations]
       operationId: createOrganization
@@ -743,6 +646,7 @@ paths:
             example:
               name: TrieOH Labs
               slug: trieoh-labs
+      x-problems: [400, 401, 409, 500, 503]
       responses:
         '201':
           description: Organization created
@@ -750,14 +654,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Organization'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations/{organization_id}/members:
     get:
@@ -772,6 +668,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Organization members
@@ -785,16 +682,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/OrganizationMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [organizations]
       operationId: addOrganizationMember
@@ -817,23 +704,10 @@ paths:
             example:
               actor_email: user@example.com
               role: member
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '201':
           description: Member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     delete:
       tags: [organizations]
       operationId: removeOrganizationMember
@@ -855,21 +729,10 @@ paths:
               $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
             example:
               actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '204':
           description: Member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations/{organization_id}/projects:
     get:
@@ -884,6 +747,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Organization projects
@@ -897,16 +761,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Project'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [organizations]
       operationId: createOrganizationProject
@@ -929,6 +783,7 @@ paths:
               name: Checkout Service
               domain: https://checkout.trieoh.com
               brand_slug: trieoh-checkout
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '201':
           description: Organization project created
@@ -936,18 +791,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations/{org_id}/projects/{project_id}/actors:
     get:
@@ -963,6 +806,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/OrgID'
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Project actors
@@ -976,16 +820,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Actor'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [organizations]
       operationId: createOrganizationProjectActor
@@ -1009,6 +843,7 @@ paths:
               auth_method: password
               type: human
               email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '201':
           description: Project actor created
@@ -1016,18 +851,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Actor'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations/{organization_id}/projects/{project_id}/members:
     get:
@@ -1043,6 +866,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Project members
@@ -1056,16 +880,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProjectMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [organizations]
       operationId: addOrganizationProjectMember
@@ -1089,23 +903,10 @@ paths:
             example:
               actor_email: user@example.com
               role: admin
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '201':
           description: Project member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     delete:
       tags: [organizations]
       operationId: removeOrganizationProjectMember
@@ -1127,21 +928,10 @@ paths:
               $ref: '#/components/schemas/RemoveOrgProjectMemberRequest'
             example:
               actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '204':
           description: Project member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /organizations/{organization_id}/projects/{project_id}/actors/{actor_id}:
     get:
@@ -1158,6 +948,7 @@ paths:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/ActorID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: The requested actor
@@ -1165,16 +956,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Actor'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects:
     get:
@@ -1188,6 +969,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyAuth: []
+      x-problems: [401, 500, 503]
       responses:
         '200':
           description: Projects the actor belongs to
@@ -1201,12 +983,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Project'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [projects]
       operationId: createProject
@@ -1229,6 +1005,7 @@ paths:
               name: My Project
               domain: https://my-project.example.com
               brand_slug: my-project
+      x-problems: [400, 401, 500, 503]
       responses:
         '201':
           description: Project created
@@ -1236,14 +1013,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/members:
     get:
@@ -1259,6 +1028,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Project members
@@ -1272,16 +1042,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProjectMember'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [projects]
       operationId: addProjectMember
@@ -1305,23 +1065,10 @@ paths:
             example:
               actor_email: user@example.com
               role: member
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '201':
           description: Project member added
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     delete:
       tags: [projects]
       operationId: removeProjectMember
@@ -1343,21 +1090,10 @@ paths:
               $ref: '#/components/schemas/RemoveProjectMemberRequest'
             example:
               actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '204':
           description: Project member removed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/actors:
     get:
@@ -1373,6 +1109,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Project actors
@@ -1386,14 +1123,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Actor'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [actors]
       operationId: createActor
@@ -1419,6 +1148,7 @@ paths:
               auth_method: api_key
               type: service
               email: checkout@example.com
+      x-problems: [400, 401, 404, 500, 503]
       responses:
         '201':
           description: Actor created
@@ -1426,16 +1156,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Actor'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/actors/{actor_id}:
     get:
@@ -1452,6 +1172,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: The requested actor
@@ -1459,14 +1180,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Actor'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/actors/{actor_email}:by_email:
     get:
@@ -1491,6 +1204,7 @@ paths:
             x-go-type: string
             type: string
             format: email
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: The requested actor
@@ -1498,14 +1212,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Actor'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/email-templates:
     get:
@@ -1522,6 +1228,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Effective email templates
@@ -1535,16 +1242,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EffectiveEmailTemplate'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/email-templates/{kind}:
     get:
@@ -1561,6 +1258,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/EmailTemplateKind'
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '200':
           description: Effective email template
@@ -1568,16 +1266,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EffectiveEmailTemplate'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [projects]
       operationId: putEmailTemplate
@@ -1607,6 +1295,7 @@ paths:
               body: |
                 <p>Hi there!</p>
                 <p><a href="{{.ActionURL}}">Confirm my email</a></p>
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '200':
           description: Email template override saved
@@ -1614,22 +1303,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EffectiveEmailTemplate'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '400':
-          description: Template fails the mandate (missing ActionURL) or does not render
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     delete:
       tags: [projects]
       operationId: deleteEmailTemplate
@@ -1645,19 +1318,10 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/EmailTemplateKind'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '204':
           description: Email template override removed (default restored)
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/terms-of-service:
     get:
@@ -1672,6 +1336,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [404, 500, 503]
       responses:
         '200':
           description: The project's current terms of service
@@ -1679,12 +1344,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectTos'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [projects]
       operationId: postProjectTos
@@ -1708,6 +1367,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TosContentBody'
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '200':
           description: Terms of service created (v1); notification enqueued
@@ -1715,20 +1375,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectTos'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [projects]
       operationId: putProjectTos
@@ -1750,6 +1396,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TosContentBody'
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '200':
           description: Terms of service updated; notification enqueued
@@ -1757,18 +1404,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectTos'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/terms-of-service/acceptances:
     get:
@@ -1785,6 +1420,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: The project's terms acceptances
@@ -1798,16 +1434,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TosAcceptance'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [projects]
       operationId: postTosAcceptance
@@ -1823,6 +1449,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Acceptance recorded
@@ -1830,16 +1457,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TosAcceptance'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/api_keys:
     post:
@@ -1871,6 +1488,7 @@ paths:
               name: checkout-prod
               env: production
               expires_at: '2027-01-01T00:00:00Z'
+      x-problems: [400, 401, 404, 500, 503]
       responses:
         '201':
           description: API key created
@@ -1878,16 +1496,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateAPIKeyResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/oauth-providers:
     get:
@@ -1903,6 +1511,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Configured OAuth providers
@@ -1916,16 +1525,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/OAuthProviderOutput'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [oauthproviders]
       operationId: createProjectOAuthProvider
@@ -1951,6 +1550,7 @@ paths:
               client_id: 1234567890-abc.apps.googleusercontent.com
               client_secret: GOCSPX-example
               callback_url: https://myapp.example.com/auth/callback
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '201':
           description: Provider configured
@@ -1958,20 +1558,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthProviderOutput'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /oauth-providers/{oauth_provider_id}:
     patch:
@@ -1996,6 +1582,7 @@ paths:
               $ref: '#/components/schemas/UpdateOAuthProviderRequest'
             example:
               client_secret: GOCSPX-new-secret
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '200':
           description: Provider updated
@@ -2003,18 +1590,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthProviderOutput'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     delete:
       tags: [oauthproviders]
       operationId: deleteOAuthProvider
@@ -2028,19 +1603,10 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OAuthProviderID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '204':
           description: Provider removed
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /oauth-providers/{oauth_provider_id}/disable:
     post:
@@ -2056,6 +1622,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OAuthProviderID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Provider disabled
@@ -2063,16 +1630,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthProviderOutput'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /oauth-providers/{oauth_provider_id}/enable:
     post:
@@ -2087,6 +1644,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OAuthProviderID'
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: Provider enabled
@@ -2094,16 +1652,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthProviderOutput'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/capabilities:
     get:
@@ -2117,6 +1665,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Project capabilities
@@ -2130,14 +1679,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Capability'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       tags: [capabilities]
       operationId: createCapability
@@ -2160,6 +1701,7 @@ paths:
             example:
               resource: intents
               action: checkout
+      x-problems: [400, 401, 404, 409, 500, 503]
       responses:
         '201':
           description: Capability created
@@ -2167,16 +1709,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Capability'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /profile-schema:
     get:
@@ -2187,6 +1719,7 @@ paths:
         Fetches the platform-wide JSON Schema used to validate actor
         profiles (applies to actors with no project). Public read.
       security: []
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Platform profile schema
@@ -2194,14 +1727,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectProfileSchema'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [profile_schemas]
       operationId: upsertPlatformProfileSchema
@@ -2225,6 +1750,7 @@ paths:
                   full_name:
                     type: string
               active: true
+      x-problems: [400, 401, 500, 503]
       responses:
         '200':
           description: Schema upserted
@@ -2232,14 +1758,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectProfileSchema'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/profile-schema:
     get:
@@ -2252,6 +1770,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Project profile schema
@@ -2259,14 +1778,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectProfileSchema'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [profile_schemas]
       operationId: upsertProjectProfileSchema
@@ -2285,6 +1796,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpsertProfileSchemaRequest'
+      x-problems: [400, 401, 404, 500, 503]
       responses:
         '200':
           description: Schema upserted
@@ -2292,16 +1804,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectProfileSchema'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /actors/{actor_id}/profile:
     get:
@@ -2316,6 +1818,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Actor profile
@@ -2323,14 +1826,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorProfile'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [profiles]
       operationId: upsertPlatformProfile
@@ -2354,6 +1849,7 @@ paths:
             example:
               profile:
                 full_name: Jane Doe
+      x-problems: [400, 401, 404, 500, 503]
       responses:
         '200':
           description: Profile upserted
@@ -2361,16 +1857,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorProfile'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/actors/{actor_id}/profile:
     get:
@@ -2384,6 +1870,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Actor profile
@@ -2391,14 +1878,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorProfile'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [profiles]
       operationId: upsertProjectProfile
@@ -2420,6 +1899,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpsertProfileRequest'
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
       responses:
         '200':
           description: Profile upserted
@@ -2427,16 +1907,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorProfile'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /profiles/by-handle/{handle}:
     get:
@@ -2449,6 +1919,7 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProfileHandle'
+      x-problems: [401, 404, 500, 503]
       responses:
         '200':
           description: Actor profile
@@ -2456,14 +1927,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActorProfile'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /profiles/outdated:
     get:
@@ -2479,6 +1942,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyAuth: []
+      x-problems: [401, 500, 503]
       responses:
         '200':
           description: Outdated platform actor profiles
@@ -2494,12 +1958,6 @@ paths:
                       $ref: '#/components/schemas/ActorProfile'
                     x-go-type: '[]ActorProfile'
                     x-go-type-skip-optional-pointer: true
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /projects/{project_id}/profiles/outdated:
     get:
@@ -2515,6 +1973,7 @@ paths:
         - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
+      x-problems: [401, 403, 500, 503]
       responses:
         '200':
           description: Outdated project actor profiles
@@ -2530,14 +1989,6 @@ paths:
                       $ref: '#/components/schemas/ActorProfile'
                     x-go-type: '[]ActorProfile'
                     x-go-type-skip-optional-pointer: true
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
 components:
   securitySchemes:
@@ -2610,56 +2061,6 @@ components:
       schema:
         $ref: '#/components/schemas/EmailTemplateKind'
 
-  responses:
-    BadRequest:
-      description: Invalid request payload or parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Missing or invalid credentials
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Forbidden:
-      description: Insufficient permissions for the requested operation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    NotFound:
-      description: The requested resource does not exist
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Conflict:
-      description: The request conflicts with the current state of the resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    InternalServerError:
-      description: Unexpected server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    ServiceUnavailable:
-      description: Service temporarily unavailable (e.g. IdentityX not set up yet)
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
   schemas:
     UUID:
       type: string
@@ -2675,49 +2076,6 @@ components:
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
         path: github.com/google/uuid
-
-    Error:
-      type: object
-      title: AppError
-      description: |
-        The body of every error response. `code` is a machine-readable
-        sentinel whose mapping to the HTTP status is documented in the
-        top-level description.
-      required: [code, message]
-      properties:
-        code:
-          type: string
-          enum:
-            - BAD_REQUEST
-            - VALIDATION_ERROR
-            - UNAUTHORIZED
-            - PAYMENT_REQUIRED
-            - FORBIDDEN
-            - NOT_FOUND
-            - METHOD_NOT_ALLOWED
-            - CONFLICT
-            - UNPROCESSABLE_ENTITY
-            - TOO_MANY_REQUESTS
-            - INTERNAL_ERROR
-            - NOT_IMPLEMENTED
-            - BAD_GATEWAY
-            - SERVICE_UNAVAILABLE
-        message:
-          type: string
-          description: Human-readable explanation of the failure.
-        fields:
-          type: array
-          description: Per-field validation errors (validation failures only).
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field:
-                type: string
-                description: Offending field name (dot notation for nested fields).
-              message:
-                type: string
-                description: Why the field is invalid.
 
     SupportedOAuthProviders:
       x-go-type: models.OAuthProvider

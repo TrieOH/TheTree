@@ -160,6 +160,7 @@ func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF
 		adaptTo[HF, MF](ValidateMiddleware()),
 		adaptTo[HF, MF](AuthDispatch(chains)),
 		adaptTo[HF, MF](TraceMiddleware()), // the generated server wraps in order: last runs first
+		adaptTo[HF, MF](operationMiddleware()),
 	}, strictOpts)
 	return handlerWith(strict, chiOpts)
 }

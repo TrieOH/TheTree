@@ -1,15 +1,21 @@
 package httpserver
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
+	"testing"
 
+	"lib/authz"
 	"lib/fielderr"
 	"lib/telemetry"
 
 	fp "github.com/MintzyG/problematic"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -26,9 +32,11 @@ type fieldError struct {
 }
 
 var (
-	problemsMu sync.RWMutex
-	mapper     fp.ErrorMapper
-	apiURL     string
+	problemsMu     sync.RWMutex
+	mapper         fp.ErrorMapper
+	apiURL         string
+	opProblems     map[string][]string // x-problems by generated-form operationID
+	strictProblems bool
 )
 
 // UseProblems installs the Backend's mapper and its public base URL
@@ -38,6 +46,78 @@ func UseProblems(m fp.ErrorMapper, baseURL string) {
 	mapper = m
 	apiURL = strings.TrimSuffix(baseURL, "/")
 	problemsMu.Unlock()
+}
+
+// UseOperationProblems installs each operation's x-problems from the
+// bundled spec, which WriteError checks every answered problem against.
+// strict makes an unlisted problem panic (tests and DEBUG_MODE always are);
+// otherwise it is a warning and a span attribute, and the response stands.
+func UseOperationProblems(spec []byte, strict bool) error {
+	ops, err := authz.SpecOperations(spec)
+	if err != nil {
+		return err
+	}
+	listed := make(map[string][]string, len(ops))
+	for _, op := range ops {
+		if op.Problems != nil {
+			listed[authz.GeneratedOperationID(op.OperationID)] = op.Problems
+		}
+	}
+	problemsMu.Lock()
+	opProblems = listed
+	strictProblems = strict || testing.Testing()
+	problemsMu.Unlock()
+	return nil
+}
+
+// operationSlot carries the strict server's operationID to WriteError: the
+// generated server answers a handler's error with the request it was
+// handed, not the one the strict middlewares derive.
+type operationSlot struct{ id string }
+
+type operationSlotKey struct{}
+
+// OperationSlot is the per-route chi middleware that gives the request its
+// operationSlot; operationMiddleware fills it.
+func OperationSlot(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), operationSlotKey{}, &operationSlot{})))
+	})
+}
+
+// operationMiddleware records the operationID in the request's slot.
+func operationMiddleware() StrictMiddlewareFunc {
+	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
+		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+			if slot, ok := ctx.Value(operationSlotKey{}).(*operationSlot); ok {
+				slot.id = operationID
+			}
+			return f(ctx, w, r, request)
+		}
+	}
+}
+
+// checkListed reports a problem the answering operation's x-problems
+// doesn't list. Requests outside an operation (routing, param binding, the
+// router middlewares) go unchecked.
+func checkListed(r *http.Request, slug string) {
+	slot, ok := r.Context().Value(operationSlotKey{}).(*operationSlot)
+	if !ok || slot.id == "" {
+		return
+	}
+	problemsMu.RLock()
+	listed, ok := opProblems[slot.id]
+	strict := strictProblems
+	problemsMu.RUnlock()
+	if !ok || slices.Contains(listed, slug) {
+		return
+	}
+	msg := slot.id + " answered problem " + slug + ", which its x-problems doesn't list"
+	if strict {
+		panic(msg)
+	}
+	telemetry.Log().Warn(msg, zap.String("operation", slot.id), zap.String("problem", slug))
+	trace.SpanFromContext(r.Context()).SetAttributes(attribute.String("problem.unlisted", slug))
 }
 
 // internalServerError is the answer to an error the mapper doesn't know,
@@ -74,6 +154,7 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	if p.Status >= http.StatusInternalServerError {
 		telemetry.Log().Error("request failed", zap.Int("status", p.Status), zap.String("path", r.URL.Path), zap.Error(err))
 	}
+	checkListed(r, p.Type)
 	p = p.Clone()
 	p.Type = problemType(base, p.Type)
 	p.Instance = r.URL.Path

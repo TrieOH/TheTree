@@ -10,8 +10,10 @@
 // description) and only its extension members. The bundle merges the files'
 // schemas into the spec, expands each problem into a <Name>Problem schema
 // and response served as application/problem+json, and builds each
-// operation's error responses from its x-problems slug list. The bundle is
-// the Backend's one spec: codegen, orval and /docs/openapi.yml read it.
+// operation's error responses from its x-problems list (a slug, or a status
+// for every problem declared with it), which the bundle keeps as slugs. The
+// bundle is the Backend's one spec: codegen, orval and /docs/openapi.yml
+// read it.
 // The package gets one constructor per problem, with the extensions as
 // typed parameters, the docs the harness serves at /problems/{slug}, and
 // Mapper.

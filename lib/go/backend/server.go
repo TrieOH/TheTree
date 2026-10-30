@@ -12,6 +12,7 @@ func ServerFrom(s libconfig.Server, cors libconfig.CORS, profilePort string) Ser
 		Port:               s.Port,
 		APIURL:             s.APIURL,
 		ProfilePort:        profilePort,
+		DebugMode:          s.DebugMode,
 		CorsAllowedOrigins: cors.AllowedOrigins,
 		CorsAllowedHeaders: cors.AllowedHeaders,
 		RateLimit: httpserver.RateLimit{

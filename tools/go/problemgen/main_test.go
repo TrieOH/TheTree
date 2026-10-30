@@ -61,7 +61,7 @@ paths:
 
 // fixture lays out api/problems.yml and api/svc/{api-spec,problems}.yml
 // and returns the spec's path.
-func fixture(t *testing.T, shared, own, spec string) string {
+func fixture(t *testing.T, own, spec string) string {
 	t.Helper()
 	root := t.TempDir()
 	svc := filepath.Join(root, "svc")
@@ -76,7 +76,7 @@ func fixture(t *testing.T, shared, own, spec string) string {
 			t.Fatal(err)
 		}
 	}
-	write(filepath.Join(root, "problems.yml"), shared)
+	write(filepath.Join(root, "problems.yml"), sharedProblems)
 	write(filepath.Join(svc, "problems.yml"), own)
 	write(filepath.Join(svc, "api-spec.yml"), spec)
 	return filepath.Join(svc, "api-spec.yml")
@@ -124,7 +124,7 @@ func dig(t *testing.T, v any, keys ...string) any {
 }
 
 func TestBundle(t *testing.T) {
-	bundled, _ := generate(t, fixture(t, sharedProblems, ownProblems, spec))
+	bundled, _ := generate(t, fixture(t, ownProblems, spec))
 
 	if dig(t, bundled, "components", "schemas", "Problem") == nil {
 		t.Error("plain schemas are not merged")
@@ -164,8 +164,35 @@ func TestBundle(t *testing.T) {
 	}
 }
 
+func TestBundleExpandsStatuses(t *testing.T) {
+	byStatus := strings.Replace(spec, "[payment-rejected, validation, not-found]", "[400, not-found]", 1)
+	bundled, _ := generate(t, fixture(t, ownProblems, byStatus))
+
+	op := dig(t, bundled, "paths", "/pay", "post")
+	got := dig(t, op, "x-problems").([]any)
+	want := []any{"validation", "batch-failed", "payment-rejected", "not-found"}
+	if len(got) != len(want) {
+		t.Fatalf("x-problems = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("x-problems = %v, want %v", got, want)
+		}
+	}
+	if got := dig(t, op, "responses", "400", "$ref"); got != "#/components/responses/Status400Problem" {
+		t.Errorf("400 = %v, want the shared response of every 400 problem", got)
+	}
+	if got := dig(t, bundled, "components", "responses", "Status400Problem", "content", "application/problem+json", "schema", "$ref"); got != "#/components/schemas/Status400Problem" {
+		t.Errorf("Status400Problem schema = %v, want the named union", got)
+	}
+	oneOf := dig(t, bundled, "components", "schemas", "Status400Problem", "oneOf").([]any)
+	if len(oneOf) != 3 {
+		t.Errorf("Status400Problem oneOf = %v, want every 400 problem", oneOf)
+	}
+}
+
 func TestPackage(t *testing.T) {
-	_, src := generate(t, fixture(t, sharedProblems, ownProblems, spec))
+	_, src := generate(t, fixture(t, ownProblems, spec))
 
 	for _, want := range []string{
 		"func PaymentRejected(detail string, message string, retryAfter int) *fp.Problem",
@@ -190,6 +217,11 @@ func TestRejects(t *testing.T) {
 			own:  ownProblems,
 			spec: "openapi: 3.1.0\npaths:\n  /x:\n    get:\n      x-problems: [nope]\n",
 			want: "undeclared problem nope",
+		},
+		"status with no problem": {
+			own:  ownProblems,
+			spec: "openapi: 3.1.0\npaths:\n  /x:\n    get:\n      x-problems: [418]\n",
+			want: "status 418 has no declared problem",
 		},
 		"status declared twice": {
 			own:  ownProblems,
@@ -224,7 +256,7 @@ func TestRejects(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			specPath := fixture(t, sharedProblems, c.own, c.spec)
+			specPath := fixture(t, c.own, c.spec)
 			dir := filepath.Dir(specPath)
 			err := run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
 			if err == nil || !strings.Contains(err.Error(), c.want) {

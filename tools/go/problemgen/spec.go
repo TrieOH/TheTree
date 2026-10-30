@@ -405,6 +405,7 @@ func (b *bundler) operationResponses() error {
 	if paths == nil {
 		return nil
 	}
+	shared := get(get(b.root, "components"), "responses")
 	for i := 0; i < len(paths.Content); i += 2 {
 		path, item := paths.Content[i].Value, paths.Content[i+1]
 		for _, method := range methods {
@@ -417,21 +418,9 @@ func (b *bundler) operationResponses() error {
 				continue
 			}
 			where := strings.ToUpper(method) + " " + path
-			var slugs []string
-			err := list.Decode(&slugs)
+			byStatus, err := b.listed(list, bySlug)
 			if err != nil {
 				return fmt.Errorf("%s: x-problems: %w", where, err)
-			}
-			byStatus := map[int][]*problem{}
-			for _, slug := range slugs {
-				p, ok := bySlug[slug]
-				if !ok {
-					return fmt.Errorf("%s: x-problems names undeclared problem %s", where, slug)
-				}
-				if slices.Contains(byStatus[p.Status], p) {
-					return fmt.Errorf("%s: x-problems names %s twice", where, slug)
-				}
-				byStatus[p.Status] = append(byStatus[p.Status], p)
 			}
 			responses := ensure(op, "responses")
 			statuses := make([]int, 0, len(byStatus))
@@ -444,19 +433,113 @@ func (b *bundler) operationResponses() error {
 				if get(responses, code) != nil {
 					return fmt.Errorf("%s: %s is declared both in responses and by x-problems", where, code)
 				}
-				set(responses, code, response(byStatus[status]))
+				resp, err := b.response(shared, status, byStatus[status])
+				if err != nil {
+					return fmt.Errorf("%s: %w", where, err)
+				}
+				set(responses, code, resp)
 			}
+			set(op, "x-problems", node(slugsOf(byStatus, statuses)))
 		}
 	}
 	return nil
 }
 
-// response is one status's error response: the problem's own, or a oneOf
-// when several problems share the status.
-func response(ps []*problem) *yaml.Node {
-	if len(ps) == 1 {
-		return ref("responses", ps[0].Name+problemSuffix)
+// listed reads an operation's x-problems: a slug names one problem, a
+// status every problem declared with it. Statuses are the coarse form
+// until each operation lists its own problems.
+func (b *bundler) listed(list *yaml.Node, bySlug map[string]*problem) (map[int][]*problem, error) {
+	if list.Kind != yaml.SequenceNode {
+		return nil, errors.New("not a list")
 	}
+	byStatus := map[int][]*problem{}
+	add := func(p *problem) {
+		if !slices.Contains(byStatus[p.Status], p) {
+			byStatus[p.Status] = append(byStatus[p.Status], p)
+		}
+	}
+	for _, entry := range list.Content {
+		if entry.Tag == "!!int" {
+			status, err := strconv.Atoi(entry.Value)
+			if err != nil {
+				return nil, err
+			}
+			ps := b.withStatus(status)
+			if len(ps) == 0 {
+				return nil, fmt.Errorf("status %d has no declared problem", status)
+			}
+			for _, p := range ps {
+				add(p)
+			}
+			continue
+		}
+		p, ok := bySlug[entry.Value]
+		if !ok {
+			return nil, fmt.Errorf("names undeclared problem %s", entry.Value)
+		}
+		if slices.Contains(byStatus[p.Status], p) {
+			return nil, fmt.Errorf("names %s twice", entry.Value)
+		}
+		add(p)
+	}
+	return byStatus, nil
+}
+
+// slugsOf is the bundle's x-problems: every listed problem's slug, by
+// status, so the writer checks slugs whichever form was authored.
+func slugsOf(byStatus map[int][]*problem, statuses []int) []string {
+	var slugs []string
+	for _, s := range statuses {
+		for _, p := range byStatus[s] {
+			slugs = append(slugs, p.Slug)
+		}
+	}
+	return slugs
+}
+
+// response is one status's error response: the problem's own, or a oneOf
+// when several problems share the status. Every problem of the status is
+// one shared Status<N>Problem response, so codegen builds its union once,
+// not once per operation.
+func (b *bundler) response(shared *yaml.Node, status int, ps []*problem) (*yaml.Node, error) {
+	if len(ps) == 1 {
+		return ref("responses", ps[0].Name+problemSuffix), nil
+	}
+	all := b.withStatus(status)
+	if len(ps) < len(all) {
+		return oneOf(ps), nil
+	}
+	name := fmt.Sprintf("Status%d%s", status, problemSuffix)
+	if get(shared, name) == nil {
+		for _, p := range b.problems {
+			if p.Name+problemSuffix == name {
+				return nil, fmt.Errorf("problem %s collides with the shared %s response", p.Name, name)
+			}
+		}
+		// The union is a named schema: oapi-codegen generates no body
+		// type for a shared response's inline schema.
+		resp := oneOf(all)
+		body := get(get(resp, "content"), "application/problem+json")
+		set(get(get(b.root, "components"), "schemas"), name, get(body, "schema"))
+		set(body, "schema", ref("schemas", name))
+		set(shared, name, resp)
+	}
+	return ref("responses", name), nil
+}
+
+// withStatus is every declared problem with status, in declared order.
+func (b *bundler) withStatus(status int) []*problem {
+	var ps []*problem
+	for _, p := range b.problems {
+		if p.Status == status {
+			ps = append(ps, p)
+		}
+	}
+	return ps
+}
+
+// oneOf is the response of several problems sharing a status.
+func oneOf(ps []*problem) *yaml.Node {
 	titles := make([]string, len(ps))
 	refs := make([]*yaml.Node, len(ps))
 	for i, p := range ps {

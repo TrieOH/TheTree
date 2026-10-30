@@ -64,6 +64,9 @@ type Server struct {
 	CorsAllowedOrigins string
 	CorsAllowedHeaders string
 	RateLimit          httpserver.RateLimit
+	// DebugMode (DEBUG_MODE) makes a problem its operation's x-problems
+	// doesn't list panic instead of warn.
+	DebugMode bool
 }
 
 // BuildFunc wires the Backend's own code: repos, services, handlers,
@@ -153,6 +156,10 @@ func Run(app App) error {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
 	}
 	httpserver.UseProblems(app.Errors, app.Server.APIURL)
+	err := httpserver.UseOperationProblems(app.Spec, app.Server.DebugMode)
+	if err != nil {
+		return fmt.Errorf("%s: read x-problems: %w", app.Name, err)
+	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            app.Name,
 		Port:               app.Server.Port,

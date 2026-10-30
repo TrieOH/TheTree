@@ -46,6 +46,10 @@ func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *
 	// Boot installs the problems before serving; the router under test
 	// answers errors through the same mapper.
 	httpserver.UseProblems(problems.Mapper(Problem), "http://identityx.test")
+	err = httpserver.UseOperationProblems(spec.OpenAPISpec, true)
+	if err != nil {
+		t.Fatalf("read x-problems: %v", err)
+	}
 	r := chi.NewRouter()
 	openapi.Mount(r, h, resolver.Chains())
 	return r
