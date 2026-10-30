@@ -254,8 +254,16 @@ e2e-down:
       kill -- -"$(cat e2e/.run/identityx-front.pid)" 2>/dev/null
       rm -f e2e/.run/identityx-front.pid
     fi
-    E2E_POSTGRES_PASSWORD=x E2E_ENCRYPTION_KEY=x E2E_HMAC_SECRET=x \
-        docker compose -f e2e/compose.yml down --volumes --remove-orphans
+    export E2E_POSTGRES_PASSWORD=x E2E_ENCRYPTION_KEY=x E2E_HMAC_SECRET=x
+    # e2e runs without DEBUG_MODE, so an answered problem its operation's
+    # x-problems doesn't list only warns: list them before the logs go.
+    unlisted="$(docker compose -f e2e/compose.yml logs --no-color 2>/dev/null \
+        | grep -oE "[A-Za-z]+ answered problem [a-z0-9-]+, which its x-problems doesn't list" | sort | uniq -c)"
+    if [ -n "$unlisted" ]; then
+      echo "Problems missing from their operation's x-problems (api/<svc>/api-spec.yml):" >&2
+      echo "$unlisted" >&2
+    fi
+    docker compose -f e2e/compose.yml down --volumes --remove-orphans
 
 # Run Robot suites against a running e2e stack (`just e2e-up` first).
 [positional-arguments]
