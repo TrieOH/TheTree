@@ -68,6 +68,8 @@ func shared(err error, m fp.ErrorMapper) *fp.Problem {
 	switch {
 	case errors.As(err, &notFound):
 		return NotFound(notFound.Error())
+	case errors.Is(err, database.ErrNotFound):
+		return NotFound(database.ErrNotFound.Error())
 	case errors.As(err, &batch):
 		items := make([]BatchItem, len(batch.Items))
 		for i, item := range batch.Items {
