@@ -2,4 +2,427 @@
 # api/problems.yml, which documents the shape. tools/problemgen generates
 # them into internal/problems and bundles them into api-spec.gen.yml.
 components:
-  schemas: {}
+  schemas:
+    # request shapes
+    InvalidRequest:
+      x-problem:
+        slug: invalid-request
+        status: 400
+        title: Invalid Request
+        description: "Invalid request."
+    InvalidDesignData:
+      x-problem:
+        slug: invalid-design-data
+        status: 400
+        title: Invalid Design Data
+        description: "Invalid design_data."
+    InvalidGalleryURLs:
+      x-problem:
+        slug: invalid-gallery-urls
+        status: 400
+        title: Invalid Gallery URLs
+        description: "Invalid gallery_urls."
+
+    # events, editions, templates, payments
+    EventNotDraft:
+      x-problem:
+        slug: event-not-draft
+        status: 400
+        title: Event Not Draft
+        description: "Cannot publish non draft event."
+    EventNotActive:
+      x-problem:
+        slug: event-not-active
+        status: 400
+        title: Event Not Active
+        description: "Cannot discontinue non active event."
+    EditionAlreadyPublished:
+      x-problem:
+        slug: edition-already-published
+        status: 400
+        title: Edition Already Published
+        description: "Edition is already published."
+    InvalidBadgeOrigin:
+      x-problem:
+        slug: invalid-badge-origin
+        status: 400
+        title: Invalid Badge Origin
+        description: "Origin must be null or \"staff\"."
+    StaffTemplateWithTicketType:
+      x-problem:
+        slug: staff-template-with-ticket-type
+        status: 400
+        title: Staff Template With Ticket Type
+        description: "A staff badge template cannot target a ticket type."
+    SellerNotInPlatformWallet:
+      x-problem:
+        slug: seller-not-in-platform-wallet
+        status: 400
+        title: Seller Not In Platform Wallet
+        description: "Seller does not belong to the platform payssage wallet."
+    InvalidPayssageWebhookSignature:
+      x-problem:
+        slug: invalid-payssage-webhook-signature
+        status: 400
+        title: Invalid Payssage Webhook Signature
+        description: "Invalid webhook signature."
+
+    # checkout
+    EditionNotPublished:
+      x-problem:
+        slug: edition-not-published
+        status: 400
+        title: Edition Not Published
+        description: "Edition is not published."
+    NoPaymentConfig:
+      x-problem:
+        slug: no-payment-config
+        status: 400
+        title: No Payment Config
+        description: "Event has no payment config."
+    NoItems:
+      x-problem:
+        slug: no-items
+        status: 400
+        title: No Items
+        description: "Checkout requires at least one item."
+    QuantityBelowOne:
+      x-problem:
+        slug: quantity-below-one
+        status: 400
+        title: Quantity Below One
+        description: "Item quantity must be at least 1."
+    TicketQuantity:
+      x-problem:
+        slug: ticket-quantity
+        status: 400
+        title: Ticket Quantity
+        description: "Ticket lines are one per person (quantity must be 1)."
+    TicketNeedsAttendee:
+      x-problem:
+        slug: ticket-needs-attendee
+        status: 400
+        title: Ticket Needs Attendee
+        description: "Ticket lines require an attendee."
+    TicketNeedsAttendeeEmail:
+      x-problem:
+        slug: ticket-needs-attendee-email
+        status: 400
+        title: Ticket Needs Attendee Email
+        description: "Ticket lines require an attendee email."
+    OneTicketPerPerson:
+      x-problem:
+        slug: one-ticket-per-person
+        status: 400
+        title: One Ticket Per Person
+        description: "Only one ticket per person."
+    DuplicateProductLine:
+      x-problem:
+        slug: duplicate-product-line
+        status: 400
+        title: Duplicate Product Line
+        description: "Duplicate product line."
+    ProgramQuantity:
+      x-problem:
+        slug: program-quantity
+        status: 400
+        title: Program Quantity
+        description: "Program lines are one session per purchase (quantity must be 1)."
+    DuplicateProgramLine:
+      x-problem:
+        slug: duplicate-program-line
+        status: 400
+        title: Duplicate Program Line
+        description: "Duplicate program line."
+    InvalidItemType:
+      x-problem:
+        slug: invalid-item-type
+        status: 400
+        title: Invalid Item Type
+        description: "Invalid item_type."
+    ProgramNeedsTicket:
+      x-problem:
+        slug: program-needs-ticket
+        status: 400
+        title: Program Needs Ticket
+        description: "Program items require a ticket item."
+    ProgramNeedsTicketInCart:
+      x-problem:
+        slug: program-needs-ticket-in-cart
+        status: 400
+        title: Program Needs Ticket In Cart
+        description: "Program items require a ticket item in the same cart."
+    AttendeeEmailUnknown:
+      x-problem:
+        slug: attendee-email-unknown
+        status: 400
+        title: Attendee Email Unknown
+        description: "Attendee email does not match an account."
+    AttendeeUserMismatch:
+      x-problem:
+        slug: attendee-user-mismatch
+        status: 400
+        title: Attendee User Mismatch
+        description: "Attendee user_id does not match the email."
+    CardTokenRequired:
+      x-problem:
+        slug: card-token-required
+        status: 400
+        title: Card Token Required
+        description: "Card_token is required for card payments."
+    PaymentMethodIDRequired:
+      x-problem:
+        slug: payment-method-id-required
+        status: 400
+        title: Payment Method ID Required
+        description: "Payment_method_id is required for card payments."
+    InstallmentsBelowOne:
+      x-problem:
+        slug: installments-below-one
+        status: 400
+        title: Installments Below One
+        description: "Installments must be at least 1."
+    InvalidPaymentMethod:
+      x-problem:
+        slug: invalid-payment-method
+        status: 400
+        title: Invalid Payment Method
+        description: "Invalid payment_method."
+    UnknownItem:
+      x-problem:
+        slug: unknown-item
+        status: 400
+        title: Unknown Item
+        description: "Unknown item."
+    ItemNotInEdition:
+      x-problem:
+        slug: item-not-in-edition
+        status: 400
+        title: Item Not In Edition
+        description: "Item does not belong to this edition."
+    PersonHasTicket:
+      x-problem:
+        slug: person-has-ticket
+        status: 409
+        title: Person Has Ticket
+        description: "This person already has a ticket for this edition."
+    ItemsUnavailable:
+      x-problem:
+        slug: items-unavailable
+        status: 409
+        title: Items Unavailable
+        description: "Some items are no longer available."
+    PaymentRejected:
+      x-problem:
+        slug: payment-rejected
+        status: 400
+        title: Payment Rejected
+        description: "The payment provider refused the payment."
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, description: "The provider's reason." }
+
+    # refunds
+    AlreadyRefunded:
+      x-problem:
+        slug: already-refunded
+        status: 409
+        title: Already Refunded
+        description: "Purchase already refunded."
+    FreeOrderRefund:
+      x-problem:
+        slug: free-order-refund
+        status: 400
+        title: Free Order Refund
+        description: "Purchase has no payment intent (free order) and cannot be refunded."
+    PurchaseStatus:
+      x-problem:
+        slug: purchase-status
+        status: 409
+        title: Purchase Status
+        description: "The purchase's status does not allow a refund."
+      type: object
+      required: [purchase_status]
+      properties:
+        purchase_status: { type: string, description: "The purchase's current status." }
+
+    # programs
+    TicketRequiredForActivity:
+      x-problem:
+        slug: ticket-required-for-activity
+        status: 403
+        title: Ticket Required For Activity
+        description: "A confirmed ticket is required to register for activities."
+    TicketRequiredForCheckpoint:
+      x-problem:
+        slug: ticket-required-for-checkpoint
+        status: 403
+        title: Ticket Required For Checkpoint
+        description: "A confirmed ticket is required to pass this checkpoint."
+    AccessLevel:
+      x-problem:
+        slug: access-level
+        status: 403
+        title: Access Level
+        description: "The caller's ticket level does not grant access."
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, description: "What was refused: activity or checkpoint." }
+    AlreadyRegistered:
+      x-problem:
+        slug: already-registered
+        status: 409
+        title: Already Registered
+        description: "You are already registered for this activity."
+    OccurrenceFull:
+      x-problem:
+        slug: occurrence-full
+        status: 409
+        title: Occurrence Full
+        description: "This activity occurrence is full."
+    NotRegistered:
+      x-problem:
+        slug: not-registered
+        status: 404
+        title: Not Registered
+        description: "You are not registered for this activity."
+    RegistrationLocked:
+      x-problem:
+        slug: registration-locked
+        status: 409
+        title: Registration Locked
+        description: "Registration is locked: attendance has been marked."
+    CheckInNotCheckpoint:
+      x-problem:
+        slug: check-in-not-checkpoint
+        status: 400
+        title: Check In Not Checkpoint
+        description: "Check-in is only for checkpoint occurrences."
+    ParticipationCancelled:
+      x-problem:
+        slug: participation-cancelled
+        status: 409
+        title: Participation Cancelled
+        description: "Cannot mark attendance: participation was cancelled."
+
+    # signatures
+    InvalidSignatureToken:
+      x-problem:
+        slug: invalid-signature-token
+        status: 403
+        title: Invalid Signature Token
+        description: "Invalid or expired token."
+    SignatureRequestNotPending:
+      x-problem:
+        slug: signature-request-not-pending
+        status: 409
+        title: Signature Request Not Pending
+        description: "Signature request is no longer pending."
+    TokenRequestEditionMismatch:
+      x-problem:
+        slug: token-request-edition-mismatch
+        status: 403
+        title: Token Request Edition Mismatch
+        description: "Token does not match request edition."
+    TokenSignatureEditionMismatch:
+      x-problem:
+        slug: token-signature-edition-mismatch
+        status: 403
+        title: Token Signature Edition Mismatch
+        description: "Token does not match signature edition."
+    SignatureRequestHandled:
+      x-problem:
+        slug: signature-request-handled
+        status: 404
+        title: Signature Request Handled
+        description: "Signature request not found or already handled."
+    SignatureRequestCompleted:
+      x-problem:
+        slug: signature-request-completed
+        status: 404
+        title: Signature Request Completed
+        description: "Signature request not found or already completed."
+
+    # not found
+
+    # constraints
+    EditionOverlap:
+      x-problem:
+        slug: edition-overlap
+        status: 409
+        title: Edition Overlap
+        description: "This edition's dates overlap with another edition of the same event."
+    TicketHeld:
+      x-problem:
+        slug: ticket-held
+        status: 409
+        title: Ticket Held
+        description: "This person already has a ticket for this edition."
+    ProductCodeTaken:
+      x-problem:
+        slug: product-code-taken
+        status: 409
+        title: Product Code Taken
+        description: "A product with this vendor code already exists in this edition."
+    VariantCodeTaken:
+      x-problem:
+        slug: variant-code-taken
+        status: 409
+        title: Variant Code Taken
+        description: "A product variant with this vendor code already exists in this edition."
+    OccurrenceRegistrationTaken:
+      x-problem:
+        slug: occurrence-registration-taken
+        status: 409
+        title: Occurrence Registration Taken
+        description: "This person is already registered for this activity occurrence."
+    IdempotencyKeyUsed:
+      x-problem:
+        slug: idempotency-key-used
+        status: 409
+        title: Idempotency Key Used
+        description: "This idempotency key has already been used."
+    BadgeEmitted:
+      x-problem:
+        slug: badge-emitted
+        status: 409
+        title: Badge Emitted
+        description: "This person already has a badge for this edition and origin."
+    BadgeTemplateScopeTaken:
+      x-problem:
+        slug: badge-template-scope-taken
+        status: 409
+        title: Badge Template Scope Taken
+        description: "This edition already has a template for this scope (default, ticket type, or staff)."
+    PendingPurchaseExists:
+      x-problem:
+        slug: pending-purchase-exists
+        status: 409
+        title: Pending Purchase Exists
+        description: "This person already has a pending purchase for this edition."
+    TicketUnitInPurchase:
+      x-problem:
+        slug: ticket-unit-in-purchase
+        status: 409
+        title: Ticket Unit In Purchase
+        description: "This ticket is already in this purchase for this person."
+    ProductLineInPurchase:
+      x-problem:
+        slug: product-line-in-purchase
+        status: 409
+        title: Product Line In Purchase
+        description: "This product is already in this purchase."
+    ProgramLineInPurchase:
+      x-problem:
+        slug: program-line-in-purchase
+        status: 409
+        title: Program Line In Purchase
+        description: "This program occurrence is already in this purchase."
+    WSTokenIssued:
+      x-problem:
+        slug: ws-token-issued
+        status: 409
+        title: WS Token Issued
+        description: "This webhook token has already been issued."

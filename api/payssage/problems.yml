@@ -2,4 +2,388 @@
 # api/problems.yml, which documents the shape. tools/problemgen generates
 # them into internal/problems and bundles them into api-spec.gen.yml.
 components:
-  schemas: {}
+  schemas:
+    # request shapes
+    InvalidRequest:
+      x-problem:
+        slug: invalid-request
+        status: 400
+        title: Invalid Request
+        description: "Invalid request."
+    InvalidProviderData:
+      x-problem:
+        slug: invalid-provider-data
+        status: 400
+        title: Invalid Provider Data
+        description: "Invalid provider_data."
+    InvalidCheckoutProviderData:
+      x-problem:
+        slug: invalid-checkout-provider-data
+        status: 400
+        title: Invalid Checkout Provider Data
+        description: "Invalid checkout_provider_data."
+    InvalidMetadata:
+      x-problem:
+        slug: invalid-metadata
+        status: 400
+        title: Invalid Metadata
+        description: "Invalid metadata."
+    TestModeOnly:
+      x-problem:
+        slug: test-mode-only
+        status: 503
+        title: Test Mode Only
+        description: "Test mode only."
+    NotResourceOwner:
+      x-problem:
+        slug: not-resource-owner
+        status: 403
+        title: Not Resource Owner
+        description: "Insufficient permissions."
+
+    # organization membership
+    AddSelfToOrg:
+      x-problem:
+        slug: add-self-to-org
+        status: 400
+        title: Add Self To Org
+        description: "Users can't add themselves to organizations."
+    AddOwnerToOrg:
+      x-problem:
+        slug: add-owner-to-org
+        status: 400
+        title: Add Owner To Org
+        description: "Owners can't be added to organizations they own."
+    AlreadyOrgMember:
+      x-problem:
+        slug: already-org-member
+        status: 400
+        title: Already Org Member
+        description: "User is already a member of the organization."
+    RemoveSelfFromOrg:
+      x-problem:
+        slug: remove-self-from-org
+        status: 400
+        title: Remove Self From Org
+        description: "Cannot remove yourself from the organization."
+    RemoveOrgOwner:
+      x-problem:
+        slug: remove-org-owner
+        status: 400
+        title: Remove Org Owner
+        description: "Cannot remove the owner of the organization."
+    NotOrgMember:
+      x-problem:
+        slug: not-org-member
+        status: 400
+        title: Not Org Member
+        description: "User is not a member of the organization."
+
+    # oauth
+    InvalidFlow:
+      x-problem:
+        slug: invalid-flow
+        status: 400
+        title: Invalid Flow
+        description: "Invalid flow."
+    InvalidProvider:
+      x-problem:
+        slug: invalid-provider
+        status: 400
+        title: Invalid Provider
+        description: "Invalid provider."
+    ProviderMismatch:
+      x-problem:
+        slug: provider-mismatch
+        status: 400
+        title: Provider Mismatch
+        description: "Provider mismatch."
+    SellerFlowNeedsWallet:
+      x-problem:
+        slug: seller-flow-needs-wallet
+        status: 400
+        title: Seller Flow Needs Wallet
+        description: "Wallet_id is required for seller flow."
+
+    # providers and intents
+    ProviderNotImplemented:
+      x-problem:
+        slug: provider-not-implemented
+        status: 400
+        title: Provider Not Implemented
+        description: "Provider not implemented."
+    ProviderRequestFailed:
+      x-problem:
+        slug: provider-request-failed
+        status: 502
+        title: Provider Request Failed
+        description: "Payment provider request failed."
+    UnsupportedProvider:
+      x-problem:
+        slug: unsupported-provider
+        status: 400
+        title: Unsupported Provider
+        description: "Payssage has no payment provider by this name."
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+    ProviderUnauthorized:
+      x-problem:
+        slug: provider-unauthorized
+        status: 401
+        title: Provider Unauthorized
+        description: "The payment provider refused Payssage's credentials."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    ProviderNotFound:
+      x-problem:
+        slug: provider-not-found
+        status: 404
+        title: Provider Not Found
+        description: "The payment provider does not know the resource."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    ProviderConflict:
+      x-problem:
+        slug: provider-conflict
+        status: 409
+        title: Provider Conflict
+        description: "The payment provider answered with a conflict."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    ProviderRateLimited:
+      x-problem:
+        slug: provider-rate-limited
+        status: 429
+        title: Provider Rate Limited
+        description: "The payment provider is rate limiting Payssage; retry later."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    ProviderUnavailable:
+      x-problem:
+        slug: provider-unavailable
+        status: 502
+        title: Provider Unavailable
+        description: "The payment provider failed on its side."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    ProviderRejected:
+      x-problem:
+        slug: provider-rejected
+        status: 400
+        title: Provider Rejected
+        description: "The payment provider rejected the request."
+      type: object
+      required: [provider, reason]
+      properties:
+        provider: { type: string, description: "The provider's name." }
+        reason: { type: string, description: "Payssage's reading of the provider's cause, or empty." }
+    SellerNotInWallet:
+      x-problem:
+        slug: seller-not-in-wallet
+        status: 400
+        title: Seller Not In Wallet
+        description: "Seller does not belong to wallet."
+    NoTransactionToRefund:
+      x-problem:
+        slug: no-transaction-to-refund
+        status: 409
+        title: No Transaction To Refund
+        description: "Intent has no mercadopago transaction to refund."
+    NoTransactionToCancel:
+      x-problem:
+        slug: no-transaction-to-cancel
+        status: 409
+        title: No Transaction To Cancel
+        description: "Intent has no mercadopago transaction to cancel."
+    IntentStatus:
+      x-problem:
+        slug: intent-status
+        status: 400
+        title: Intent Status
+        description: "The intent's status does not allow the action."
+      type: object
+      required: [action, intent_status]
+      properties:
+        action: { type: string, description: "The refused action, such as refunded or cancelled." }
+        intent_status: { type: string, description: "The intent's current status." }
+    SellerRevokedCheckout:
+      x-problem:
+        slug: seller-revoked-checkout
+        status: 403
+        title: Seller Revoked
+        description: "The seller revoked Payssage's access, so it cannot be charged."
+      type: object
+      required: [seller_id]
+      properties:
+        seller_id: { type: string, description: "The seller." }
+    SellerRevoked:
+      x-problem:
+        slug: seller-revoked
+        status: 409
+        title: Seller Revoked
+        description: "The seller revoked Payssage's access, so the payment cannot be refunded or cancelled here; it needs manual handling at the provider."
+      type: object
+      required: [seller_id]
+      properties:
+        seller_id: { type: string, description: "The seller." }
+    SellerProviderMismatch:
+      x-problem:
+        slug: seller-provider-mismatch
+        status: 409
+        title: Seller Provider Mismatch
+        description: "The seller is connected through another payment provider."
+      type: object
+      required: [seller_id, provider]
+      properties:
+        seller_id: { type: string, description: "The seller." }
+        provider: { type: string, description: "The provider's name." }
+
+    # incoming webhooks
+    UnknownWebhookProvider:
+      x-problem:
+        slug: unknown-webhook-provider
+        status: 404
+        title: Unknown Webhook Provider
+        description: "Unknown webhook provider."
+    WebhookNotImplemented:
+      x-problem:
+        slug: webhook-not-implemented
+        status: 400
+        title: Webhook Not Implemented
+        description: "Webhook handling not implemented for this provider."
+    WebhookPayloadInvalid:
+      x-problem:
+        slug: webhook-payload-invalid
+        status: 400
+        title: Webhook Payload Invalid
+        description: "Mercadopago webhook: invalid payload."
+    WebhookMissingDataID:
+      x-problem:
+        slug: webhook-missing-data-id
+        status: 400
+        title: Webhook Missing Data ID
+        description: "Mercadopago webhook: missing data.id."
+    WebhookSignatureMissing:
+      x-problem:
+        slug: webhook-signature-missing
+        status: 401
+        title: Webhook Signature Missing
+        description: "Mercadopago webhook: missing ts or v1 in x-signature header."
+    WebhookSignatureMismatch:
+      x-problem:
+        slug: webhook-signature-mismatch
+        status: 401
+        title: Webhook Signature Mismatch
+        description: "Mercadopago webhook: signature mismatch."
+    UnhandledWebhookEvent:
+      x-problem:
+        slug: unhandled-webhook-event
+        status: 404
+        title: Unhandled Webhook Event
+        description: "Payssage does not handle this webhook event type."
+      type: object
+      required: [event_type]
+      properties:
+        event_type: { type: string, description: "The event type." }
+    WebhookIntentNotFound:
+      x-problem:
+        slug: webhook-intent-not-found
+        status: 404
+        title: Webhook Intent Not Found
+        description: "No intent was created for the webhook's payment."
+      type: object
+      required: [payment_id]
+      properties:
+        payment_id: { type: string, description: "The provider's payment." }
+    WebhookSellerTokenMissing:
+      x-problem:
+        slug: webhook-seller-token-missing
+        status: 409
+        title: Webhook Seller Token Missing
+        description: "The intent's seller has no provider access token, so the webhook cannot be resolved."
+      type: object
+      required: [seller_id, intent_id]
+      properties:
+        seller_id: { type: string, description: "The seller." }
+        intent_id: { type: string, description: "The intent." }
+
+    # not found
+
+    # constraints
+    OrgWalletNameTaken:
+      x-problem:
+        slug: org-wallet-name-taken
+        status: 409
+        title: Org Wallet Name Taken
+        description: "A wallet with this name already exists in this organization."
+    PersonalWalletTaken:
+      x-problem:
+        slug: personal-wallet-taken
+        status: 409
+        title: Personal Wallet Taken
+        description: "A wallet with this name already exists."
+    DeliveryExists:
+      x-problem:
+        slug: delivery-exists
+        status: 409
+        title: Delivery Exists
+        description: "A delivery for this event and endpoint already exists."
+    WebhookEventExists:
+      x-problem:
+        slug: webhook-event-exists
+        status: 409
+        title: Webhook Event Exists
+        description: "A webhook event for this external id and type already exists for this provider."
+    OrgSlugTaken:
+      x-problem:
+        slug: org-slug-taken
+        status: 409
+        title: Org Slug Taken
+        description: "An organization with this slug already exists."
+    CredentialsConnected:
+      x-problem:
+        slug: credentials-connected
+        status: 409
+        title: Credentials Connected
+        description: "Credentials for this provider are already connected to this wallet."
+    OrgCollectorConnected:
+      x-problem:
+        slug: org-collector-connected
+        status: 409
+        title: Org Collector Connected
+        description: "This collector is already connected to this organization."
+    PersonalCollectorConnected:
+      x-problem:
+        slug: personal-collector-connected
+        status: 409
+        title: Personal Collector Connected
+        description: "This collector is already connected to your account."
+    SellerConnected:
+      x-problem:
+        slug: seller-connected
+        status: 409
+        title: Seller Connected
+        description: "This seller is already connected to this wallet."
+
+    # providerStatus answers a provider's own error by what the provider said:
+
+    # its auth failures are ours to fix (401), a provider outage is a bad
+
+    # gateway, and its 4xx answers pass through.

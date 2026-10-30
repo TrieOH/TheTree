@@ -1,7 +1,7 @@
 # The problems every Backend shares (ADR-0019), and the base schemas their
-# problems build on. Each Backend's api-spec.yml lists this file under
-# x-problem-files; tools/problemgen generates its problems into every
-# Backend's own package and bundles them into its spec.
+# problems build on. tools/problemgen reads it as ../problems.yml from
+# every Backend's spec, generates its problems into each Backend's own
+# package and bundles them into its spec.
 #
 # A problem is a schema with an x-problem block and only its extension
 # members, every one of them required. Its slug, status and title are

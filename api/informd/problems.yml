@@ -2,4 +2,199 @@
 # api/problems.yml, which documents the shape. tools/problemgen generates
 # them into internal/problems and bundles them into api-spec.gen.yml.
 components:
-  schemas: {}
+  schemas:
+    # form lifecycle
+    OpenNotDraft:
+      x-problem:
+        slug: open-not-draft
+        status: 400
+        title: Open Not Draft
+        description: "Cannot open a form not on draft."
+    CloseNotOpen:
+      x-problem:
+        slug: close-not-open
+        status: 400
+        title: Close Not Open
+        description: "Cannot close a form not on open."
+    RedraftNotOpen:
+      x-problem:
+        slug: redraft-not-open
+        status: 400
+        title: Redraft Not Open
+        description: "Cannot redraft a form not on open."
+    RedraftWithResponses:
+      x-problem:
+        slug: redraft-with-responses
+        status: 400
+        title: Redraft With Responses
+        description: "Cannot redraft a form with responses."
+    ArchiveNotClosed:
+      x-problem:
+        slug: archive-not-closed
+        status: 400
+        title: Archive Not Closed
+        description: "Cannot archive a form not on closed."
+    FormNotAnswerable:
+      x-problem:
+        slug: form-not-answerable
+        status: 403
+        title: Form Not Answerable
+        description: "Form is not open for answers."
+    FormNotOpenForResponses:
+      x-problem:
+        slug: form-not-open-for-responses
+        status: 400
+        title: Form Not Open For Responses
+        description: "Form is not open for responses."
+
+    # form contents
+    StepsAcrossForms:
+      x-problem:
+        slug: steps-across-forms
+        status: 400
+        title: Steps Across Forms
+        description: "All steps must belong to the same form."
+    FieldsAcrossSteps:
+      x-problem:
+        slug: fields-across-steps
+        status: 400
+        title: Fields Across Steps
+        description: "All fields must belong to the same step."
+    InvalidSelectOptions:
+      x-problem:
+        slug: invalid-select-options
+        status: 400
+        title: Invalid Select Options
+        description: "Invalid options."
+
+    # membership
+    AddSelfToForm:
+      x-problem:
+        slug: add-self-to-form
+        status: 400
+        title: Add Self To Form
+        description: "Users can't add themselves to forms."
+    FormOwnerAlreadyMember:
+      x-problem:
+        slug: form-owner-already-member
+        status: 400
+        title: Form Owner Already Member
+        description: "Owner of the form is already a member of the form."
+    NamespaceOwnerAlreadyInForm:
+      x-problem:
+        slug: namespace-owner-already-in-form
+        status: 400
+        title: Namespace Owner Already In Form
+        description: "Owner of the namespace is already a member of the form."
+    NamespaceMemberAlreadyInForm:
+      x-problem:
+        slug: namespace-member-already-in-form
+        status: 400
+        title: Namespace Member Already In Form
+        description: "Namespace member is already a member of the form."
+    AlreadyFormMember:
+      x-problem:
+        slug: already-form-member
+        status: 400
+        title: Already Form Member
+        description: "User is already a member of the form."
+    RemoveSelfFromForm:
+      x-problem:
+        slug: remove-self-from-form
+        status: 400
+        title: Remove Self From Form
+        description: "Users can't remove themselves from forms."
+    RemoveFormOwner:
+      x-problem:
+        slug: remove-form-owner
+        status: 400
+        title: Remove Form Owner
+        description: "Cannot remove owner of the form."
+    RemoveNamespaceOwnerFromForm:
+      x-problem:
+        slug: remove-namespace-owner-from-form
+        status: 400
+        title: Remove Namespace Owner From Form
+        description: "Cannot remove owner of the namespace from form."
+    RemoveNamespaceMemberFromForm:
+      x-problem:
+        slug: remove-namespace-member-from-form
+        status: 400
+        title: Remove Namespace Member From Form
+        description: "Cannot remove namespace member from form."
+    NotFormMember:
+      x-problem:
+        slug: not-form-member
+        status: 400
+        title: Not Form Member
+        description: "User is not a member of the form."
+    AddSelfToNamespace:
+      x-problem:
+        slug: add-self-to-namespace
+        status: 400
+        title: Add Self To Namespace
+        description: "Users can't add themselves to namespaces."
+    AddOwnerToNamespace:
+      x-problem:
+        slug: add-owner-to-namespace
+        status: 400
+        title: Add Owner To Namespace
+        description: "Owners can't be added to namespaces they own."
+    AlreadyNamespaceMember:
+      x-problem:
+        slug: already-namespace-member
+        status: 400
+        title: Already Namespace Member
+        description: "User is already a member of the namespace."
+    NotNamespaceMember:
+      x-problem:
+        slug: not-namespace-member
+        status: 400
+        title: Not Namespace Member
+        description: "User is not a member of the namespace."
+
+    # not found
+
+    # constraints
+    FormNameTaken:
+      x-problem:
+        slug: form-name-taken
+        status: 409
+        title: Form Name Taken
+        description: "A form with this name already exists in this namespace."
+    APIKeyNameTaken:
+      x-problem:
+        slug: api-key-name-taken
+        status: 409
+        title: API Key Name Taken
+        description: "An API key with this name already exists."
+    FieldKeyTaken:
+      x-problem:
+        slug: field-key-taken
+        status: 409
+        title: Field Key Taken
+        description: "A field with this key already exists in this step."
+    NamespaceNameTaken:
+      x-problem:
+        slug: namespace-name-taken
+        status: 409
+        title: Namespace Name Taken
+        description: "A namespace with this name already exists."
+    FieldAlreadyAnswered:
+      x-problem:
+        slug: field-already-answered
+        status: 409
+        title: Field Already Answered
+        description: "This field already has an answer in this response."
+    ResponderEmailTaken:
+      x-problem:
+        slug: responder-email-taken
+        status: 409
+        title: Responder Email Taken
+        description: "A responder with this email already exists on this system."
+    InviteTokenTaken:
+      x-problem:
+        slug: invite-token-taken
+        status: 409
+        title: Invite Token Taken
+        description: "An invite with this token already exists."
