@@ -143,7 +143,7 @@ func TestConnectProvider(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
-	client, _, _ := newTestClient(t, http.StatusNotFound, `{"code":"NOT_FOUND","message":"wallet not found"}`)
+	client, _, _ := newTestClient(t, http.StatusNotFound, `{"type":"https://api.payssage.test/problems/not-found","status":404,"title":"Not Found","detail":"wallet not found"}`)
 	_, err := client.CreateWallet(context.Background(), CreateWalletRequest{Name: "x"})
 	if err == nil {
 		t.Fatal("want error")
