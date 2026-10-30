@@ -100,12 +100,14 @@ func (e *UnsupportedKeyError) Error() string {
 // --------------------------------------------------------------------------
 
 // APIError is returned when IdentityX responds with a failure status.
-// StatusCode is the HTTP status; the rest is the decoded error body, which
-// may be empty when the body was not the usual JSON error shape.
+// StatusCode is the HTTP status; the rest is the decoded RFC 9457 problem,
+// which may be empty when the body was not a problem. Message is the
+// problem's detail.
 type APIError struct {
 	StatusCode int    `json:"-"`
-	Code       string `json:"code"`
-	Message    string `json:"message"`
+	Type       string `json:"type"`
+	Title      string `json:"title"`
+	Message    string `json:"detail"`
 }
 
 func (e *APIError) Error() string {
