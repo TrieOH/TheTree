@@ -211,9 +211,6 @@ function RouteComponent() {
               <span className="text-[10px] font-mono px-2 py-1 rounded-md border border-border/60 bg-background text-muted-foreground">
                 code {introspectError.code}
               </span>
-              <span className="text-[10px] font-mono px-2 py-1 rounded-md border border-border/60 bg-background text-muted-foreground">
-                {introspectError.error_id}
-              </span>
             </div>
             {introspectError.trace?.length ? (
               <pre className="mt-4 max-w-full overflow-x-auto rounded-lg border border-border/60 bg-background p-3 text-left text-[11px] font-mono leading-relaxed text-muted-foreground">
