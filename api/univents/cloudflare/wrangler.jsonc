@@ -55,6 +55,10 @@
 		"IDENTITY_X_PROJECT_ID": "01a00284-7b25-7f91-8e29-bdf7b4708fba",
 		"PAYSSAGE_URL": "https://api.payssage.trieoh.com",
 		"PAYSSAGE_WALLET_ID": "01a00289-1927-7daf-bba1-6e8c36602b76",
+		// R2's S3 API for this account; the bucket is "univents".
+		"OBJECT_STORAGE_ENDPOINT": "https://fdc6590fe9b028c608005c515140ff74.r2.cloudflarestorage.com",
+		"OBJECT_STORAGE_USE_SSL": "true",
+		"OBJECT_STORAGE_REGION": "auto",
 		"SMTP_HOST": "mail.trieoh.com",
 		"SMTP_PORT": "587",
 		"SMTP_FROM": "univents@trieoh.com",
@@ -63,8 +67,8 @@
 	// Credentials are Worker secrets, set one at a time with
 	// `wrangler secret put NAME` and kept across deploys. Listing them makes
 	// `wrangler types` type them without reading a local .dev.vars/.env.
-	// OBJECT_STORAGE_ENDPOINT and _USE_SSL stay secrets until the storage
-	// endpoint is settled.
+	// OBJECT_STORAGE_ACCESS_KEY/_SECRET_KEY are an R2 API token's S3
+	// credentials.
 	"secrets": {
 		"required": [
 			"UNIVENTS_POSTGRES_HOST",
@@ -76,10 +80,8 @@
 			"HMAC_SECRET",
 			"PAYSSAGE_API_KEY",
 			"PAYSSAGE_WEBHOOK_SECRET",
-			"OBJECT_STORAGE_ENDPOINT",
 			"OBJECT_STORAGE_ACCESS_KEY",
 			"OBJECT_STORAGE_SECRET_KEY",
-			"OBJECT_STORAGE_USE_SSL",
 			"SMTP_USERNAME",
 			"SMTP_PASSWORD",
 			"SIMPLE_AUTH_USER",
