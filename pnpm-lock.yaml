@@ -267,11 +267,11 @@ catalogs:
       specifier: ^0.1.5
       version: 0.1.5
     '@trieoh/identityx-access-sdk-ts':
-      specifier: ^0.1.10
-      version: 0.1.10
+      specifier: ^0.1.11
+      version: 0.1.11
     '@trieoh/identityx-sdk-ts':
-      specifier: ^0.16.3
-      version: 0.16.3
+      specifier: ^0.16.4
+      version: 0.16.4
     '@trieoh/identityx-sdk-ts-react':
       specifier: ^0.16.0
       version: 0.16.0
@@ -539,7 +539,7 @@ importers:
         version: link:../../lib/ts/identityx
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -672,7 +672,7 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -805,10 +805,10 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-access-sdk-ts':
         specifier: 'catalog:'
-        version: 0.1.10
+        version: 0.1.11
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -1109,10 +1109,10 @@ importers:
         version: link:../../lib/ts/front-core-react
       '@trieoh/identityx-access-sdk-ts':
         specifier: 'catalog:'
-        version: 0.1.10
+        version: 0.1.11
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -1402,7 +1402,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
 
   lib/ts/front-core:
     dependencies:
@@ -1442,7 +1442,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
 
   lib/ts/front-core-react:
     dependencies:
@@ -1464,7 +1464,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(lucide-react@1.63.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
@@ -1501,7 +1501,7 @@ importers:
         version: link:../front-core
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'catalog:'
         version: 0.16.5(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
@@ -1653,7 +1653,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -1705,7 +1705,7 @@ importers:
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
-        version: 0.16.3
+        version: 0.16.4
     devDependencies:
       '@solidjs/vite-plugin':
         specifier: 'catalog:'
@@ -4715,8 +4715,8 @@ packages:
   '@trieoh/envoy-fetch-ts@0.1.5':
     resolution: {integrity: sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ==}
 
-  '@trieoh/identityx-access-sdk-ts@0.1.10':
-    resolution: {integrity: sha512-4V0YluT6G3Uy9gfGB2HZDREy7itXJa48LJ8jp3GRs1tdd+KtRHt0b8oj/js+3lMvrQ8PUnBNaNU/Cx2lyniRxg==}
+  '@trieoh/identityx-access-sdk-ts@0.1.11':
+    resolution: {integrity: sha512-K1gSzgpOfv0g0YtwgkRJFrNZ5kjNgdMzyiWT8Y9yZq+UjfV9MfkjEhvTYLh0v3WYMnJo/eesi9Q0GQTgH4pZCA==}
 
   '@trieoh/identityx-sdk-ts-react@0.16.0':
     resolution: {integrity: sha512-8op3920LUISKJaopCGJgRUbL7jfnyeUZDoKVQXNN30Wj4jeXEgTtREwhfSI/2OEZVEQvTMmnUBJuw59xS4Xiyg==}
@@ -4732,8 +4732,8 @@ packages:
       '@solidjs/web': 2.0.0-rc.17
       solid-js: 2.0.0-rc.17
 
-  '@trieoh/identityx-sdk-ts@0.16.3':
-    resolution: {integrity: sha512-x4B38+TMfAB4NN0Lxw9pDuxA1PjKvCAoaqG8JvGbWc92k8+6MbHf6TrIc4MkZl4vGYB8BnToBys4BSqZu7FqHw==}
+  '@trieoh/identityx-sdk-ts@0.16.4':
+    resolution: {integrity: sha512-9M1XnXXRK0eiInYxgVbGnsdluHzENt6eS1Xd/LvJDn02GE1QASP15yHYy1lhhETqjGoY4qYdfp4xa5wik//qmg==}
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -10233,7 +10233,7 @@ snapshots:
 
   '@trieoh/envoy-fetch-ts@0.1.5': {}
 
-  '@trieoh/identityx-access-sdk-ts@0.1.10':
+  '@trieoh/identityx-access-sdk-ts@0.1.11':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
 
@@ -10241,7 +10241,7 @@ snapshots:
     dependencies:
       '@hookform/resolvers': 5.9.2(@standard-schema/spec@1.1.0)(ajv@8.20.0)(effect@4.0.7)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
       '@trieoh/envoy-fetch-ts': 0.1.5
-      '@trieoh/identityx-sdk-ts': 0.16.3
+      '@trieoh/identityx-sdk-ts': 0.16.4
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       lucide-react: 1.63.0(@types/react@19.3.0)(react@19.3.1)
@@ -10282,10 +10282,10 @@ snapshots:
     dependencies:
       '@solidjs/web': 2.0.0-rc.17(solid-js@2.0.0-rc.17)
       '@trieoh/envoy-fetch-ts': 0.1.5
-      '@trieoh/identityx-sdk-ts': 0.16.3
+      '@trieoh/identityx-sdk-ts': 0.16.4
       solid-js: 2.0.0-rc.17
 
-  '@trieoh/identityx-sdk-ts@0.16.3':
+  '@trieoh/identityx-sdk-ts@0.16.4':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
       ua-parser-js: 2.0.10
