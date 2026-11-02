@@ -18,10 +18,15 @@ const JOBS_HOST = "jobs.internal";
 // may reach it.
 const EVENTS_PATH = "/_jobs";
 
-// Public signing keys, cached at the edge for this long. Short, so a
-// rotated-in key is served within minutes.
+// Public signing keys. Every other API fetches them on its cold start, so
+// the Worker answers from the edge cache, then from KV (shared by every
+// location), and only wakes the container when both miss. The KV copy is
+// dropped as soon as the daily keys.rotate job runs, and lives an hour at
+// most otherwise, so a key rotated in some other way is served within that.
 const JWKS_PATH = "/.well-known/jwks.json";
-const JWKS_TTL_SECONDS = 300;
+const JWKS_EDGE_TTL_SECONDS = 300;
+const JWKS_KV_TTL_SECONDS = 3600;
+const JWKS_KV_PREFIX = "jwks:";
 
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
@@ -85,6 +90,36 @@ async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
 	return res.ok;
 }
 
+async function jwks(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	const cache = caches.default;
+	const cacheKey = new Request(request.url, { method: "GET" });
+	const hit = await cache.match(cacheKey);
+	if (hit) return hit;
+
+	const kvKey = JWKS_KV_PREFIX + new URL(request.url).search;
+	let body = await env.BUDGET.get(kvKey);
+	if (body === null) {
+		const res = await (await instance(env)).fetch(request);
+		if (!res.ok) return res;
+		body = await res.text();
+		ctx.waitUntil(env.BUDGET.put(kvKey, body, { expirationTtl: JWKS_KV_TTL_SECONDS }));
+	}
+	const res = new Response(body, {
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": `public, max-age=${JWKS_EDGE_TTL_SECONDS}`,
+		},
+	});
+	ctx.waitUntil(cache.put(cacheKey, res.clone()));
+	return res;
+}
+
+// Drops every stored JWKS copy, so the next fetch reads the rotated keys.
+async function forgetJWKS(env: Env): Promise<void> {
+	const { keys } = await env.BUDGET.list({ prefix: JWKS_KV_PREFIX });
+	await Promise.all(keys.map((k) => env.BUDGET.delete(k.name)));
+}
+
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
@@ -92,21 +127,8 @@ export default {
 			return new Response("Not Found", { status: 404 });
 		}
 		if (isNoise(pathname)) return notFound();
-		// Other services fetch the JWKS on every cold start; serving it from
-		// the edge cache keeps those fetches from waking the container.
 		if (pathname === JWKS_PATH && request.method === "GET") {
-			const cache = caches.default;
-			const key = new Request(request.url, { method: "GET" });
-			const hit = await cache.match(key);
-			if (hit) return hit;
-			const res = await (await instance(env)).fetch(request);
-			if (res.ok) {
-				const cached = new Response(res.body, res);
-				cached.headers.set("Cache-Control", `public, max-age=${JWKS_TTL_SECONDS}`);
-				ctx.waitUntil(cache.put(key, cached.clone()));
-				return cached;
-			}
-			return res;
+			return jwks(request, env, ctx);
 		}
 		const container = await instance(env);
 		return container.fetch(request);
@@ -115,8 +137,10 @@ export default {
 	async queue(batch, env) {
 		for (const message of batch.messages) {
 			try {
-				if (await deliver(env, message.body)) message.ack();
-				else message.retry();
+				if (await deliver(env, message.body)) {
+					if (message.body.kind === "keys.rotate") await forgetJWKS(env);
+					message.ack();
+				} else message.retry();
 			} catch (err) {
 				console.error("job delivery failed", err);
 				message.retry();
