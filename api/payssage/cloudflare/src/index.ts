@@ -1,5 +1,5 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer } from "@trieoh/container-budget";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -34,7 +34,7 @@ function retryDelay(attempts: number): number {
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
-	"0 * * * *": ["webhook.redrive"],
+	"0 */6 * * *": ["webhook.redrive"],
 };
 
 // Jobs whose retries ran out, mapped to the job that records the give-up.
@@ -116,6 +116,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
+		if (isNoise(pathname)) return notFound();
 		const container = await instance(env);
 		return container.fetch(request);
 	},
