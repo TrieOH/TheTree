@@ -59,6 +59,8 @@
 		"IDENTITY_X_PROJECT_ID": "01a00284-7b25-7f91-8e29-bdf7b4708fba",
 		"PAYSSAGE_URL": "https://api.payssage.trieoh.com",
 		"PAYSSAGE_WALLET_ID": "01a00289-1927-7daf-bba1-6e8c36602b76",
+		// The boot check would wake Payssage and IdentityX on every cold start.
+		"PAYSSAGE_VERIFY_WALLET_ON_BOOT": "false",
 		// R2's S3 API for this account; the bucket is "univents".
 		"OBJECT_STORAGE_ENDPOINT": "https://fdc6590fe9b028c608005c515140ff74.r2.cloudflarestorage.com",
 		"OBJECT_STORAGE_USE_SSL": "true",

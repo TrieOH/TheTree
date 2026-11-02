@@ -44,9 +44,11 @@ func Build(cfg config.Config) backend.BuildFunc {
 		// Fail fast on the platform wallet: wrong/missing PAYSSAGE_WALLET_ID
 		// or an unreachable Payssage must stop the boot, not surface at
 		// checkout (D6).
-		err = VerifyPayssageWallet(ctx, pay, cfg.PayssageWalletID)
-		if err != nil {
-			return err
+		if cfg.PayssageVerifyWalletOnBoot {
+			err = VerifyPayssageWallet(ctx, pay, cfg.PayssageWalletID)
+			if err != nil {
+				return err
+			}
 		}
 		// The store's LISTEN/NOTIFY bridge. Notify opens its own connection
 		// per call, so nothing needs starting here.

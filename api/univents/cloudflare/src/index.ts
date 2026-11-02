@@ -1,5 +1,5 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer } from "@trieoh/container-budget";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -92,6 +92,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
+		if (isNoise(pathname)) return notFound();
 		const container = await instance(env);
 		return container.fetch(request);
 	},
