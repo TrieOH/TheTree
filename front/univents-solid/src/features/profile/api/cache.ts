@@ -66,3 +66,22 @@ export function getCachedOwnProfile(
 export function invalidateProfileCaches(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: profileKeys.all });
 }
+
+/**
+ * An actor's profile from the shared query cache, fetched only when missing
+ * or stale. Lists that show many attendees read names through here, so
+ * revisiting a page does not ask IdentityX again (and wake its container).
+ */
+export function fetchCachedActorProfile(
+  queryClient: QueryClient,
+  actorId: string,
+  load: (id: string) => Promise<{ success: boolean; data?: ActorProfile; code?: number }>,
+): Promise<ActorProfile | null> {
+  return queryClient.fetchQuery({
+    queryKey: profileKeys.detail(actorId),
+    queryFn: async () => {
+      const res = await load(actorId);
+      return res.success && res.data ? res.data : null;
+    },
+  });
+}
