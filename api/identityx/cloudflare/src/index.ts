@@ -1,5 +1,5 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer } from "@trieoh/container-budget";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -26,8 +26,8 @@ const JWKS_TTL_SECONDS = 300;
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
-	"0 * * * *": ["cleanup_blacklist", "cleanup_action_tokens"],
-	"0 3 * * *": ["keys.rotate"],
+	// One daily run, so the cron wakes the container once a day.
+	"0 3 * * *": ["cleanup_blacklist", "cleanup_action_tokens", "keys.rotate"],
 };
 
 type Envelope = { kind: string; args?: unknown };
@@ -91,6 +91,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
+		if (isNoise(pathname)) return notFound();
 		// Other services fetch the JWKS on every cold start; serving it from
 		// the edge cache keeps those fetches from waking the container.
 		if (pathname === JWKS_PATH && request.method === "GET") {

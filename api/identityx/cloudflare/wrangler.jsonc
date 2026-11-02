@@ -40,7 +40,7 @@
 	},
 
 	// Periodic jobs; must match PERIODIC in src/index.ts.
-	"triggers": { "crons": ["0 * * * *", "0 3 * * *"] },
+	"triggers": { "crons": ["0 3 * * *"] },
 
 	// Every string binding, var or secret, reaches the container as an
 	// environment variable (src/index.ts); the keys are those of
