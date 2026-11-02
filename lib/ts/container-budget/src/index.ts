@@ -113,3 +113,5 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 		if (this.total) this.total.seconds += spent;
 	}
 }
+
+export { isNoise, notFound } from "./noise";
