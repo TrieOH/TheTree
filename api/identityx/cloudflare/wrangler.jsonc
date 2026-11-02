@@ -60,7 +60,7 @@
 		"PROFILE_PORT": "6060",
 		"IDENTITY_X_KEY_LIFETIME": "168h",
 		"ROTATE_KEYS_JOB_DURATION": "24h",
-		"ACCESS_TOKEN_LIFETIME": "15m",
+		"ACCESS_TOKEN_LIFETIME": "1h",
 		"REFRESH_TOKEN_LIFETIME": "168h",
 		"GOOGLE_REDIRECT_URI": "https://dev.identityx.com.br/auth/google/callback",
 		"GITHUB_REDIRECT_URI": "https://dev.identityx.com.br/auth/github/callback",

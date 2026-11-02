@@ -28,7 +28,17 @@ const FLUSH_MS = 60_000;
 // How long a read of the pool's total is trusted.
 const TOTAL_TTL_MS = 60_000;
 
+// A container with no new request for this long is stopped, even when the
+// library still counts a request in flight: a request whose caller gave up
+// (an edge timeout during a slow cold start) never has its response read,
+// and the library keeps the container awake for it forever.
+const IDLE_LIMIT_MS = 5 * 60_000;
+
+// How often a running container checks that it is still in use.
+const WATCHDOG_MS = 60_000;
+
 const STARTED_AT = "budget:startedAt";
+const LAST_REQUEST = "budget:lastRequest";
 
 export type BudgetEnv = { BUDGET: KVNamespace };
 
@@ -66,18 +76,35 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 	private total?: { seconds: number; readAt: number };
 
 	override async fetch(request: Request): Promise<Response> {
-		await this.flush(false);
+		// Not running with a start on record: it stopped and the library has
+		// not reported it yet. Close that run before starting a new one.
+		await this.flush(!this.ctx.container?.running);
 		if (await this.overBudget()) {
 			return new Response("Paused: this month's compute budget is spent.", {
 				status: 503,
 				headers: { "Retry-After": "3600" },
 			});
 		}
+		await this.ctx.storage.put(LAST_REQUEST, Date.now());
 		return super.fetch(request);
 	}
 
 	override async onStart(): Promise<void> {
-		await this.ctx.storage.put(STARTED_AT, Date.now());
+		const now = Date.now();
+		await this.ctx.storage.put({ [STARTED_AT]: now, [LAST_REQUEST]: now });
+		await this.schedule(new Date(now + WATCHDOG_MS), "watchdog");
+	}
+
+	// Stops a running container once it has gone IDLE_LIMIT_MS without a new
+	// request; otherwise checks again in WATCHDOG_MS.
+	async watchdog(): Promise<void> {
+		if (!this.ctx.container?.running) return;
+		const last = (await this.ctx.storage.get<number>(LAST_REQUEST)) ?? 0;
+		if (Date.now() - last > IDLE_LIMIT_MS) {
+			await this.stop();
+			return;
+		}
+		await this.schedule(new Date(Date.now() + WATCHDOG_MS), "watchdog");
 	}
 
 	override async onStop(): Promise<void> {
@@ -101,7 +128,14 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 		const now = Date.now();
 		if (!stopped && now - since < FLUSH_MS) return;
 
-		const spent = ((now - since) / 1000) * this.memoryGiB;
+		// The library can report a stop late (on the next wake), so a stop
+		// never counts past the latest moment the watchdog allows.
+		let end = now;
+		if (stopped) {
+			const last = (await this.ctx.storage.get<number>(LAST_REQUEST)) ?? since;
+			end = Math.min(now, Math.max(since, last) + IDLE_LIMIT_MS + WATCHDOG_MS);
+		}
+		const spent = (Math.max(0, end - since) / 1000) * this.memoryGiB;
 		const k = key(cycleStart(new Date(now)), this.app);
 		const prev = Number(await this.env.BUDGET.get(k)) || 0;
 		await this.env.BUDGET.put(k, String(prev + spent), {

@@ -1,4 +1,5 @@
 import { appQueryClient } from "@/shared/lib/query-client";
+import { fetchCachedActorProfile } from "@/features/profile/api/cache";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -248,9 +249,9 @@ function AdminEditionBadgesRoute(): JSX.Element {
         await Promise.all(
           ids.map(async (id) => {
             try {
-              const res = await auth.getActorProfile(id);
-              if (res.success && res.data) {
-                const p = asUniventsProfile(res.data.profile ?? {});
+              const data = await fetchCachedActorProfile(appQueryClient, id, (actorId) => auth.getActorProfile(actorId));
+              if (data) {
+                const p = asUniventsProfile(data.profile ?? {});
                 result[id] = profileDisplayName(p);
               }
             } catch {

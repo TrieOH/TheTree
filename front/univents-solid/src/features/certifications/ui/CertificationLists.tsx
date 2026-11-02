@@ -1,4 +1,6 @@
 import type { JSX } from "@solidjs/web";
+import { fetchCachedActorProfile } from "@/features/profile/api/cache";
+import { appQueryClient } from "@/shared/lib/query-client";
 import { useNavigate } from "@tanstack/solid-router";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 
@@ -115,9 +117,9 @@ export function CertificationList(props: CertificationListProps): JSX.Element {
         await Promise.all(
           currentIds.map(async (id) => {
             try {
-              const res = await auth.getActorProfile(id);
-              if (res.success && res.data) {
-                const p = asUniventsProfile(res.data.profile ?? {});
+              const data = await fetchCachedActorProfile(appQueryClient, id, (actorId) => auth.getActorProfile(actorId));
+              if (data) {
+                const p = asUniventsProfile(data.profile ?? {});
                 result[id] = profileDisplayName(p);
               }
             } catch {
@@ -434,9 +436,9 @@ export function CertificationEmissionErrorsList(props: {
         await Promise.all(
           currentIds.map(async (id) => {
             try {
-              const res = await auth.getActorProfile(id);
-              if (res.success && res.data) {
-                const p = asUniventsProfile(res.data.profile ?? {});
+              const data = await fetchCachedActorProfile(appQueryClient, id, (actorId) => auth.getActorProfile(actorId));
+              if (data) {
+                const p = asUniventsProfile(data.profile ?? {});
                 result[id] = profileDisplayName(p);
               }
             } catch {
