@@ -13,7 +13,7 @@
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
 			"instance_type": "basic",
-			"max_instances": 3,
+			"max_instances": 1,
 			// Next to Neon (São Paulo).
 			"constraints": { "regions": ["SAM"] }
 		}
@@ -46,7 +46,7 @@
 	},
 
 	// Periodic jobs; must match PERIODIC in src/index.ts.
-	"triggers": { "crons": ["*/15 * * * *"] },
+	"triggers": { "crons": ["0 * * * *"] },
 
 	// Every string binding, var or secret, reaches the container as an
 	// environment variable (src/index.ts); the keys are those of

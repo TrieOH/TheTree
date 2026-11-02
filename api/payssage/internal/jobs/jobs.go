@@ -37,7 +37,7 @@ func Registry(d Deps) *libjobs.Registry {
 // only catches enqueues lost between commit and enqueue, a rare failure, so
 // it runs often enough to bound that delay without keeping the Cloudflare
 // container awake.
-const RedriveInterval = 15 * time.Minute
+const RedriveInterval = time.Hour
 
 // Periodic declares the recurring jobs. The in-process runner runs them on
 // tickers; on Cloudflare the Worker's cron triggers fire the same kinds, so

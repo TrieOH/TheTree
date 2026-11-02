@@ -7,7 +7,7 @@ export { ContainerProxy } from "@cloudflare/containers";
 // How many container instances share the traffic. Payssage keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
-const INSTANCES = 3;
+const INSTANCES = 1;
 
 // The container enqueues by POSTing a job envelope here (JOBS_URL). The
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
@@ -33,7 +33,7 @@ function retryDelay(attempts: number): number {
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
-	"*/15 * * * *": ["webhook.redrive"],
+	"0 * * * *": ["webhook.redrive"],
 };
 
 // Jobs whose retries ran out, mapped to the job that records the give-up.
@@ -47,7 +47,7 @@ type Envelope = { kind: string; args?: unknown };
 export class PayssageContainer extends Container<Env> {
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
-	sleepAfter = "5m";
+	sleepAfter = "2m";
 
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
