@@ -11,6 +11,7 @@ const INSTANCES = 1;
 // container.
 export class InformdContainer extends BudgetedContainer<Env> {
 	protected readonly app = "informd";
+	protected readonly memoryGiB = 0.25; // lite
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";

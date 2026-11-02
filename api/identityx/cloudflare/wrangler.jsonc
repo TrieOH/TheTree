@@ -12,7 +12,7 @@
 			"image": "../Dockerfile",
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
-			"instance_type": "basic",
+			"instance_type": "lite",
 			"max_instances": 1,
 			// Next to Neon (São Paulo).
 			"constraints": { "regions": ["SAM"] }
@@ -47,6 +47,8 @@
 	// api/identityx/.example.env, minus JOBS_URL. Public config lives here,
 	// reviewed with the code.
 	"vars": {
+		// Keeps the Go heap under the lite instance's 256 MiB (Container only).
+		"GOMEMLIMIT": "200MiB",
 		"APP_NAME": "IdentityX",
 		"APP_URL": "https://dev.identityx.com.br",
 		"API_URL": "https://api.identityx.trieoh.com",

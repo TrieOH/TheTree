@@ -12,7 +12,7 @@
 			"image": "../Dockerfile",
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
-			"instance_type": "basic",
+			"instance_type": "lite",
 			"max_instances": 1,
 			// Next to Neon (São Paulo).
 			"constraints": { "regions": ["SAM"] }
@@ -30,6 +30,8 @@
 	// api/informd/.example.env. Public config lives here, reviewed with the
 	// code.
 	"vars": {
+		// Keeps the Go heap under the lite instance's 256 MiB (Container only).
+		"GOMEMLIMIT": "200MiB",
 		"APP_NAME": "Informd",
 		"APP_URL": "https://dev.informd.trieoh.com",
 		"API_URL": "https://api.informd.trieoh.com",

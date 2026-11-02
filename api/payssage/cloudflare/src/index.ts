@@ -47,6 +47,7 @@ type Envelope = { kind: string; args?: unknown };
 
 export class PayssageContainer extends BudgetedContainer<Env> {
 	protected readonly app = "payssage";
+	protected readonly memoryGiB = 0.25; // lite
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";
