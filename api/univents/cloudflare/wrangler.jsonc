@@ -12,12 +12,14 @@
 			"image": "../Dockerfile",
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
-			"instance_type": "basic",
-			"max_instances": 3,
+			"instance_type": "lite",
+			"max_instances": 1,
 			// Next to Neon (São Paulo).
 			"constraints": { "regions": ["SAM"] }
 		}
 	],
+	// Shared awake-time pool that caps container spend (lib/ts/container-budget).
+	"kv_namespaces": [{ "binding": "BUDGET", "id": "bc65d11390534722b1bfca37d503e99b" }],
 	"durable_objects": {
 		"bindings": [{ "name": "UNIVENTS", "class_name": "UniventsContainer" }]
 	},
@@ -44,6 +46,8 @@
 	// api/univents/.example.env, minus JOBS_URL. Public config lives here,
 	// reviewed with the code.
 	"vars": {
+		// Keeps the Go heap under the lite instance's 256 MiB (Container only).
+		"GOMEMLIMIT": "200MiB",
 		"APP_NAME": "univents",
 		"APP_URL": "https://dev.univents.com.br",
 		"API_URL": "https://api.univents.com.br",
@@ -55,6 +59,8 @@
 		"IDENTITY_X_PROJECT_ID": "01a00284-7b25-7f91-8e29-bdf7b4708fba",
 		"PAYSSAGE_URL": "https://api.payssage.trieoh.com",
 		"PAYSSAGE_WALLET_ID": "01a00289-1927-7daf-bba1-6e8c36602b76",
+		// The boot check would wake Payssage and IdentityX on every cold start.
+		"PAYSSAGE_VERIFY_WALLET_ON_BOOT": "false",
 		// R2's S3 API for this account; the bucket is "univents".
 		"OBJECT_STORAGE_ENDPOINT": "https://fdc6590fe9b028c608005c515140ff74.r2.cloudflarestorage.com",
 		"OBJECT_STORAGE_USE_SSL": "true",

@@ -33,6 +33,9 @@ type Config struct {
 	PayssageAPIKey        string    `env:"PAYSSAGE_API_KEY,required"`
 	PayssageWalletID      uuid.UUID `env:"PAYSSAGE_WALLET_ID,required"` // one platform wallet shared by every event (D6)
 	PayssageWebhookSecret string    `env:"PAYSSAGE_WEBHOOK_SECRET,required"`
+	// Off on Cloudflare: the check wakes Payssage (and IdentityX) on every
+	// cold start.
+	PayssageVerifyWalletOnBoot bool `env:"PAYSSAGE_VERIFY_WALLET_ON_BOOT" envDefault:"true"`
 
 	// Object Storage (RustFS)
 	ObjStorageEndpoint  string `env:"OBJECT_STORAGE_ENDPOINT,required"`

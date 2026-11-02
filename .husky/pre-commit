@@ -53,7 +53,7 @@ if [ ! -s "$ENGINE_TMP/staged" ]; then
     exit 0
 fi
 
-engine_targets "$ENGINE_TMP/staged" >"$ENGINE_TMP/targets"
+engine_targets "$ENGINE_TMP/staged" >/dev/null
 
 if [ ! -s "$ENGINE_TMP/targets" ]; then
     printf '✓ nothing to check (staged changes have no runnable checks)\n'

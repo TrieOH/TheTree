@@ -1,4 +1,5 @@
-import { Container, getRandom } from "@cloudflare/containers";
+import { getRandom } from "@cloudflare/containers";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -7,7 +8,7 @@ export { ContainerProxy } from "@cloudflare/containers";
 // How many container instances share the traffic. Payssage keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
-const INSTANCES = 3;
+const INSTANCES = 1;
 
 // The container enqueues by POSTing a job envelope here (JOBS_URL). The
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
@@ -33,7 +34,7 @@ function retryDelay(attempts: number): number {
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
-	"*/15 * * * *": ["webhook.redrive"],
+	"0 */6 * * *": ["webhook.redrive"],
 };
 
 // Jobs whose retries ran out, mapped to the job that records the give-up.
@@ -44,10 +45,12 @@ const ON_DEAD: Record<string, string> = {
 
 type Envelope = { kind: string; args?: unknown };
 
-export class PayssageContainer extends Container<Env> {
+export class PayssageContainer extends BudgetedContainer<Env> {
+	protected readonly app = "payssage";
+	protected readonly memoryGiB = 0.25; // lite
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
-	sleepAfter = "5m";
+	sleepAfter = "2m";
 
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
@@ -113,6 +116,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
+		if (isNoise(pathname)) return notFound();
 		const container = await instance(env);
 		return container.fetch(request);
 	},

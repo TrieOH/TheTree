@@ -1,4 +1,5 @@
-import { Container, getRandom } from "@cloudflare/containers";
+import { getRandom } from "@cloudflare/containers";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -7,7 +8,7 @@ export { ContainerProxy } from "@cloudflare/containers";
 // How many container instances share the traffic. Univents keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
-const INSTANCES = 3;
+const INSTANCES = 1;
 
 // The container enqueues by POSTing a job envelope here (JOBS_URL). The
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
@@ -31,10 +32,12 @@ function retryDelay(attempts: number): number {
 
 type Envelope = { kind: string; args?: unknown };
 
-export class UniventsContainer extends Container<Env> {
+export class UniventsContainer extends BudgetedContainer<Env> {
+	protected readonly app = "univents";
+	protected readonly memoryGiB = 0.25; // lite
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
-	sleepAfter = "5m";
+	sleepAfter = "2m";
 
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
@@ -89,6 +92,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
+		if (isNoise(pathname)) return notFound();
 		const container = await instance(env);
 		return container.fetch(request);
 	},

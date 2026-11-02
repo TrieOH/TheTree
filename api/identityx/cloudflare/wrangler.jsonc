@@ -12,12 +12,14 @@
 			"image": "../Dockerfile",
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
-			"instance_type": "basic",
-			"max_instances": 3,
+			"instance_type": "lite",
+			"max_instances": 1,
 			// Next to Neon (São Paulo).
 			"constraints": { "regions": ["SAM"] }
 		}
 	],
+	// Shared awake-time pool that caps container spend (lib/ts/container-budget).
+	"kv_namespaces": [{ "binding": "BUDGET", "id": "bc65d11390534722b1bfca37d503e99b" }],
 	"durable_objects": {
 		"bindings": [{ "name": "IDENTITYX", "class_name": "IdentityXContainer" }]
 	},
@@ -38,13 +40,15 @@
 	},
 
 	// Periodic jobs; must match PERIODIC in src/index.ts.
-	"triggers": { "crons": ["0 * * * *", "0 3 * * *"] },
+	"triggers": { "crons": ["0 3 * * *"] },
 
 	// Every string binding, var or secret, reaches the container as an
 	// environment variable (src/index.ts); the keys are those of
 	// api/identityx/.example.env, minus JOBS_URL. Public config lives here,
 	// reviewed with the code.
 	"vars": {
+		// Keeps the Go heap under the lite instance's 256 MiB (Container only).
+		"GOMEMLIMIT": "200MiB",
 		"APP_NAME": "IdentityX",
 		"APP_URL": "https://dev.identityx.com.br",
 		"API_URL": "https://api.identityx.trieoh.com",
