@@ -1,5 +1,5 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer } from "@trieoh/container-budget";
+import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
 
 // How many container instances share the traffic. Informd keeps no state
 // between requests that matters across instances (the in-memory rate limit
@@ -34,6 +34,7 @@ function stringBindings(env: Env): Record<string, string> {
 
 export default {
 	async fetch(request, env) {
+		if (isNoise(new URL(request.url).pathname)) return notFound();
 		const container = await getRandom(env.INFORMD, INSTANCES);
 		return container.fetch(request);
 	},
