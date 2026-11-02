@@ -9,7 +9,8 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@cloudflare/containers": "catalog:"
+    "@cloudflare/containers": "catalog:",
+    "@trieoh/container-budget": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

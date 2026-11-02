@@ -1,4 +1,5 @@
-import { Container, getRandom } from "@cloudflare/containers";
+import { getRandom } from "@cloudflare/containers";
+import { BudgetedContainer } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -31,7 +32,8 @@ function retryDelay(attempts: number): number {
 
 type Envelope = { kind: string; args?: unknown };
 
-export class UniventsContainer extends Container<Env> {
+export class UniventsContainer extends BudgetedContainer<Env> {
+	protected readonly app = "univents";
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";

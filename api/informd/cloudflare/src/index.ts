@@ -1,4 +1,5 @@
-import { Container, getRandom } from "@cloudflare/containers";
+import { getRandom } from "@cloudflare/containers";
+import { BudgetedContainer } from "@trieoh/container-budget";
 
 // How many container instances share the traffic. Informd keeps no state
 // between requests that matters across instances (the in-memory rate limit
@@ -8,7 +9,8 @@ const INSTANCES = 1;
 // Informd has no background jobs, so unlike IdentityX and Payssage there is
 // no queue, no cron and no /events endpoint: the Worker only fronts the
 // container.
-export class InformdContainer extends Container<Env> {
+export class InformdContainer extends BudgetedContainer<Env> {
+	protected readonly app = "informd";
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";

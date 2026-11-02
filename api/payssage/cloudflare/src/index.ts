@@ -1,4 +1,5 @@
-import { Container, getRandom } from "@cloudflare/containers";
+import { getRandom } from "@cloudflare/containers";
+import { BudgetedContainer } from "@trieoh/container-budget";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -44,7 +45,8 @@ const ON_DEAD: Record<string, string> = {
 
 type Envelope = { kind: string; args?: unknown };
 
-export class PayssageContainer extends Container<Env> {
+export class PayssageContainer extends BudgetedContainer<Env> {
+	protected readonly app = "payssage";
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";

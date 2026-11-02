@@ -18,6 +18,8 @@
 			"constraints": { "regions": ["SAM"] }
 		}
 	],
+	// Shared awake-time pool that caps container spend (lib/ts/container-budget).
+	"kv_namespaces": [{ "binding": "BUDGET", "id": "bc65d11390534722b1bfca37d503e99b" }],
 	"durable_objects": {
 		"bindings": [{ "name": "PAYSSAGE", "class_name": "PayssageContainer" }]
 	},
