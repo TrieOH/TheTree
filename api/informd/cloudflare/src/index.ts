@@ -3,7 +3,7 @@ import { Container, getRandom } from "@cloudflare/containers";
 // How many container instances share the traffic. Informd keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
-const INSTANCES = 3;
+const INSTANCES = 1;
 
 // Informd has no background jobs, so unlike IdentityX and Payssage there is
 // no queue, no cron and no /events endpoint: the Worker only fronts the
@@ -11,7 +11,7 @@ const INSTANCES = 3;
 export class InformdContainer extends Container<Env> {
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
-	sleepAfter = "5m";
+	sleepAfter = "2m";
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);
