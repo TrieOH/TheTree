@@ -7,7 +7,7 @@ export { ContainerProxy } from "@cloudflare/containers";
 // How many container instances share the traffic. IdentityX keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
-const INSTANCES = 3;
+const INSTANCES = 1;
 
 // The container enqueues by POSTing a job envelope here (JOBS_URL). The
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
@@ -16,6 +16,11 @@ const JOBS_HOST = "jobs.internal";
 // The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
 // may reach it.
 const EVENTS_PATH = "/_jobs";
+
+// Public signing keys, cached at the edge for this long. Short, so a
+// rotated-in key is served within minutes.
+const JWKS_PATH = "/.well-known/jwks.json";
+const JWKS_TTL_SECONDS = 300;
 
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
@@ -29,7 +34,7 @@ type Envelope = { kind: string; args?: unknown };
 export class IdentityXContainer extends Container<Env> {
 	defaultPort = 8080;
 	// Idle time before the container sleeps; the next request cold-starts it.
-	sleepAfter = "5m";
+	sleepAfter = "2m";
 
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
@@ -78,10 +83,26 @@ async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
 }
 
 export default {
-	async fetch(request, env) {
+	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
+		}
+		// Other services fetch the JWKS on every cold start; serving it from
+		// the edge cache keeps those fetches from waking the container.
+		if (pathname === JWKS_PATH && request.method === "GET") {
+			const cache = caches.default;
+			const key = new Request(request.url, { method: "GET" });
+			const hit = await cache.match(key);
+			if (hit) return hit;
+			const res = await (await instance(env)).fetch(request);
+			if (res.ok) {
+				const cached = new Response(res.body, res);
+				cached.headers.set("Cache-Control", `public, max-age=${JWKS_TTL_SECONDS}`);
+				ctx.waitUntil(cache.put(key, cached.clone()));
+				return cached;
+			}
+			return res;
 		}
 		const container = await instance(env);
 		return container.fetch(request);
