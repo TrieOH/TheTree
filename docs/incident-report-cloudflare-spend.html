@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cloudflare Spend Incident</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Same system as docs/incident-report.html: one dark look, orange accent. */
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #131313;
+    --bg-3: #1c1c1c;
+    --text: #f5f5f5;
+    --text-dim: #b3b3b3;
+    --orange: #ff8c1a;
+    --orange-soft: #ffb35c;
+    --border: #2c2c2c;
+    --ok: #4ade80;
+    --warn: #facc15;
+    --bad: #f87171;
+    --future: #94a3b8;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-block: 40px 80px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header {
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  .kicker {
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  h1 { font-size: 30px; margin: 0 0 10px; text-wrap: balance; }
+  .meta { color: var(--text-dim); font-size: 14px; }
+  .meta b { color: var(--text); }
+  h2 {
+    color: var(--orange);
+    font-size: 19px;
+    margin: 44px 0 14px;
+    padding-left: 12px;
+    border-left: 4px solid var(--orange);
+    text-wrap: balance;
+  }
+  h3 { color: var(--orange-soft); font-size: 15px; margin: 24px 0 8px; }
+  p, li { color: var(--text); }
+  a { color: var(--orange); }
+  .tablewrap { overflow-x: auto; margin: 12px 0 20px; }
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--bg-3); color: var(--orange-soft); font-weight: 600; }
+  td.hl { color: var(--orange); font-weight: 700; }
+  td.num { text-align: right; white-space: nowrap; }
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 12px 0;
+  }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--bg-3);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--orange-soft);
+    overflow-wrap: anywhere;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+  }
+  .b-ok { background: rgba(74,222,128,.15); color: var(--ok); border: 1px solid var(--ok); }
+  .b-warn { background: rgba(250,204,21,.12); color: var(--warn); border: 1px solid var(--warn); }
+  .b-future { background: rgba(148,163,184,.12); color: var(--future); border: 1px solid var(--future); }
+  .action { border-left: 3px solid var(--orange); padding: 10px 14px; margin: 10px 0; background: var(--bg-2); border-radius: 0 8px 8px 0; }
+  .action p { margin: 4px 0; }
+  .action .title { font-weight: 700; color: var(--text); }
+  .foot {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .big { font-size: 15px; }
+  @media (max-width: 480px) { h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Incident Report</p>
+  <h1>Cloudflare Containers billed past the Workers Paid plan with no users</h1>
+  <p class="meta">
+    <b>Window:</b> 2026-10-19 → 2026-11-02 (detected 2026-11-02 11:27 UTC, mitigated 11:40, resolved 17:50) &nbsp;·&nbsp;
+    <b>Severity:</b> medium (financial, ~$23 over the plan; no outage, no data loss) &nbsp;·&nbsp;
+    <b>Status:</b> <span style="color:var(--ok)">Resolved</span> — spend now hard-capped inside the plan
+  </p>
+</header>
+
+<h2>Summary</h2>
+<p class="big">
+A Cloudflare usage alert reported <b>~$20 of metered usage</b> on an account with no users, on top of the
+$5 Workers Paid plan. The four backends (<code>identityx</code>, <code>payssage</code>, <code>univents</code>,
+<code>informd</code>) moved to <b>Cloudflare Containers</b> on Oct 19–23. Each ran up to <b>3 instances of the
+<code>basic</code> size (1 GiB / 4 GB)</b> behind its Worker. Cloudflare bills a container's <b>provisioned</b>
+memory and disk for every second it is awake, and bills the Durable Object that hosts it for the same seconds.
+The APIs actually use 40–55 MB. Crons, cold-start JWKS fetches, a boot-time service chain and internet scanners
+kept the containers awake around the clock: <b>981 Durable Object hours in 9 days</b>.
+The first fix (one <code>lite</code> instance, a 2-minute sleep, fewer wakers, a spend guard) went live at 12:12.
+A library quirk then kept IdentityX awake for another three hours; a second fix at 17:50 closed it.
+</p>
+
+<div class="card">
+  <b style="color:var(--orange)">Why it happened — in one sentence:</b>
+  <p style="margin:6px 0 0">
+  We paid for <b>1 GiB × 3 instances × 4 apps</b> of reserved memory to run apps that use ~40 MB, and
+  something always woke them up before the 5-minute sleep could kick in, on a platform that has
+  <b>no spending cap</b> and reports overage a day late.
+  </p>
+</div>
+
+<h2>Timeline (UTC)</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Time</th><th>Event</th></tr>
+  <tr><td>Oct 19 22:20</td><td><code>identityx-api</code> container deployed: <code>basic</code>, <code>max_instances: 3</code>, <code>sleepAfter: 5m</code>, hourly + daily crons</td></tr>
+  <tr><td>Oct 23 20:37–21:56</td><td><code>payssage</code>, <code>informd</code>, <code>univents</code> containers deployed with the same shape; payssage cron every 15 min</td></tr>
+  <tr><td>Oct 24</td><td>Billing cycle starts. Durable Objects awake 92 h that day</td></tr>
+  <tr><td>Oct 25</td><td class="hl">Peak: 162 DO-hours in one day</td></tr>
+  <tr><td>Oct 26 – Oct 31</td><td>77–147 DO-hours/day; container memory charges ~$0.70–1.60/day start once 25 GiB-hours are spent</td></tr>
+  <tr><td>Nov 1</td><td class="hl">Cumulative DO duration crosses the 400k GB-s included. The 34.2k overage is billed as a full 1M GB-s block: <b>$12.50 in one day</b></td></tr>
+  <tr><td>Nov 2 11:27</td><td><b>Detected:</b> usage alert email (~$20 metered). Investigation starts</td></tr>
+  <tr><td>Nov 2 11:40</td><td><b>Mitigation:</b> <code>max_instances</code> 3 → 1 on all four container apps via the API</td></tr>
+  <tr><td>Nov 2 12:08–12:12</td><td>PR #68 deployed (<code>identityx/v0.40.0</code>, <code>payssage/v0.12.0</code>, <code>univents/v0.15.0</code>, <code>informd/v0.7.0</code>): <code>lite</code>, 1 instance, 2 m sleep, fewer wakers, spend guard</td></tr>
+  <tr><td>Nov 2 15:00–17:50</td><td class="hl">IdentityX stays awake continuously with only sparse traffic (in-flight request leak, see root cause 4)</td></tr>
+  <tr><td>Nov 2 ~17:30</td><td>Leak found in <code>@cloudflare/containers</code> 0.3.7: abandoned responses keep the in-flight counter above zero</td></tr>
+  <tr><td>Nov 2 17:47–17:50</td><td>PR #69 deployed (<code>identityx/v0.41.0</code>, <code>payssage/v0.12.1</code>, <code>univents/v0.15.1</code>, <code>informd/v0.7.1</code>). IdentityX restarted, asleep at 17:50:39</td></tr>
+  <tr><td>Nov 2 ~17:58</td><td><code>univents-ui/v0.14.0</code> deployed (profile lookups through the query cache). <b>Resolved</b></td></tr>
+</table>
+</div>
+
+<h2>Key numbers</h2>
+<h3>Billable usage, Oct 24 – Nov 2 (Cloudflare dashboard)</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Line item</th><th>Total usage</th><th>Included</th><th>Cost</th></tr>
+  <tr><td>Durable Objects compute duration</td><td class="num">434.2k GB-s</td><td class="num">400k GB-s</td><td class="num hl">$12.50</td></tr>
+  <tr><td>Container memory</td><td class="num">3.38M GiB-s</td><td class="num">25 GiB-h (90k)</td><td class="num hl">$8.23</td></tr>
+  <tr><td>Container disk</td><td class="num">13.53M GB-s</td><td class="num">200 GB-h</td><td class="num">$0.90</td></tr>
+  <tr><td>Container vCPU</td><td class="num">38.02k vCPU-s</td><td class="num">375 vCPU-min</td><td class="num">$0.31</td></tr>
+  <tr><td>Everything else (Workers, R2, D1, KV, Queues, DO requests)</td><td class="num">—</td><td class="num">—</td><td class="num">$0.00</td></tr>
+  <tr><th>Total metered</th><th></th><th></th><th class="num">$21.93</th></tr>
+</table>
+</div>
+<ul>
+  <li><b>Expected cycle total:</b> ~$28 ($21.93 metered + $5 plan + a few cents before the fix went live). The dashboard's <b>$68 projection</b> was misleading: it extrapolated the one-off $12.50 block as a daily cost.</li>
+  <li><b>Who was awake (DO hours, Oct 24 – Nov 2):</b> identityx 399, univents 274, payssage 191, informd 118 — <b>981 h</b>, about four containers awake nonstop.</li>
+  <li><b>What the apps actually use:</b> 36–48 MB average memory, ~60 MB disk, CPU near idle. One IdentityX peak at 295 MB.</li>
+  <li><b>Workers itself was never the cost:</b> ~190k requests and ~1.1M CPU-ms against 10M / 30M included.</li>
+  <li><b>R2 was a misread:</b> 69 MB stored and ~1.7k operations, all free. The $12 line was Durable Objects.</li>
+  <li><b>DO billing math:</b> 981 h × 3600 s × 0.125 GB (every awake DO is billed as 128 MB) ≈ 441k GB-s, matching the dashboard's 434k.</li>
+</ul>
+
+<h2>Root cause — four layers</h2>
+<ol>
+  <li><b>Billing model vs. app size.</b> Containers bill <b>provisioned</b> memory and disk per second awake, plus DO duration for the same seconds. <code>basic</code> reserved 1 GiB for apps using ~40 MB (25× over). <code>getRandom(env.X, 3)</code> spread traffic over three instances, so a trickle of requests woke all three, each staying up for its 5-minute <code>sleepAfter</code>.</li>
+  <li><b>Something always woke them.</b>
+    <ul>
+      <li>Payssage cron every 15 min (96 wakes/day) and IdentityX hourly cleanups (24/day). Each wake costs ≥ 5 min awake.</li>
+      <li>Every other API fetched IdentityX's <code>/.well-known/jwks.json</code> on cold start: ~430 requests in 3 days.</li>
+      <li>Univents' boot check <code>GetWallet</code> called Payssage, whose API-key auth called IdentityX <code>/auth/introspect</code>: one cold start became three (55 calls on each side).</li>
+      <li>Scanners probing <code>/</code>, <code>/.env</code>, <code>*.php</code>, <code>gcp-key.json</code> reached the containers through the Workers.</li>
+    </ul>
+  </li>
+  <li><b>No hard cap.</b> Cloudflare has no spending limit for usage products. Budget alerts are email-only and fire the day after the threshold is crossed. DO overage is billed in whole 1M GB-s blocks, so the first GB-s over the line cost $12.50.</li>
+  <li><b>In-flight request leak (found after the first fix).</b> <code>@cloudflare/containers</code> 0.3.7 counts a request as in flight until its response body is fully read, and a container never sleeps while the count is above zero. On the slower <code>lite</code> cold start, the edge gave up on JWKS requests (10 × 504). Nobody read those responses, so IdentityX stayed awake from 15:00 to 17:50 with no real traffic. The spend guard also over-counted: the library reports some stops late, and the guard counted the sleeping gap as awake time (univents: 889 GiB-s counted vs ~169 real).</li>
+</ol>
+
+<h2>Evidence trail</h2>
+<ul>
+  <li>Cloudflare billable usage dashboard (Oct 24 – Nov 2) and the Nov 1 daily breakdown showing the $12.50 DO block</li>
+  <li>GraphQL Analytics: <code>durableObjectsPeriodicGroups</code> (awake hours per app and day), <code>containersUsageAdaptiveGroups</code> (allocated memory per 15 min), <code>containersMetricsAdaptiveGroups</code> (real memory/CPU), <code>workersInvocationsAdaptive</code>, <code>httpRequestsAdaptiveGroups</code> (per-path wakers), <code>r2*</code> datasets</li>
+  <li>Containers API: application config (<code>max_instances</code>, instance size) and <code>instances-v2</code> (IdentityX running since 16:43:54 with no request after 17:16)</li>
+  <li>Library source: <code>@cloudflare/containers</code> 0.3.7 <code>container.js</code> — <code>isActivityExpired()</code> renews while <code>inflightRequests &gt; 0</code>; the count drops only after <code>res.body.pipeTo()</code> settles</li>
+  <li>Code: <code>lib/go/backend/identityx</code> (introspect), <code>api/univents/internal/app/clients.go</code> (boot wallet check), <code>sdk/go/IdentityX/tokens.go</code> (JWKS fetch)</li>
+  <li>KV <code>container-budget</code>: per-app awake GiB-seconds since the guard went live</li>
+</ul>
+
+<h2>Action items</h2>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Instance cap (immediate)</span></p>
+  <p>Containers API: <code>max_instances</code> 3 → 1 on all four apps at 11:40, before any code change.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Right-size and sleep sooner — PR #68</span></p>
+  <p><code>api/*/cloudflare</code>: <code>instance_type</code> <b>basic → lite</b> (1/16 vCPU, 256 MiB, 2 GB), <code>INSTANCES = 1</code>, <code>sleepAfter</code> <b>5m → 2m</b>, <code>GOMEMLIMIT=200MiB</code> so Go collects before the 256 MiB ceiling. Trade-off: CPU-heavy work (password hashing) is slower on 1/16 vCPU.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Remove the wakers — PRs #68 and #69</span></p>
+  <p>IdentityX crons hourly → <b>once a day</b> (03:00, cleanups + key rotation); Payssage redrive 15 min → <b>every 6 hours</b>. Univents boot wallet check off on Cloudflare (<code>PAYSSAGE_VERIFY_WALLET_ON_BOOT=false</code>). Workers answer scanner paths with 404 without waking a container (<code>isNoise()</code>). JWKS served from the edge cache and from <b>KV for 1 hour</b>, dropped right after <code>keys.rotate</code>. Access tokens 15 min → <b>1 h</b> (fewer refreshes; trade-off: a revoked token stays valid up to an hour). Univents front reads attendee profiles through the query cache.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Hard spend cap — <code>lib/ts/container-budget</code></span></p>
+  <p><code>BudgetedContainer</code> counts every container's awake GiB-seconds into KV <code>container-budget</code>. At <b>90% of the plan's 25 GiB-hours</b> in a billing cycle (starts on the 24th), the APIs answer <b>503</b> instead of starting a container, until the next cycle. This is the guarantee: spend cannot leave the $5 plan. Trade-off: the APIs go down for the rest of the cycle if the budget runs out.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Idle watchdog and accurate counting — PR #69</span></p>
+  <p>A container with no new request for <b>5 minutes</b> is stopped, whatever the library's in-flight count says. Late stop reports are clamped to the last request plus that window, so sleeping time is never counted. Trade-off: Univents' WebSocket/SSE connections drop after 5 idle minutes and reconnect on the next use.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Pre-commit hook fix</span></p>
+  <p><code>.husky/pre-commit</code> line 56 redirected <code>engine_targets</code> into the file it writes, failing every commit with "input file is output file".</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-warn">Watch</span><span class="title">Reconcile the guard with Cloudflare</span></p>
+  <p>After a few days, compare KV <code>container-budget</code> with <code>containersUsageAdaptiveGroups</code>. Expect idle days near zero and ~1–1.3 container-hours per hour of active use; the plan holds ~90 <code>lite</code> hours a month (~4.5 h per weekday).</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Future</span><span class="title">Faster cold starts on lite</span></p>
+  <p>IdentityX boot runs <code>keys.EnsureAll</code> with sequential Neon round trips per project before accepting traffic. Slow boots caused the 504s behind root cause 4; trimming boot work lowers both latency and awake time.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Future</span><span class="title">Make the budget visible</span></p>
+  <p>Expose spent/limit from KV (a small endpoint or a Grafana panel) and warn at 50% and 75%, so a cut-off on the 20th isn't a surprise. Lower the Cloudflare budget alert to $1 in the dashboard as a second signal.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Future</span><span class="title">Revisit the platform if usage grows</span></p>
+  <p>Containers bill reserved memory, and <code>lite</code> (256 MiB) is the smallest size. If real traffic outgrows ~90 hours a month, a fixed-price host runs all four APIs at ~40 MB each for less.</p>
+</div>
+
+<div class="foot">
+  Produced 2026-11-02 · Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69) ·
+  <span style="color:var(--orange)">TrieOH platform</span>
+</div>
+
+</div>
+</body>
+</html>
