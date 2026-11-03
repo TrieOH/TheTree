@@ -43,6 +43,36 @@ const ON_DEAD: Record<string, string> = {
 	"webhook.deliver": "webhook.fail",
 };
 
+// webhook.redrive only finds deliveries whose enqueue was lost, and a
+// delivery is only written while the container handles a write request or
+// a job. The Worker records when it last passed one on, and the cron skips
+// the redrive (and the wake) when nothing happened since the previous one.
+// The margin covers the sweep's own 2-minute redriveAfter and KV lag.
+const LAST_WRITE = "payssage:lastWrite";
+const LAST_REDRIVE = "payssage:lastRedrive";
+const REDRIVE_MARGIN_MS = 15 * 60_000;
+const REDRIVE_KIND = "webhook.redrive";
+
+// A write is recorded at most this often per isolate.
+const MARK_EVERY_MS = 60_000;
+let lastMark = 0;
+
+function markWrite(env: Env, ctx: ExecutionContext): void {
+	const now = Date.now();
+	if (now - lastMark < MARK_EVERY_MS) return;
+	lastMark = now;
+	ctx.waitUntil(env.BUDGET.put(LAST_WRITE, String(now)).catch((err) => console.error("mark write", err)));
+}
+
+// True when a write since the previous redrive could have lost an enqueue.
+async function redriveNeeded(env: Env): Promise<boolean> {
+	const [write, redrive] = await Promise.all([env.BUDGET.get(LAST_WRITE), env.BUDGET.get(LAST_REDRIVE)]);
+	if (redrive === null) return true;
+	return Number(write) >= Number(redrive) - REDRIVE_MARGIN_MS;
+}
+
+const READS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 type Envelope = { kind: string; args?: unknown };
 
 export class PayssageContainer extends BudgetedContainer<Env> {
@@ -111,17 +141,19 @@ function jobFor(queue: string, envelope: Envelope): Envelope | null {
 }
 
 export default {
-	async fetch(request, env) {
+	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
 		if (isNoise(pathname)) return notFound();
+		if (!READS.has(request.method)) markWrite(env, ctx);
 		const container = await instance(env);
 		return container.fetch(request);
 	},
 
-	async queue(batch, env) {
+	async queue(batch, env, ctx) {
+		if (batch.messages.some((m) => m.body.kind !== REDRIVE_KIND)) markWrite(env, ctx);
 		for (const message of batch.messages) {
 			const job = jobFor(batch.queue, message.body);
 			if (!job) {
@@ -140,11 +172,19 @@ export default {
 	},
 
 	async scheduled(controller, env) {
-		const kinds = PERIODIC[controller.cron] ?? [];
+		let kinds = PERIODIC[controller.cron] ?? [];
 		if (kinds.length === 0) {
 			console.error(`no periodic jobs for cron ${controller.cron}`);
 			return;
 		}
+		if (kinds.includes(REDRIVE_KIND)) {
+			if (await redriveNeeded(env)) {
+				await env.BUDGET.put(LAST_REDRIVE, String(Date.now()));
+			} else {
+				kinds = kinds.filter((k) => k !== REDRIVE_KIND);
+			}
+		}
+		if (kinds.length === 0) return;
 		await env.JOBS.sendBatch(kinds.map((kind) => ({ body: { kind }, contentType: "json" })));
 	},
 } satisfies ExportedHandler<Env, Envelope>;
