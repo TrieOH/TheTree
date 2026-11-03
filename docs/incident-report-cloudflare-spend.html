@@ -278,8 +278,50 @@ A library quirk then kept IdentityX awake for another three hours; a second fix 
   <p>Containers bill reserved memory, and <code>lite</code> (256 MiB) is the smallest size. If real traffic outgrows ~90 hours a month, a fixed-price host runs all four APIs at ~40 MB each for less.</p>
 </div>
 
+<h2>Day-1 follow-up (2026-11-03)</h2>
+<p class="big">
+First 23 hours after the fix (Nov 2 18:00 → Nov 3 17:00 UTC). <b>The fix holds:</b> the four containers were awake
+<b>5.8 DO-hours</b> in total, against ~98 h/day before (<b>−94%</b>). Container memory dropped from ~338k to
+<b>~3.1k GiB-s/day (−99%)</b>, under 1¢ a day at overage rates. No new DO block is coming: the 1M GB-s block bought
+on Nov 1 covers up to 1.4M, and the day used ~2.7k.
+</p>
+<div class="tablewrap">
+<table>
+  <tr><th>App</th><th>DO awake</th><th>Container awake</th><th>Awake in</th><th>Why</th></tr>
+  <tr><td>identityx</td><td class="num hl">230 min</td><td class="num">127 min</td><td>13 of 23 hours</td><td>Other APIs' cold starts (JWKS), 03:00 cron, real use</td></tr>
+  <tr><td>univents</td><td class="num">73 min</td><td class="num">59 min</td><td>6 hours</td><td>Real use (08:00, 12–13:00)</td></tr>
+  <tr><td>payssage</td><td class="num">30 min</td><td class="num">16 min</td><td>6 hours</td><td>6-hourly redrive cron, use</td></tr>
+  <tr><td>informd</td><td class="num">15 min</td><td class="num">5 min</td><td>1 hour</td><td>One wake</td></tr>
+</table>
+</div>
+<ul>
+  <li><b>Workers:</b> ~4.2k requests, 0 errors. All four apps on <code>lite</code>, 1 instance, PR #69 images.</li>
+  <li><b>Spend guard:</b> KV counted 5.56k GiB-s since it went live (~1.5 of the 22.5 GiB-h cutoff). IdentityX's 4.1k of that includes the 15:00–17:50 leak window.</li>
+  <li><b>Headroom was tight:</b> at the day's ~0.86 GiB-h, the cycle would close (Nov 24) near 19.6 of 22.5 GiB-h. A few busy days would have tripped the guard and taken the APIs down until the 24th.</li>
+</ul>
+
+<h3>What still woke IdentityX</h3>
+<ul>
+  <li><b>The JWKS KV copy never held.</b> KV had no <code>jwks:</code> key a day later. The 1-hour TTL lapsed between wakes, and on a <code>lite</code> cold start the caller gave up (499/504) before the fill, so nothing was written.</li>
+  <li><b>So every cold start chained into IdentityX.</b> Payssage's redrive cron at 00:00 and 06:00 woke Payssage, its JWKS fetch woke IdentityX. Each of those wakes lasted 4–6 min, because the abandoned JWKS request left the container to the 5-minute watchdog instead of the 2-minute sleep.</li>
+  <li><b>Scanners are mostly handled.</b> Hundreds of <code>.env</code>/<code>.php</code> probes were answered 404 by the Workers. A few extensionless ones (<code>/info</code>, <code>/api/status</code>) still reach a container; rare enough to leave.</li>
+</ul>
+
+<div class="action">
+  <p><span class="badge b-warn">PR #70</span><span class="title">JWKS kept until keys can change</span></p>
+  <p>The KV copy lives 7 days and is dropped only when keys can change: container start (boot <code>EnsureAll</code>), <code>keys.rotate</code>, and project creation. The fill runs in <code>waitUntil</code>, so it lands even when the caller times out. Other APIs' cold starts stop waking IdentityX.</p>
+</div>
+<div class="action">
+  <p><span class="badge b-warn">PR #70</span><span class="title">Skip the Payssage redrive on idle days</span></p>
+  <p>The Worker records the last write request or job it passed to Payssage. The 6-hourly <code>webhook.redrive</code> runs only when something happened since the previous run (15-minute margin over the sweep's 2-minute <code>redriveAfter</code>). Idle days: 4 cron wakes, each chaining into IdentityX, become 0.</p>
+</div>
+<div class="action">
+  <p><span class="badge b-future">Next</span><span class="title">Expected after #70, check on day 3</span></p>
+  <p>On an idle day: IdentityX only for the 03:00 cron (~5 min), Payssage and Informd 0, Univents only with real use. Target under 0.3 GiB-h/day idle, about 7 GiB-h a cycle, leaving the rest for real users.</p>
+</div>
+
 <div class="foot">
-  Produced 2026-11-02 · Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69) ·
+  Produced 2026-11-02, follow-up 2026-11-03 ·Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69) ·
   <span style="color:var(--orange)">TrieOH platform</span>
 </div>
 
