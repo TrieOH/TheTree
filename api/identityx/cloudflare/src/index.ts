@@ -20,13 +20,17 @@ const EVENTS_PATH = "/_jobs";
 
 // Public signing keys. Every other API fetches them on its cold start, so
 // the Worker answers from the edge cache, then from KV (shared by every
-// location), and only wakes the container when both miss. The KV copy is
-// dropped as soon as the daily keys.rotate job runs, and lives an hour at
-// most otherwise, so a key rotated in some other way is served within that.
+// location), and only wakes the container when both miss. Keys only change
+// while the container runs: on boot (EnsureAll), in the daily keys.rotate
+// job, and when a project is created. The KV copy is dropped at each of
+// those, so it can otherwise live as long as a key does.
 const JWKS_PATH = "/.well-known/jwks.json";
 const JWKS_EDGE_TTL_SECONDS = 300;
-const JWKS_KV_TTL_SECONDS = 3600;
+const JWKS_KV_TTL_SECONDS = 7 * 24 * 3600;
 const JWKS_KV_PREFIX = "jwks:";
+
+// Routes that create a project, and with it the project's keys.
+const CREATES_PROJECT = /^(\/organizations\/[^/]+)?\/projects$/;
 
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
@@ -57,6 +61,12 @@ export class IdentityXContainer extends BudgetedContainer<Env> {
 		// Vars and secrets become the container's environment; a running
 		// container keeps what it started with until it restarts.
 		this.envVars = { ...stringBindings(env), JOBS_URL: `http://${JOBS_HOST}/enqueue` };
+	}
+
+	// Boot runs EnsureAll, which may rotate keys.
+	override async onStart(): Promise<void> {
+		await super.onStart();
+		await forgetJWKS(this.env);
 	}
 }
 
@@ -99,10 +109,19 @@ async function jwks(request: Request, env: Env, ctx: ExecutionContext): Promise<
 	const kvKey = JWKS_KV_PREFIX + new URL(request.url).search;
 	let body = await env.BUDGET.get(kvKey);
 	if (body === null) {
-		const res = await (await instance(env)).fetch(request);
-		if (!res.ok) return res;
-		body = await res.text();
-		ctx.waitUntil(env.BUDGET.put(kvKey, body, { expirationTtl: JWKS_KV_TTL_SECONDS }));
+		// Fill KV even when the caller gives up during a slow cold start, so
+		// the next cold start elsewhere does not wake the container again.
+		const fill = (async () => {
+			const res = await (await instance(env)).fetch(request);
+			if (!res.ok) return res;
+			const text = await res.text();
+			await env.BUDGET.put(kvKey, text, { expirationTtl: JWKS_KV_TTL_SECONDS });
+			return text;
+		})();
+		ctx.waitUntil(fill);
+		const filled = await fill;
+		if (filled instanceof Response) return filled;
+		body = filled;
 	}
 	const res = new Response(body, {
 		headers: {
@@ -129,6 +148,9 @@ export default {
 		if (isNoise(pathname)) return notFound();
 		if (pathname === JWKS_PATH && request.method === "GET") {
 			return jwks(request, env, ctx);
+		}
+		if (request.method === "POST" && CREATES_PROJECT.test(pathname)) {
+			ctx.waitUntil(forgetJWKS(env));
 		}
 		const container = await instance(env);
 		return container.fetch(request);
