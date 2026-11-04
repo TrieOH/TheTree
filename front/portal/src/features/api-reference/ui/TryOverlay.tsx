@@ -84,8 +84,11 @@ export function TryOverlay(props: {
       onOpenChange={props.onOpenChange}
       size="full"
       ariaLabel={`Try ${props.op.summary}`}
-      class="h-[min(88dvh,860px)] max-w-[1120px]"
-      contentClass="grid min-h-0 flex-1 overflow-hidden p-0 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      class="max-h-[min(88dvh,860px)] max-w-[1120px] ring-1 ring-border"
+      // The Dialog body pads with `p-5 sm:p-6`; both are zeroed so the columns
+      // carry the same inset as the header. minmax(0,1fr) keeps a long code
+      // line from widening the single phone column past the dialog.
+      contentClass="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] overflow-y-auto p-0 sm:p-0 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:items-start md:overflow-hidden"
       // The standard title slot brings the dialog's padding and close button.
       title={
         <span class="flex min-w-0 items-center gap-3">
@@ -95,18 +98,18 @@ export function TryOverlay(props: {
       }
       description={props.op.summary}
     >
-      <section aria-label="Request" class="min-h-0 space-y-3 overflow-y-auto border-border p-5 text-[13px] md:border-r">
+      <section aria-label="Request" class="space-y-3 border-border px-5 py-5 text-[13px] sm:px-6 md:max-h-full md:min-h-0 md:overflow-y-auto md:border-r">
       <div class="space-y-1.5 border-b border-border pb-4">
         <button
           type="button"
           onClick={send}
           disabled={!!check().blocker || sending()}
-          class="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-opacity disabled:opacity-40"
+          class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-colors disabled:cursor-not-allowed disabled:border disabled:border-dashed disabled:border-border disabled:bg-transparent disabled:text-muted-foreground"
         >
           <SendIcon class="size-3.5" />
           {sending() ? "Sending…" : "Send"}
         </button>
-        <p class="text-[11.5px] text-muted-foreground">
+        <p class="text-xs text-muted-foreground">
           {check().blocker ?? check().hint ?? "Sends from your browser. A sleeping API wakes up to answer."}
         </p>
       </div>
@@ -182,7 +185,7 @@ export function TryOverlay(props: {
         </Show>
       </section>
 
-      <section aria-label="Code and response" class="min-h-0 space-y-4 overflow-y-auto p-5 text-[13px]">
+      <section aria-label="Code and response" class="space-y-4 px-5 py-5 text-[13px] sm:px-6 md:max-h-full md:min-h-0 md:overflow-y-auto">
       <div>
         <Tabs
           ariaLabel="Snippet language"

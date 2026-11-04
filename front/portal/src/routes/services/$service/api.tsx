@@ -1,5 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onSettled } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onSettled } from "solid-js";
 import BoxIcon from "~icons/lucide/box";
 import { findService } from "@/features/catalog/services";
 import { loadApi, schemaAnchor, tagAnchor, type ApiModel } from "@/features/api-reference/model";
@@ -67,10 +67,11 @@ function Reference(props: { api: ApiModel }) {
     };
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    onCleanup(() => {
+    // Solid 2 takes the teardown as onSettled's return value.
+    return () => {
       window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
-    });
+    };
   });
 
   // The nav follows: whatever marks the active endpoint (its route, or its
@@ -92,7 +93,7 @@ function Reference(props: { api: ApiModel }) {
   return (
     // The reference sits centered like every page; the nav floats centered in
     // the space to its left.
-    <div class="grid gap-8 lg:grid-cols-[minmax(250px,1fr)_minmax(0,860px)_minmax(0,1fr)]">
+    <div class="grid gap-6 lg:grid-cols-[minmax(250px,1fr)_minmax(0,860px)_minmax(0,1fr)]">
       <aside
         ref={(element) => (nav = element)}
         class={`hidden w-[250px] justify-self-center lg:block ${floating}`}
@@ -116,7 +117,7 @@ function Reference(props: { api: ApiModel }) {
           </p>
           <details class="rounded-xl border border-border px-4 py-3">
             <summary class="cursor-pointer text-[13px] font-medium">Overview and authentication</summary>
-            <div class="prose-doc mt-3 text-[13.5px]" innerHTML={props.api.description} />
+            <div class="prose-doc prose-wide mt-3 text-[13.5px]" innerHTML={props.api.description} />
             <ul class="mt-3 space-y-1 text-[13px]">
               <For each={props.api.auth}>
                 {(auth) => (
@@ -132,11 +133,11 @@ function Reference(props: { api: ApiModel }) {
 
         <For each={props.api.tags}>
           {(tag) => (
-            <section id={tagAnchor(tag.name)} class="scroll-mt-6 space-y-8">
+            <section id={tagAnchor(tag.name)} class="scroll-mt-6 space-y-10">
               <div>
                 <h2 class="font-heading text-xl font-semibold">{tag.name}</h2>
                 <Show when={tag.description}>
-                  <div class="prose-doc mt-1 text-[13.5px] text-muted-foreground" innerHTML={tag.description} />
+                  <div class="prose-doc prose-wide mt-1 text-[13.5px] text-muted-foreground" innerHTML={tag.description} />
                 </Show>
               </div>
               <For each={tag.operations}>

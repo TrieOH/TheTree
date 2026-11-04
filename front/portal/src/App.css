@@ -123,6 +123,15 @@
   text-align: left;
 }
 
+/* No trailing margin inside a block, so boxes pad evenly top and bottom. */
+.prose-doc > :last-child {
+  margin-bottom: 0;
+}
+/* Prose that should use the full column (API descriptions). */
+.prose-doc.prose-wide {
+  max-width: none;
+}
+
 /* Code highlighted at build time by shiki with both themes as CSS variables. */
 .prose-doc pre.shiki {
   background: var(--code-background);

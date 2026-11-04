@@ -33,12 +33,12 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
   const params = () => IN_ORDER.flatMap((where) => props.op.parameters.filter((param) => param.in === where));
 
   return (
-    <article id={operationAnchor(props.op)} data-operation={props.op.id} class="scroll-mt-6 space-y-5 border-b border-border pb-10">
+    <article id={operationAnchor(props.op)} data-operation={props.op.id} class="scroll-mt-6 space-y-6 border-b border-border pb-10">
       <header class="space-y-2">
         <h3 class="font-heading text-[17px] font-semibold">{props.op.summary}</h3>
-        <div class="flex min-w-0 items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
           <MethodBadge method={props.op.method} />
-          <PathText path={props.op.path} />
+          <PathText path={props.op.path} class="max-w-full" />
           <button
             type="button"
             onClick={() => setTryOpen(true)}
@@ -55,7 +55,7 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
         </p>
       </header>
 
-      <div class="prose-doc text-[13.5px]" innerHTML={props.op.description} />
+      <div class="prose-doc prose-wide text-[13.5px]" innerHTML={props.op.description} />
 
       <Show when={params().length > 0}>
         <Block title="Parameters">
@@ -63,7 +63,7 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
             <For each={params()}>
               {(param) => (
                 <li class="px-3 py-2 text-[13px]">
-                  <div class="flex flex-wrap items-baseline gap-x-2">
+                  <div class="flex flex-wrap items-center gap-x-2">
                     <code class="font-mono text-[12.5px] font-medium">{param.name}</code>
                     <span class="text-[11px] text-muted-foreground">{param.in}</span>
                     <TypeText node={param.schema} />
@@ -72,7 +72,7 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
                     </Show>
                   </div>
                   <Show when={param.description}>
-                    <div class="prose-doc mt-0.5 text-muted-foreground" innerHTML={param.description} />
+                    <div class="prose-doc prose-wide mt-0.5 text-muted-foreground" innerHTML={param.description} />
                   </Show>
                 </li>
               )}

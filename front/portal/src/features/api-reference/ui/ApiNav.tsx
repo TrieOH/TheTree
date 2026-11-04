@@ -46,14 +46,14 @@ function Group(props: { tag: ApiModel["tags"][number]; active: string | null }) 
           )}
         >
           <Show when={holdsActive()}>
-            <span aria-hidden="true" class="absolute -left-1 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent" />
+            <span aria-hidden="true" class="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent" />
           </Show>
           {props.tag.name}
           <span class="text-[11px] tabular-nums opacity-70">{props.tag.operations.length}</span>
         </a>
       </div>
       <Show when={open()}>
-        <ul class="mb-1 ml-3.5 border-l border-border pl-2">
+        <ul class="mb-1 ml-3 border-l border-border pl-1">
           <For each={props.tag.operations}>
             {(op) => (
               <li>
@@ -61,12 +61,15 @@ function Group(props: { tag: ApiModel["tags"][number]; active: string | null }) 
                   href={`#${operationAnchor(op)}`}
                   data-nav-op={op.id}
                   aria-current={op.id === props.active ? "location" : undefined}
+                  title={`${op.method.toUpperCase()} ${op.path}\n${op.summary}`}
                   class={cn(
-                    "flex min-h-7 items-center gap-2 rounded-md px-1.5 py-1 text-[12.5px] hover:bg-foreground/5",
-                    op.id === props.active ? "bg-foreground/10 text-foreground" : "text-foreground/75",
+                    "flex min-h-7 items-center gap-1.5 rounded-md px-1.5 py-1 text-[12.5px]",
+                    op.id === props.active
+                      ? "bg-accent/10 font-medium text-foreground shadow-[inset_2px_0_0_var(--accent)]"
+                      : "text-foreground/75 hover:bg-foreground/5",
                   )}
                 >
-                  <span class={cn("w-10 shrink-0 font-mono text-[10px] font-semibold uppercase", METHOD_TEXT[op.method])}>
+                  <span class={cn("w-8 shrink-0 font-mono text-[10px] font-semibold uppercase", METHOD_TEXT[op.method])}>
                     {op.method}
                   </span>
                   <span class="min-w-0 truncate">{op.summary}</span>
