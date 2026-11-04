@@ -1,10 +1,13 @@
 import { cn } from "@trieoh/ui-solid";
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import ChevronIcon from "~icons/lucide/chevron-right";
 import { operationAnchor, tagAnchor, type ApiModel } from "../model";
 import { METHOD_TEXT } from "./MethodBadge";
 
-/** Tag groups that open to their routes; the one being read is highlighted. */
+/**
+ * Tag groups that open to their routes. The group and route being read are
+ * highlighted; groups only open when the reader opens them.
+ */
 export function ApiNav(props: { api: ApiModel; active: string | null }) {
   return (
     <nav aria-label="Endpoints" class="space-y-0.5 text-[13px]">
@@ -19,10 +22,6 @@ export function ApiNav(props: { api: ApiModel; active: string | null }) {
 function Group(props: { tag: ApiModel["tags"][number]; active: string | null }) {
   const holdsActive = () => props.tag.operations.some((op) => op.id === props.active);
   const [open, setOpen] = createSignal(false, { name: "nav-tag-open" });
-  // Follows the reader: the group being read opens by itself.
-  createEffect(holdsActive, (inside) => {
-    if (inside) setOpen(true);
-  });
 
   return (
     <div>
@@ -38,11 +37,17 @@ function Group(props: { tag: ApiModel["tags"][number]; active: string | null }) 
         </button>
         <a
           href={`#${tagAnchor(props.tag.name)}`}
+          // Where the nav scrolls to while the group is closed.
+          data-nav-tag={props.tag.name}
+          aria-current={holdsActive() && !open() ? "location" : undefined}
           class={cn(
-            "flex h-8 flex-1 items-center justify-between rounded-lg px-1.5 hover:bg-foreground/5",
-            holdsActive() ? "font-medium text-foreground" : "text-foreground/75",
+            "relative flex h-8 flex-1 items-center justify-between rounded-lg px-1.5 hover:bg-foreground/5",
+            holdsActive() ? "bg-foreground/10 font-medium text-foreground" : "text-foreground/75",
           )}
         >
+          <Show when={holdsActive()}>
+            <span aria-hidden="true" class="absolute -left-1 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent" />
+          </Show>
           {props.tag.name}
           <span class="text-[11px] tabular-nums opacity-70">{props.tag.operations.length}</span>
         </a>
@@ -54,6 +59,7 @@ function Group(props: { tag: ApiModel["tags"][number]; active: string | null }) 
               <li>
                 <a
                   href={`#${operationAnchor(op)}`}
+                  data-nav-op={op.id}
                   aria-current={op.id === props.active ? "location" : undefined}
                   class={cn(
                     "flex min-h-7 items-center gap-2 rounded-md px-1.5 py-1 text-[12.5px] hover:bg-foreground/5",

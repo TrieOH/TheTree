@@ -1,5 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
-import { For, Show, createMemo, createSignal, onCleanup, onSettled } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onSettled } from "solid-js";
 import { findService } from "@/features/catalog/services";
 import { loadApi, schemaAnchor, tagAnchor, type ApiModel } from "@/features/api-reference/model";
 import { ApiNav } from "@/features/api-reference/ui/ApiNav";
@@ -42,31 +42,59 @@ function Reference(props: { api: ApiModel }) {
   const data = Route.useLoaderData();
   const operations = createMemo(() => props.api.tags.flatMap((tag) => tag.operations));
   const [active, setActive] = createSignal<string | null>(null, { name: "api-active" });
-  const activeOp = () => operations().find((op) => op.id === active()) ?? operations()[0];
+  // Nothing above the first endpoint.
+  const activeOp = () => operations().find((op) => op.id === active()) ?? null;
 
-  // Which endpoint is being read: the topmost one in the upper part of the
-  // screen. Read from the page only; the URL is never rewritten on scroll.
+  // Which endpoint is being read: the last one whose top has passed a line
+  // a quarter down the screen. Read from the page on scroll (once a frame);
+  // the URL is never rewritten.
+  let nav: HTMLElement | undefined;
   onSettled(() => {
-    const visible = new Set<Element>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target);
-          else visible.delete(entry.target);
-        }
-        const top = [...visible].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0];
-        if (top) setActive((top as HTMLElement).dataset.operation ?? null);
-      },
-      { rootMargin: "-10% 0px -70% 0px" },
-    );
-    for (const element of document.querySelectorAll("[data-operation]")) observer.observe(element);
-    onCleanup(() => observer.disconnect());
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.25;
+      let current: string | null = null;
+      for (const element of document.querySelectorAll<HTMLElement>("[data-operation]")) {
+        if (element.getBoundingClientRect().top > line) break;
+        current = element.dataset.operation ?? null;
+      }
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onCleanup(() => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    });
   });
 
+  // The nav follows: whatever marks the active endpoint (its route, or its
+  // group while closed) is kept in the middle of the nav's own scroll.
+  createEffect(
+    () => activeOp()?.id,
+    (id) => {
+      if (!nav || !id) return;
+      const tag = props.api.tags.find((t) => t.operations.some((op) => op.id === id))?.name;
+      const target =
+        nav.querySelector<HTMLElement>(`[data-nav-op="${CSS.escape(id)}"]`) ??
+        (tag ? nav.querySelector<HTMLElement>(`[data-nav-tag="${CSS.escape(tag)}"]`) : null);
+      if (!target) return;
+      const offset = target.getBoundingClientRect().top - nav.getBoundingClientRect().top + nav.scrollTop;
+      nav.scrollTo({ top: offset - nav.clientHeight / 2 + target.clientHeight / 2, behavior: "smooth" });
+    },
+  );
+
   return (
-    <div class="grid justify-center gap-8 lg:grid-cols-[250px_minmax(0,860px)]">
+    // The reference sits centered like every page; the nav floats centered in
+    // the space to its left.
+    <div class="grid gap-8 lg:grid-cols-[minmax(250px,1fr)_minmax(0,860px)_minmax(0,1fr)]">
       <aside
-        class={`hidden lg:block ${floating}`}
+        ref={(element) => (nav = element)}
+        class={`hidden w-[250px] justify-self-center lg:block ${floating}`}
         style={{ height: NAV_HEIGHT, top: `calc((100dvh - ${NAV_HEIGHT}) / 2)` }}
       >
         <ApiNav api={props.api} active={activeOp()?.id ?? null} />
