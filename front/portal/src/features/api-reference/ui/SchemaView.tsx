@@ -1,9 +1,10 @@
 import { cn } from "@trieoh/ui-solid";
 import { For, Show, createSignal } from "solid-js";
+import BoxIcon from "~icons/lucide/box";
 import ChevronIcon from "~icons/lucide/chevron-right";
 import { refOf, schemaAnchor, typeLabel, type SchemaNode } from "../model";
 
-/** A type, linking to its model when it is (or holds) a named one. */
+/** A type, linking to its model when it is (or holds) a named one; models carry a box icon. */
 export function TypeText(props: { node: SchemaNode | null | undefined }) {
   const ref = () => refOf(props.node);
   return (
@@ -12,7 +13,12 @@ export function TypeText(props: { node: SchemaNode | null | undefined }) {
       fallback={<span class="font-mono text-[12px] text-muted-foreground">{typeLabel(props.node)}</span>}
     >
       {(name) => (
-        <a href={`#${schemaAnchor(name())}`} class="font-mono text-[12px] text-accent hover:underline">
+        <a
+          href={`#${schemaAnchor(name())}`}
+          title={`Model ${name()}`}
+          class="inline-flex items-center gap-1 font-mono text-[12px] text-accent hover:underline"
+        >
+          <BoxIcon aria-hidden="true" class="size-3.5 shrink-0" />
           {typeLabel(props.node)}
         </a>
       )}
@@ -55,14 +61,14 @@ function PropertyRow(props: { name: string; child: SchemaNode; required: boolean
 
   return (
     <li class="px-3 py-2 text-[13px]">
-      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <Show when={nested()} fallback={<span class="inline-block w-4" />}>
           <button
             type="button"
             aria-expanded={open() ? "true" : "false"}
             aria-label={open() ? `Hide ${props.name}` : `Show ${props.name}`}
             onClick={() => setOpen(!open())}
-            class="grid size-4 place-items-center self-center text-muted-foreground hover:text-foreground"
+            class="grid size-4 place-items-center text-muted-foreground hover:text-foreground"
           >
             <ChevronIcon class={cn("size-3.5 transition-transform", open() && "rotate-90")} />
           </button>

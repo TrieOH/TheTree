@@ -65,6 +65,10 @@ describe("API reference", () => {
     const panel = within(dialog);
 
     expect(panel.getByRole("button", { name: /Send/ })).toBeDisabled();
+    // Send comes first, above the fields; the header has the dialog's close button.
+    const sendButton = panel.getByRole("button", { name: /Send/ });
+    expect(sendButton.compareDocumentPosition(panel.getByLabelText("Base URL")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(panel.getByRole("button", { name: "Fechar" })).toBeInTheDocument();
     expect(panel.getByText("Set the base URL to send.")).toBeInTheDocument();
     await waitFor(() => expect(dialog.textContent).toContain("{API_URL}/organizations/{organization_id}/members"));
 
