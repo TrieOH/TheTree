@@ -1,8 +1,7 @@
 import { Dynamic, type JSX } from "@solidjs/web";
-import { createSignal, omit } from "solid-js";
-import CheckIcon from "~icons/lucide/check";
-import CopyIcon from "~icons/lucide/copy";
+import { omit } from "solid-js";
 import LinkIcon from "~icons/lucide/link";
+import { CopyButton } from "@/shared/ui/CopyButton";
 
 // Overrides for the plain elements MDX emits.
 
@@ -29,26 +28,17 @@ function heading(Tag: "h2" | "h3" | "h4") {
 /** Highlighted code (shiki, at build time) with a copy button. */
 function Pre(props: Props) {
   let pre: HTMLPreElement | undefined;
-  const [copied, setCopied] = createSignal(false, { name: "copied" });
-  const copy = async () => {
-    await navigator.clipboard.writeText(pre?.textContent ?? "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
   const rest = omit(props, "children");
   return (
     <div class="group relative">
       <pre ref={(el) => (pre = el)} {...(rest as JSX.HTMLAttributes<HTMLPreElement>)}>
         {props.children}
       </pre>
-      <button
-        type="button"
-        onClick={copy}
-        aria-label={copied() ? "Copied" : "Copy code"}
-        class="absolute right-2 top-2 grid size-7 place-items-center rounded-md border border-border bg-background/80 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus:opacity-100 group-hover:opacity-100"
-      >
-        {copied() ? <CheckIcon class="size-3.5" /> : <CopyIcon class="size-3.5" />}
-      </button>
+      <CopyButton
+        text={() => pre?.textContent ?? ""}
+        label="Copy code"
+        class="absolute right-2 top-2 border border-border bg-background/80 opacity-0 focus:opacity-100 group-hover:opacity-100"
+      />
     </div>
   );
 }

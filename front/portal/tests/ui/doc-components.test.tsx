@@ -67,8 +67,10 @@ describe("doc components, through the real MDX pipeline", () => {
     expect(container.querySelector("figure [role='img'][aria-label='Diagram']")).not.toBeNull();
     const highlighted = [...container.querySelectorAll("pre.shiki")].map((pre) => pre.textContent ?? "");
     expect(highlighted.some((code) => code.includes("flowchart"))).toBe(false);
-    const slugs = [...container.querySelectorAll("tbody code")].map((code) => code.textContent);
-    expect(slugs.length).toBeGreaterThan(40);
-    expect(slugs).toContain("not-found");
+    const slugs = [...container.querySelectorAll("a[href^='/problems/payssage/']")].map((a) => a.textContent);
+    expect(slugs).toContain("provider-conflict");
+    // Shared problems stay behind the link by default.
+    expect(slugs).not.toContain("not-found");
+    expect(container.querySelector("a[href='/problems/shared']")).not.toBeNull();
   });
 });

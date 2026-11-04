@@ -90,6 +90,19 @@ flowchart LR
 
 ## Problems
 
-`<Problems service="payssage" />` lists every problem a service can answer, read from its `problems.yml`:
+`<Problems service="…" />` lists the RFC 9457 problems a service can answer, read from its `problems.yml` when the portal is built. By default it groups them by status, leaves the shared ones to a link, and keeps descriptions on each problem's own page. Every row expands to the problem's members and an example body.
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `service` | (required) | A service, or `"shared"` for the problems every service answers |
+| `shared` | `"link"` | `"include"` lists the shared problems too; `"hide"` drops the link |
+| `only` | every problem | `only={["provider-conflict"]}` shows just those slugs |
+| `group` | `true` | `group={false}` gives one flat list |
+| `open` | `false` | `open` keeps every row's details open, with no toggle |
+| `description` | `"page"` | `"inline"` shows descriptions in the list too; one that only restates the title is never shown |
 
 <Problems service="payssage" />
+
+A single problem, open:
+
+<Problems service="payssage" only={["provider-unauthorized"]} open description="inline" />

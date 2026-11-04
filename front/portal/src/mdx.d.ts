@@ -17,8 +17,9 @@ declare module "*.mdx" {
 }
 
 declare module "virtual:problems" {
-  import type { ProblemDoc } from "../mdx/problems-plugin";
+  import type { ProblemDoc, ProblemSet } from "../mdx/problems-plugin";
 
-  const problems: Record<string, ProblemDoc[]>;
+  /** "shared" holds the problems every service answers; each service, its own. */
+  const problems: Record<ProblemSet, ProblemDoc[]>;
   export default problems;
 }
