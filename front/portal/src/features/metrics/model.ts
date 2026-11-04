@@ -81,12 +81,24 @@ export interface NeonStats {
   resumeMaxMs: number | null;
 }
 
+export interface ColdStartDay {
+  service: ServiceId;
+  /** YYYY-MM-DD */
+  day: string;
+  count: number;
+  failed: number;
+  p50Ms: number;
+  p95Ms: number;
+}
+
 export interface MetricsPayload {
   cycle: { start: string; end: string };
   services: ServiceMetrics[];
   usage: Usage[];
   workers: WorkerStats[];
   neon: NeonStats[];
+  /** Container cold starts per service per day, the last 30 days, oldest first. */
+  coldStarts: ColdStartDay[];
   /** When Cloudflare and Neon were last pulled; null before the first run. */
   syncedAt: string | null;
 }

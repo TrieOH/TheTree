@@ -3,7 +3,8 @@ import { For, Show } from "solid-js";
 import { REPO_URL, findService } from "@/features/catalog/services";
 import { loadDelivery } from "@/features/delivery/api";
 import { loadMetrics } from "@/features/metrics/api";
-import { formatCount, formatPercent } from "@/features/metrics/format";
+import { summarize } from "@/features/metrics/cold-starts";
+import { formatCount, formatMs, formatPercent } from "@/features/metrics/format";
 import { tagUrl } from "@/features/delivery/model";
 import { loadIssues } from "@/features/issues/api";
 import { isOpen } from "@/features/issues/model";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/services/$service/")({
     return {
       service,
       metrics: metrics?.services.find((s) => s.id === service.id) ?? null,
+      coldStarts: metrics ? summarize(metrics.coldStarts, service.id, 7) : null,
       tag: current?.tag ?? null,
       issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)),
     };
@@ -90,6 +92,15 @@ function ServicePage() {
           </Kpi>
           <Kpi label="Open issues">{data().issues.length}</Kpi>
         </KpiRow>
+        <Show when={data().coldStarts?.count}>
+          <p class="mt-3 text-[13px] text-muted-foreground">
+            {data().coldStarts!.count} cold starts in the last 7 days, typically {formatMs(data().coldStarts!.typicalMs)}
+            {data().coldStarts!.failed ? `; ${data().coldStarts!.failed} failed` : ""}.{" "}
+            <Link to="/metrics" class="underline underline-offset-4">
+              Metrics
+            </Link>
+          </p>
+        </Show>
       </Section>
 
       <Section title="Open issues" aside={<Link to="/issues">All issues</Link>}>

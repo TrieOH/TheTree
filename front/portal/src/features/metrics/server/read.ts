@@ -5,6 +5,7 @@ import {
   STATUS_WINDOW_HOURS,
   statusOf,
   type MetricsPayload,
+  type ColdStartDay,
   type NeonStats,
   type PlanResource,
   type ServiceMetrics,
@@ -29,7 +30,7 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
   end.setUTCMonth(end.getUTCMonth() + 1);
   const since30d = new Date(now.getTime() - 30 * 24 * HOUR).toISOString();
 
-  const [rollups, usage, workers, neon, sync] = await db.batch<unknown>([
+  const [rollups, usage, workers, neon, sync, cold] = await db.batch<unknown>([
     db.prepare(
       "SELECT service, metric, bucket, value FROM metric_rollups WHERE metric IN ('requests', 'errors_5xx') AND bucket >= ? ORDER BY bucket",
     ).bind(since30d),
@@ -39,6 +40,9 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
     ).bind(period),
     db.prepare("SELECT * FROM neon_projects"),
     db.prepare("SELECT synced_at FROM sync_state WHERE source = 'metrics'"),
+    db.prepare(
+      "SELECT resource, day, count, failed, p50_ms, p95_ms FROM cold_starts WHERE kind = 'container' AND day >= ? ORDER BY day",
+    ).bind(since30d.slice(0, 10)),
   ]);
 
   const rows = rollups.results as Rollup[];
@@ -146,8 +150,22 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
     };
   });
 
+  const coldStarts = (
+    cold.results as { resource: ServiceId; day: string; count: number; failed: number; p50_ms: number; p95_ms: number }[]
+  ).map(
+    (row): ColdStartDay => ({
+      service: row.resource,
+      day: row.day,
+      count: row.count,
+      failed: row.failed,
+      p50Ms: row.p50_ms,
+      p95Ms: row.p95_ms,
+    }),
+  );
+
   return {
     cycle: { start: `${period}T00:00:00Z`, end: end.toISOString() },
+    coldStarts,
     services,
     usage: usageOut,
     workers: workersOut,

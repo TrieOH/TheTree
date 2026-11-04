@@ -1,4 +1,4 @@
-import { cycleStart, spentGiBSeconds } from "@trieoh/container-budget";
+import { COLD_START_DATASET, cycleStart, spentGiBSeconds } from "@trieoh/container-budget";
 import { SERVICES } from "@/features/catalog/services";
 
 // Every 30 minutes: plan usage, per-service traffic and per-Worker stats from
@@ -191,6 +191,62 @@ async function syncAccount(env: Env, now: Date): Promise<D1PreparedStatement[]> 
   ];
 }
 
+// ── Container cold starts, per service per day ─────────────────────────────
+
+const ANALYTICS_ENGINE = (account: string) =>
+  `https://api.cloudflare.com/client/v4/accounts/${account}/analytics_engine/sql`;
+
+// Written by @trieoh/container-budget: blob1 the app, blob2 ok|failed,
+// double1 milliseconds. _sample_interval undoes Analytics Engine's sampling.
+const COLD_STARTS = `SELECT
+    blob1 AS service,
+    toStartOfDay(timestamp) AS day,
+    SUM(_sample_interval) AS count,
+    sumIf(_sample_interval, blob2 = 'failed') AS failed,
+    quantileExactWeighted(0.5, double1, _sample_interval) AS p50,
+    quantileExactWeighted(0.95, double1, _sample_interval) AS p95
+  FROM ${COLD_START_DATASET}
+  WHERE timestamp > NOW() - INTERVAL '30' DAY
+  GROUP BY service, day
+  FORMAT JSON`;
+
+interface ColdStartRow {
+  service: string;
+  day: string;
+  count: number | string;
+  failed: number | string;
+  p50: number | string;
+  p95: number | string;
+}
+
+async function syncColdStarts(env: Env): Promise<D1PreparedStatement[]> {
+  const response = await fetch(ANALYTICS_ENGINE(env.CLOUDFLARE_ACCOUNT_ID), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}` },
+    body: COLD_STARTS,
+  });
+  if (!response.ok) throw new Error(`Analytics Engine (${response.status}): ${(await response.text()).slice(0, 200)}`);
+  const { data } = (await response.json()) as { data: ColdStartRow[] };
+  const services = new Set(SERVICES.map((service) => service.id as string));
+  const upsert = env.DB.prepare(
+    `INSERT INTO cold_starts (resource, kind, day, count, p50_ms, p95_ms, failed) VALUES (?, 'container', ?, ?, ?, ?, ?)
+     ON CONFLICT (resource, day) DO UPDATE SET count = excluded.count, p50_ms = excluded.p50_ms,
+       p95_ms = excluded.p95_ms, failed = excluded.failed`,
+  );
+  return data
+    .filter((row) => services.has(row.service))
+    .map((row) =>
+      upsert.bind(
+        row.service,
+        String(row.day).slice(0, 10),
+        Math.round(Number(row.count)),
+        Math.round(Number(row.p50)),
+        Math.round(Number(row.p95)),
+        Math.round(Number(row.failed)),
+      ),
+    );
+}
+
 // ── Neon, per service ───────────────────────────────────────────────────────
 
 // GET /projects/{id} names these differently from the list endpoint
@@ -275,11 +331,22 @@ async function syncNeon(env: Env, now: Date): Promise<D1PreparedStatement[]> {
 }
 
 export async function syncMetrics(env: Env, now = new Date()): Promise<{ statements: number }> {
-  const [traffic, account, neonRows] = await Promise.all([syncTraffic(env, now), syncAccount(env, now), syncNeon(env, now)]);
+  const [traffic, account, neonRows, coldStarts] = await Promise.all([
+    syncTraffic(env, now),
+    syncAccount(env, now),
+    syncNeon(env, now),
+    // The dataset only exists once an API Worker has written to it; until
+    // then (or if it fails) the rest of the pull still lands.
+    syncColdStarts(env).catch((error: unknown) => {
+      console.warn("cold starts not pulled:", error instanceof Error ? error.message : error);
+      return [];
+    }),
+  ]);
   const statements = [
     ...traffic,
     ...account,
     ...neonRows,
+    ...coldStarts,
     env.DB.prepare(
       `INSERT INTO sync_state (source, synced_at) VALUES ('metrics', ?)
        ON CONFLICT (source) DO UPDATE SET synced_at = excluded.synced_at`,

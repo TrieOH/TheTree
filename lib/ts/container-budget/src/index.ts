@@ -40,7 +40,12 @@ const WATCHDOG_MS = 60_000;
 const STARTED_AT = "budget:startedAt";
 const LAST_REQUEST = "budget:lastRequest";
 
-export type BudgetEnv = { BUDGET: KVNamespace };
+// COLD_STARTS is optional: an Analytics Engine dataset that gets one data
+// point per request that had to start the container. The dev portal reads it.
+export type BudgetEnv = { BUDGET: KVNamespace; COLD_STARTS?: AnalyticsEngineDataset };
+
+// The dataset the API Workers bind as COLD_STARTS.
+export const COLD_START_DATASET = "container_cold_starts";
 
 // The first day of the billing cycle `now` falls in, as YYYY-MM-DD.
 export function cycleStart(now: Date): string {
@@ -76,9 +81,11 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 	private total?: { seconds: number; readAt: number };
 
 	override async fetch(request: Request): Promise<Response> {
+		// Asleep when the request arrived: this request pays for the start.
+		const cold = !this.ctx.container?.running;
 		// Not running with a start on record: it stopped and the library has
 		// not reported it yet. Close that run before starting a new one.
-		await this.flush(!this.ctx.container?.running);
+		await this.flush(cold);
 		if (await this.overBudget()) {
 			return new Response("Paused: this month's compute budget is spent.", {
 				status: 503,
@@ -86,7 +93,34 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 			});
 		}
 		await this.ctx.storage.put(LAST_REQUEST, Date.now());
-		return super.fetch(request);
+		if (!cold) return super.fetch(request);
+
+		// Time from the request to the container's first answer, which is what
+		// the caller waited: the boot plus that one response.
+		const started = Date.now();
+		try {
+			const response = await super.fetch(request);
+			this.recordColdStart(Date.now() - started, response.status);
+			return response;
+		} catch (error) {
+			this.recordColdStart(Date.now() - started, 0);
+			throw error;
+		}
+	}
+
+	// One data point per cold start: index and blob1 the app, blob2 "ok" or
+	// "failed" (a 5xx or no answer), double1 the milliseconds, double2 the
+	// status (0 when the container never answered).
+	private recordColdStart(ms: number, status: number): void {
+		try {
+			this.env.COLD_STARTS?.writeDataPoint({
+				indexes: [this.app],
+				blobs: [this.app, status === 0 || status >= 500 ? "failed" : "ok"],
+				doubles: [ms, status],
+			});
+		} catch {
+			// Metrics never get in the way of the request.
+		}
 	}
 
 	override async onStart(): Promise<void> {

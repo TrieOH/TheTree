@@ -5,6 +5,7 @@ import { findService } from "@/features/catalog/services";
 import { loadMetrics } from "@/features/metrics/api";
 import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
 import type { MetricsPayload, WorkerStats } from "@/features/metrics/model";
+import { summarize } from "@/features/metrics/cold-starts";
 import { Sparkline } from "@/features/metrics/ui/Sparkline";
 import { UsageBar } from "@/features/metrics/ui/UsageBar";
 import { timeAgo } from "@/features/delivery/stats";
@@ -63,13 +64,9 @@ function MetricsPage() {
               <Workers workers={data().workers.filter((w) => w.kind === "front" || w.kind === "portal")} />
             </Match>
             <Match when={tab() === "cold-starts"}>
-              <NotConnected source="the API Workers">
-                Cold starts get measured inside the API Workers in the next phase. Until then, the API Workers' p99 wall
-                time below hints at them: it includes waking a container.
-              </NotConnected>
-              <div class="mt-6">
-                <Workers workers={data().workers.filter((w) => w.kind === "api")} />
-              </div>
+              <ColdStarts data={data()} />
+              <h3 class="mb-2 mt-10 font-heading text-[15px] font-semibold">API Workers</h3>
+              <Workers workers={data().workers.filter((w) => w.kind === "api")} />
             </Match>
           </Switch>
           <p class="mt-8 text-[12px] text-muted-foreground">Last pulled {timeAgo(data().syncedAt!)}.</p>
@@ -119,6 +116,60 @@ function Services(props: { data: MetricsPayload }) {
           </Link>
         )}
       </For>
+    </div>
+  );
+}
+
+function ColdStarts(props: { data: MetricsPayload }) {
+  return (
+    <div class="space-y-4">
+      <p class="text-[13px] text-muted-foreground">
+        A request that finds its API's container asleep waits for it to start. Each API Worker records that wait (start
+        plus first answer) as it happens; nothing is started to measure it. Last 7 days; bars are starts per day over 14.
+      </p>
+      <Show
+        when={props.data.coldStarts.length > 0}
+        fallback={
+          <NotConnected source="the API Workers">
+            No cold starts recorded yet. They start arriving once each API is released with the cold-start recording.
+          </NotConnected>
+        }
+      >
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[13px]">
+            <thead class="text-[12px] text-muted-foreground">
+              <tr class="border-b border-border">
+                <th class={th}>Service</th>
+                <th class={th}>Starts</th>
+                <th class={th}>Failed</th>
+                <th class={th}>Typical</th>
+                <th class={th}>Worst day p95</th>
+                <th class="py-2 font-normal">Per day</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              <For each={props.data.services}>
+                {(service) => {
+                  const week = summarize(props.data.coldStarts, service.id, 7);
+                  const fortnight = summarize(props.data.coldStarts, service.id, 14);
+                  return (
+                    <tr>
+                      <td class="py-2.5 pr-4 font-medium">{findService(service.id)?.name}</td>
+                      <td class={td}>{week.count}</td>
+                      <td class={cn(td, week.failed > 0 && "text-warn")}>{week.failed}</td>
+                      <td class={td}>{formatMs(week.typicalMs)}</td>
+                      <td class={td}>{formatMs(week.worstP95Ms)}</td>
+                      <td class="py-2.5">
+                        <Sparkline values={fortnight.daily} label="Cold starts per day, last 14 days" />
+                      </td>
+                    </tr>
+                  );
+                }}
+              </For>
+            </tbody>
+          </table>
+        </div>
+      </Show>
     </div>
   );
 }

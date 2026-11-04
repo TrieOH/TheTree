@@ -20,6 +20,8 @@
 	],
 	// Shared awake-time pool that caps container spend (lib/ts/container-budget).
 	"kv_namespaces": [{ "binding": "BUDGET", "id": "bc65d11390534722b1bfca37d503e99b" }],
+	// One data point per request that had to start the container (@trieoh/container-budget).
+	"analytics_engine_datasets": [{ "binding": "COLD_STARTS", "dataset": "container_cold_starts" }],
 	"durable_objects": {
 		"bindings": [{ "name": "IDENTITYX", "class_name": "IdentityXContainer" }]
 	},
