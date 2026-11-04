@@ -14,11 +14,12 @@ import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as IssuesRouteImport } from './routes/issues'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as ServicesServiceRouteImport } from './routes/services/$service'
 import { Route as DocsCategoryIndexRouteImport } from './routes/docs/$category/index'
 import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category/$slug'
 import { Route as ProblemsSetIndexRouteImport } from './routes/problems/$set/index'
 import { Route as ProblemsSetSlugRouteImport } from './routes/problems/$set/$slug'
+import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service/index'
+import { Route as ServicesServiceApiRouteImport } from './routes/services/$service/api'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,11 +46,6 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServicesServiceRoute = ServicesServiceRouteImport.update({
-  id: '/services/$service',
-  path: '/services/$service',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DocsCategoryIndexRoute = DocsCategoryIndexRouteImport.update({
   id: '/docs/$category/',
   path: '/docs/$category/',
@@ -70,30 +66,42 @@ const ProblemsSetSlugRoute = ProblemsSetSlugRouteImport.update({
   path: '/problems/$set/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesServiceIndexRoute = ServicesServiceIndexRouteImport.update({
+  id: '/services/$service/',
+  path: '/services/$service/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesServiceApiRoute = ServicesServiceApiRouteImport.update({
+  id: '/services/$service/api',
+  path: '/services/$service/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
-  '/services/$service': typeof ServicesServiceRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
+  '/services/$service/api': typeof ServicesServiceApiRoute
   '/docs/$category/': typeof DocsCategoryIndexRoute
   '/problems/$set/': typeof ProblemsSetIndexRoute
+  '/services/$service/': typeof ServicesServiceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
-  '/services/$service': typeof ServicesServiceRoute
   '/docs': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
+  '/services/$service/api': typeof ServicesServiceApiRoute
   '/docs/$category': typeof DocsCategoryIndexRoute
   '/problems/$set': typeof ProblemsSetIndexRoute
+  '/services/$service': typeof ServicesServiceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,12 +109,13 @@ export interface FileRoutesById {
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
-  '/services/$service': typeof ServicesServiceRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
+  '/services/$service/api': typeof ServicesServiceApiRoute
   '/docs/$category/': typeof DocsCategoryIndexRoute
   '/problems/$set/': typeof ProblemsSetIndexRoute
+  '/services/$service/': typeof ServicesServiceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,36 +124,39 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/issues'
     | '/metrics'
-    | '/services/$service'
     | '/docs/'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
+    | '/services/$service/api'
     | '/docs/$category/'
     | '/problems/$set/'
+    | '/services/$service/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/delivery'
     | '/issues'
     | '/metrics'
-    | '/services/$service'
     | '/docs'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
+    | '/services/$service/api'
     | '/docs/$category'
     | '/problems/$set'
+    | '/services/$service'
   id:
     | '__root__'
     | '/'
     | '/delivery'
     | '/issues'
     | '/metrics'
-    | '/services/$service'
     | '/docs/'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
+    | '/services/$service/api'
     | '/docs/$category/'
     | '/problems/$set/'
+    | '/services/$service/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,12 +164,13 @@ export interface RootRouteChildren {
   DeliveryRoute: typeof DeliveryRoute
   IssuesRoute: typeof IssuesRoute
   MetricsRoute: typeof MetricsRoute
-  ServicesServiceRoute: typeof ServicesServiceRoute
   DocsIndexRoute: typeof DocsIndexRoute
   DocsCategorySlugRoute: typeof DocsCategorySlugRoute
   ProblemsSetSlugRoute: typeof ProblemsSetSlugRoute
+  ServicesServiceApiRoute: typeof ServicesServiceApiRoute
   DocsCategoryIndexRoute: typeof DocsCategoryIndexRoute
   ProblemsSetIndexRoute: typeof ProblemsSetIndexRoute
+  ServicesServiceIndexRoute: typeof ServicesServiceIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -197,13 +210,6 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/services/$service': {
-      id: '/services/$service'
-      path: '/services/$service'
-      fullPath: '/services/$service'
-      preLoaderRoute: typeof ServicesServiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/docs/$category/': {
       id: '/docs/$category/'
       path: '/docs/$category'
@@ -232,6 +238,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ProblemsSetSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/$service/': {
+      id: '/services/$service/'
+      path: '/services/$service'
+      fullPath: '/services/$service/'
+      preLoaderRoute: typeof ServicesServiceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$service/api': {
+      id: '/services/$service/api'
+      path: '/services/$service/api'
+      fullPath: '/services/$service/api'
+      preLoaderRoute: typeof ServicesServiceApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -240,12 +260,13 @@ const rootRouteChildren: RootRouteChildren = {
   DeliveryRoute: DeliveryRoute,
   IssuesRoute: IssuesRoute,
   MetricsRoute: MetricsRoute,
-  ServicesServiceRoute: ServicesServiceRoute,
   DocsIndexRoute: DocsIndexRoute,
   DocsCategorySlugRoute: DocsCategorySlugRoute,
   ProblemsSetSlugRoute: ProblemsSetSlugRoute,
+  ServicesServiceApiRoute: ServicesServiceApiRoute,
   DocsCategoryIndexRoute: DocsCategoryIndexRoute,
   ProblemsSetIndexRoute: ProblemsSetIndexRoute,
+  ServicesServiceIndexRoute: ServicesServiceIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

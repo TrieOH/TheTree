@@ -1,6 +1,6 @@
 {
   "name": "portal",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "TrieOH dev portal",
   "type": "module",
   "scripts": {
@@ -48,6 +48,7 @@
     "yaml": "catalog:"
   },
   "dependencies": {
+    "@scalar/api-reference": "catalog:",
     "@solidjs/web": "catalog:solid",
     "@tanstack/solid-router": "catalog:solid",
     "@trieoh/ui-solid": "workspace:*",
