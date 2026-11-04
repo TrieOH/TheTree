@@ -3,6 +3,10 @@
 // Nothing here may call the four APIs or Postgres: they scale to zero and the
 // portal must not wake them.
 
+import { LINEAR_WEBHOOK_PATH, handleLinearWebhook } from "./features/issues/server/linear-webhook";
+import { syncLinear } from "./features/issues/server/linear-sync";
+import { readIssues } from "./features/issues/server/read";
+
 function json(body: unknown, init?: ResponseInit): Response {
   return Response.json(body, {
     ...init,
@@ -21,6 +25,10 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
     return json({ ok: row?.ok === 1 });
   }
 
+  if (path === "/api/issues") {
+    return json(await readIssues(env.DB));
+  }
+
   return json({ error: "not found" }, { status: 404 });
 }
 
@@ -32,11 +40,19 @@ export default {
       return handleApi(request, env, path);
     }
 
+    if (path === LINEAR_WEBHOOK_PATH && request.method === "POST") {
+      return handleLinearWebhook(request, env);
+    }
+
     if (path.startsWith("/webhooks/")) {
-      // Linear, GitHub and the deploy hook arrive in phases 2 and 3.
+      // GitHub and the deploy hook arrive in phase 3.
       return json({ error: "not found" }, { status: 404 });
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(syncLinear(env).then((result) => console.log("linear sync", result)));
   },
 } satisfies ExportedHandler<Env>;

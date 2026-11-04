@@ -25,7 +25,7 @@ describe("worker routing", () => {
     const assets = vi.spyOn(env.ASSETS, "fetch");
 
     expect((await worker.fetch(request("/api/nope"), env)).status).toBe(404);
-    expect((await worker.fetch(request("/webhooks/linear", { method: "POST" }), env)).status).toBe(404);
+    expect((await worker.fetch(request("/webhooks/github", { method: "POST" }), env)).status).toBe(404);
     expect(assets).not.toHaveBeenCalled();
   });
 

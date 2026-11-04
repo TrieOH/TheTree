@@ -5,6 +5,7 @@ import { Fragment, jsx, jsxs } from "../../src/shared/mdx/jsx-runtime";
 describe("mdx jsx-runtime", () => {
   it("renders intrinsic tags and components the way MDX calls them", () => {
     const Note = (props: { children?: unknown }) =>
+      // oxlint-disable-next-line solid/reactivity -- static test content
       jsx("aside", { class: "note", children: props.children as never });
 
     const { container } = render(() =>

@@ -1,16 +1,21 @@
-import { createFileRoute, notFound } from "@tanstack/solid-router";
+import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
 import { For } from "solid-js";
 import { REPO_URL, findService } from "@/features/catalog/services";
-import { NotConnected, PageHeader, Section } from "@/widgets/shell/PageHeader";
+import { loadIssues } from "@/features/issues/api";
+import { isOpen } from "@/features/issues/model";
+import { IssueList } from "@/features/issues/ui/IssueList";
+import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
+import { PageHeader, Section } from "@/widgets/shell/PageHeader";
 import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/services/$service")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const service = findService(params.service);
     if (!service) throw notFound();
-    return service;
+    const { issues } = await loadIssues();
+    return { service, issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)) };
   },
-  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.name ?? "Service"} · TrieOH dev` }] }),
+  head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.service.name ?? "Service"} · TrieOH dev` }] }),
   component: ServicePage,
 });
 
@@ -18,7 +23,8 @@ const button =
   "inline-flex h-8 items-center rounded-lg border border-border px-3 text-[13px] transition-colors hover:bg-foreground/5";
 
 function ServicePage() {
-  const service = Route.useLoaderData();
+  const data = Route.useLoaderData();
+  const service = () => data().service;
 
   const links = () => [
     { label: "API reference", href: `${REPO_URL}/blob/main/${service().dir}/api-spec.yml` },
@@ -42,7 +48,7 @@ function ServicePage() {
       </PageHeader>
 
       <Section title="Health">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <KpiRow>
           <Kpi label="Status">
             <span class="inline-flex items-center gap-2">
               <StatusDot status="unknown" />
@@ -51,22 +57,13 @@ function ServicePage() {
           </Kpi>
           <Kpi label="Success rate 30d">—</Kpi>
           <Kpi label="p95">—</Kpi>
-          <Kpi label="Open issues">—</Kpi>
-        </div>
+          <Kpi label="Open issues">{data().issues.length}</Kpi>
+        </KpiRow>
       </Section>
 
-      <Section title="Issues">
-        <NotConnected source="Linear" />
+      <Section title="Open issues" aside={<Link to="/issues">All issues</Link>}>
+        <IssueList issues={data().issues} empty={`No open issues for ${service().name}.`} />
       </Section>
     </>
-  );
-}
-
-function Kpi(props: { label: string; children: unknown }) {
-  return (
-    <div class="rounded-xl border border-border bg-card p-3.5">
-      <span class="block text-[12px] text-muted-foreground">{props.label}</span>
-      <b class="mt-1 block text-lg font-semibold tabular-nums">{props.children as never}</b>
-    </div>
   );
 }
