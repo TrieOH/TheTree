@@ -1,7 +1,7 @@
 import type { ServiceId } from "@/features/catalog/services";
-import type { ApiModel, ApiOperation, ApiParameter, SchemaNode } from "../../../mdx/api-plugin";
+import type { ApiAuth, ApiModel, ApiOperation, ApiParameter, SchemaNode } from "../../../mdx/api-plugin";
 
-export type { ApiModel, ApiOperation, ApiParameter, SchemaNode };
+export type { ApiAuth, ApiModel, ApiOperation, ApiParameter, SchemaNode };
 
 // One lazy chunk per service, built from its spec at build time
 // (mdx/api-plugin.ts).

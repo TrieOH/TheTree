@@ -85,6 +85,11 @@ export interface ApiAuth {
   /** "Bearer token", "API key in header X-API-Key"… */
   summary: string;
   description: string;
+  /** The header that carries it, and what goes before the value. */
+  header: string;
+  prefix: string;
+  /** Stands in for the value in snippets: `<token>`, `<api-key>`. */
+  placeholder: string;
 }
 
 export interface ApiModel {
@@ -248,11 +253,17 @@ function rawModel(doc: Json): ApiModel {
     version: String(info.version ?? ""),
     description: html(info.description),
     baseUrl: "{API_URL}",
-    auth: Object.entries(schemes).map(([name, scheme]) => ({
-      name,
-      summary: authSummary(scheme),
-      description: html(scheme.description),
-    })),
+    auth: Object.entries(schemes).map(([name, scheme]) => {
+      const bearer = scheme.type === "http";
+      return {
+        name,
+        summary: authSummary(scheme),
+        description: html(scheme.description),
+        header: bearer ? "Authorization" : String(scheme.name ?? "Authorization"),
+        prefix: bearer ? `${String(scheme.scheme ?? "bearer").replace(/^./, (c) => c.toUpperCase())} ` : "",
+        placeholder: bearer ? "<token>" : "<api-key>",
+      };
+    }),
     tags: tags.map((name) => ({ name, description: tagText[name] ?? "", operations: byTag.get(name)! })),
     schemas: Object.fromEntries(
       Object.entries((components.schemas ?? {}) as Json)

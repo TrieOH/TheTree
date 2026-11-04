@@ -230,6 +230,9 @@ catalogs:
     '@scalar/openapi-parser':
       specifier: ^0.29.19
       version: 0.29.19
+    '@scalar/snippetz':
+      specifier: ^0.10.14
+      version: 0.10.14
     '@shikijs/rehype':
       specifier: ^4.6.0
       version: 4.6.0
@@ -975,6 +978,9 @@ importers:
 
   front/portal:
     dependencies:
+      '@scalar/snippetz':
+        specifier: 'catalog:'
+        version: 0.10.14
       '@solidjs/web':
         specifier: catalog:solid
         version: 2.0.0-rc.17(solid-js@2.0.0-rc.17)
@@ -4026,6 +4032,10 @@ packages:
     resolution: {integrity: sha512-vBZZgD5k5mp5ii3kNdAti3bZZO0kEvUWYbr9E+Dkjdb67LAdgD5y4Ym0pNIik7prN6KUuUVUu1UMFGFvu1Udqw==}
     engines: {node: '>=22'}
 
+  '@scalar/snippetz@0.10.14':
+    resolution: {integrity: sha512-/1O75DNxK8fB6r8QdvlHsek6bMynhnCe88IY33qxHXbHfo3gQruD+HztJvqOV8IQYGAnjf33rnnz4aeSnfUABg==}
+    engines: {node: '>=22'}
+
   '@scalar/types@0.26.0':
     resolution: {integrity: sha512-T78Dj1Q+W0E1RsMyPoydfR+L+p9IUIkntBCRYlWaRibM98jAxABRYGQoU/qDHX0PR1IAFdE+d7ZqslypZbJzcg==}
     engines: {node: '>=22'}
@@ -6595,6 +6605,9 @@ packages:
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
+
+  js-base64@3.9.6:
+    resolution: {integrity: sha512-LjkzbLtU6Lx6fjXMYGEACEB7rdtqZtxkBe9aS1ZpDNUyWgUivw3yBEIhQ37OVygJYRt+C+9e9fVT8PpFzH2Hww==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -10137,6 +10150,12 @@ snapshots:
       '@scalar/types': 0.26.0
       yaml: 2.9.1
 
+  '@scalar/snippetz@0.10.14':
+    dependencies:
+      '@scalar/helpers': 0.16.4
+      '@scalar/types': 0.26.0
+      js-base64: 3.9.6
+
   '@scalar/types@0.26.0':
     dependencies:
       '@scalar/helpers': 0.16.4
@@ -13122,6 +13141,8 @@ snapshots:
   jiti@2.7.0: {}
 
   joycon@3.1.1: {}
+
+  js-base64@3.9.6: {}
 
   js-tokens@4.0.0: {}
 
