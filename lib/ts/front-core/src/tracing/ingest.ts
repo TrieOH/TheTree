@@ -1,8 +1,10 @@
 export interface TracesIngestEnv {
   TRACES_ENABLED?: string | null;
 
-  // OpenTelemetry official standard
+  // OpenTelemetry official standard: the base ENDPOINT gets /v1/traces
+  // appended, the TRACES_ENDPOINT is used as is.
   OTEL_EXPORTER_OTLP_ENDPOINT?: string | null;
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?: string | null;
   OTEL_EXPORTER_OTLP_HEADERS?: string | null;
   OTEL_EXPORTER_OTLP_PROTOCOL?: string | null;
 
@@ -12,12 +14,10 @@ export interface TracesIngestEnv {
   TRACES_OTLP_URL?: string | null;
 }
 
-const DEFAULT_TRACES_INGEST_URL =
-  "https://traces.trieoh.com/insert/opentelemetry/v1/traces";
-
 /**
  * Parses comma-separated key=value pairs into a headers record.
- * Handles both quoted and unquoted values (e.g. `Authorization=Basic dXNlcjpwYXNz,X-Scope=123`).
+ * Handles both quoted and unquoted values (e.g. `Authorization=Basic dXNlcjpwYXNz,X-Scope=123`),
+ * and percent-encoded ones as the spec writes them (`Authorization=Basic%20dXNlcjpwYXNz`).
  */
 export function parseOtlpHeaders(raw?: string | null): Record<string, string> {
   if (!raw) return {};
@@ -36,11 +36,27 @@ export function parseOtlpHeaders(raw?: string | null): Record<string, string> {
         val = val.slice(1, -1);
       }
       if (key) {
-        headers[key] = val;
+        headers[key] = percentDecode(val);
       }
     }
   }
   return headers;
+}
+
+function percentDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function tracesUrl(env: TracesIngestEnv): string {
+  const signal = env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.trim();
+  if (signal) return signal;
+  const base = env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim();
+  if (base) return `${base.replace(/\/+$/, "")}/v1/traces`;
+  return env.TRACES_OTLP_URL?.trim() ?? "";
 }
 
 export function resolveOtlpConfig(env: TracesIngestEnv): {
@@ -48,10 +64,7 @@ export function resolveOtlpConfig(env: TracesIngestEnv): {
   headers: Record<string, string>;
   hasCredentials: boolean;
 } {
-  const targetUrl =
-    env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim() ||
-    env.TRACES_OTLP_URL?.trim() ||
-    DEFAULT_TRACES_INGEST_URL;
+  const targetUrl = tracesUrl(env);
 
   const headers = parseOtlpHeaders(env.OTEL_EXPORTER_OTLP_HEADERS);
 
@@ -66,10 +79,12 @@ export function resolveOtlpConfig(env: TracesIngestEnv): {
     headers["Authorization"] = `Basic ${btoa(`${user}:${password}`)}`;
   }
 
+  // Without an endpoint there is nowhere to send to, so it counts as unconfigured.
   const hasCredentials =
-    hasAuthHeader ||
-    Boolean(user && password) ||
-    Object.keys(headers).length > 0;
+    Boolean(targetUrl) &&
+    (hasAuthHeader ||
+      Boolean(user && password) ||
+      Object.keys(headers).length > 0);
 
   return {
     targetUrl,
@@ -102,7 +117,7 @@ export async function handleTracesIngest(
 
   if (!hasCredentials) {
     console.error(
-      `[tracing] OTLP credentials not configured (set OTEL_EXPORTER_OTLP_HEADERS or TRACES_OTLP_USER/PASSWORD, TRACES_ENABLED=${env.TRACES_ENABLED})`,
+      `[tracing] OTLP export not configured (set OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS, TRACES_ENABLED=${env.TRACES_ENABLED})`,
     );
     return new Response(null, { status: 503 });
   }

@@ -64,7 +64,12 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 	serviceName = appName
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	res, err := resource.New(ctx, resource.WithAttributes(semconv.ServiceName(appName), semconv.ServiceVersion("dev")))
+	// OTEL_RESOURCE_ATTRIBUTES (service.version, deployment.environment.name,
+	// set by the deploy) overrides the defaults here.
+	res, err := resource.New(ctx,
+		resource.WithAttributes(semconv.ServiceName(appName), semconv.ServiceVersion("dev")),
+		resource.WithFromEnv(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("telemetry resource: %w", err)
 	}
