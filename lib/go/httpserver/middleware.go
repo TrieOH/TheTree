@@ -160,6 +160,7 @@ func logs(logger *zap.Logger, skip []string) func(http.Handler) http.Handler {
 type httpCollectors struct {
 	requests *prometheus.CounterVec
 	duration *prometheus.HistogramVec
+	problems *prometheus.CounterVec
 }
 
 // newCollectors registers the HTTP metrics. Names, labels and buckets are
@@ -175,8 +176,12 @@ func newCollectors(reg prometheus.Registerer) (*httpCollectors, error) {
 			Help:    "Histogram of HTTP response times.",
 			Buckets: prometheus.ExponentialBuckets(0.00025, 2, 16),
 		}, []string{"route"}),
+		problems: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "http_problems_total",
+			Help: "Problem answers by operation, problem type slug and status.",
+		}, []string{"operation", "problem", "status"}),
 	}
-	for _, col := range []prometheus.Collector{c.requests, c.duration} {
+	for _, col := range []prometheus.Collector{c.requests, c.duration, c.problems} {
 		err := reg.Register(col)
 		if err != nil {
 			return nil, err
