@@ -6,7 +6,12 @@ import tailwindcss from "@tailwindcss/vite";
 import Icons from "unplugin-icons/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { fileURLToPath } from "node:url";
+import rehypeShiki from "@shikijs/rehype";
+import remarkGfm from "remark-gfm";
+import { problems } from "./mdx/problems-plugin.ts";
+import { rehypeHeadingIds } from "./mdx/rehype-heading-ids.ts";
 import { remarkAdr } from "./mdx/remark-adr.ts";
+import { remarkMermaid } from "./mdx/remark-mermaid.ts";
 
 export default defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
@@ -32,9 +37,15 @@ export default defineConfig(({ mode }) => ({
         jsxImportSource: fileURLToPath(new URL("./src/shared/mdx", import.meta.url)),
         mdExtensions: [".md"],
         mdxExtensions: [".mdx"],
-        remarkPlugins: [remarkAdr],
+        remarkPlugins: [remarkAdr, remarkGfm, remarkMermaid],
+        // Highlighted at build time, in both themes: App.css picks one.
+        rehypePlugins: [
+          rehypeHeadingIds,
+          [rehypeShiki, { themes: { light: "github-light", dark: "github-dark-dimmed" }, defaultColor: false }],
+        ],
       }),
     },
+    problems(),
     // Scans src/routes and generates src/routeTree.gen.ts — the typed route
     // tree — on dev and build. Must be registered before solid().
     tanstackRouter({ target: "solid", autoCodeSplitting: true }),

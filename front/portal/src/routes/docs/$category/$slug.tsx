@@ -1,6 +1,7 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
 import { Show } from "solid-js";
 import { findCategory, findDoc } from "@/features/docs/catalog";
+import { docComponents } from "@/features/docs/components";
 import { DocStatus } from "@/features/docs/DocStatus";
 import { PageHeader } from "@/widgets/shell/PageHeader";
 
@@ -36,7 +37,7 @@ function DocPage() {
         </div>
       </PageHeader>
       <article class="prose-doc">
-        <Content />
+        <Content components={docComponents} />
       </article>
     </>
   );

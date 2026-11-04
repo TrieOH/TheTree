@@ -121,3 +121,41 @@
   border-bottom: 1px solid var(--border);
   text-align: left;
 }
+
+/* Code highlighted at build time by shiki with both themes as CSS variables. */
+.prose-doc pre.shiki {
+  background: var(--code-background);
+}
+.shiki span {
+  color: var(--shiki-light);
+}
+.dark .shiki span {
+  color: var(--shiki-dark);
+}
+
+/* <Steps>: each ### inside is numbered. */
+.doc-steps {
+  counter-reset: step;
+  padding-left: 2.25rem;
+  border-left: 1px solid var(--border);
+  margin-left: 0.75rem;
+}
+.doc-steps h3 {
+  counter-increment: step;
+  position: relative;
+}
+.doc-steps h3::before {
+  content: counter(step);
+  position: absolute;
+  left: -3.05rem;
+  top: -0.1rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
