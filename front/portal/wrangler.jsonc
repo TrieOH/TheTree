@@ -23,6 +23,18 @@
     // /api/* and /webhooks/* reach the Worker even when a file would match.
     "run_worker_first": ["/api/*", "/webhooks/*"]
   },
+  // Hourly catch-up from Linear (the first run is the backfill). Only reads
+  // Linear and writes D1.
+  "triggers": {
+    "crons": ["7 * * * *"]
+  },
+  // Runtime secrets (`wrangler secret put`); deploys fail while one is missing.
+  "secrets": {
+    "required": [
+      "LINEAR_API_KEY",
+      "LINEAR_WEBHOOK_SECRET"
+    ]
+  },
   "observability": {
     "enabled": true
   }

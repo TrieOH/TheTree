@@ -1,9 +1,14 @@
 import { Link, createFileRoute } from "@tanstack/solid-router";
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 import { docsIn, type DocCategoryId } from "@/features/docs/catalog";
-import { NotConnected, Section } from "@/widgets/shell/PageHeader";
+import { loadIssues } from "@/features/issues/api";
+import { isOpen, type IssuesPayload } from "@/features/issues/model";
+import { IssueList } from "@/features/issues/ui/IssueList";
+import { Section } from "@/widgets/shell/PageHeader";
 
 export const Route = createFileRoute("/")({
+  // Home still renders when the issues can't load; attention just says so.
+  loader: (): Promise<IssuesPayload | null> => loadIssues().catch(() => null),
   component: Home,
 });
 
@@ -25,6 +30,8 @@ const chip =
 
 function Home() {
   const decisions = docsIn("decisions");
+  const data = Route.useLoaderData();
+  const urgent = () => data()?.issues.filter((issue) => isOpen(issue) && issue.priority === 1) ?? [];
 
   return (
     <>
@@ -46,10 +53,12 @@ function Home() {
       </section>
 
       <Section title="Needs attention">
-        <NotConnected source="Linear, CI and Cloudflare">
-          Nothing to flag yet. Urgent issues, failing CI on main and degraded services show up here once
-          those sources are connected.
-        </NotConnected>
+        <Show
+          when={data()}
+          fallback={<p class="text-[13px] text-muted-foreground">Couldn't load issues right now.</p>}
+        >
+          <IssueList issues={urgent()} empty="Nothing needs attention." />
+        </Show>
       </Section>
 
       <Section
