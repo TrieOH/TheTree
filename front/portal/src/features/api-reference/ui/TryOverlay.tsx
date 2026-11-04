@@ -86,15 +86,31 @@ export function TryOverlay(props: {
       ariaLabel={`Try ${props.op.summary}`}
       class="h-[min(88dvh,860px)] max-w-[1120px]"
       contentClass="grid min-h-0 flex-1 overflow-hidden p-0 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
-      header={
-        <div class="flex min-w-0 items-center gap-3 pr-10">
+      // The standard title slot brings the dialog's padding and close button.
+      title={
+        <span class="flex min-w-0 items-center gap-3">
           <MethodBadge method={props.op.method} />
-          <PathText path={props.op.path} class="text-[14px]" />
-          <span class="ml-auto hidden shrink-0 text-[13px] text-muted-foreground lg:inline">{props.op.summary}</span>
-        </div>
+          <PathText path={props.op.path} class="text-[14px] font-normal" />
+        </span>
       }
+      description={props.op.summary}
     >
       <section aria-label="Request" class="min-h-0 space-y-3 overflow-y-auto border-border p-5 text-[13px] md:border-r">
+      <div class="space-y-1.5 border-b border-border pb-4">
+        <button
+          type="button"
+          onClick={send}
+          disabled={!!check().blocker || sending()}
+          class="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-opacity disabled:opacity-40"
+        >
+          <SendIcon class="size-3.5" />
+          {sending() ? "Sending…" : "Send"}
+        </button>
+        <p class="text-[11.5px] text-muted-foreground">
+          {check().blocker ?? check().hint ?? "Sends from your browser. A sleeping API wakes up to answer."}
+        </p>
+      </div>
+
         <div>
           <label class={label} for="try-base">Base URL</label>
           <input
@@ -180,21 +196,6 @@ export function TryOverlay(props: {
           code={snippet(language(), request())}
           filename={LANGUAGES.find((lang) => lang.id === language())!.filename}
         />
-      </div>
-
-      <div class="space-y-1.5">
-        <button
-          type="button"
-          onClick={send}
-          disabled={!!check().blocker || sending()}
-          class="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-opacity disabled:opacity-40"
-        >
-          <SendIcon class="size-3.5" />
-          {sending() ? "Sending…" : "Send"}
-        </button>
-        <p class="text-[11.5px] text-muted-foreground">
-          {check().blocker ?? check().hint ?? "Sends from your browser. A sleeping API wakes up to answer."}
-        </p>
       </div>
 
       <Show when={result()}>
