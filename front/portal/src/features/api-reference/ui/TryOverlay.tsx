@@ -1,4 +1,4 @@
-import { CodeBlock, Tabs, cn } from "@trieoh/ui-solid";
+import { CodeBlock, Dialog, Tabs, cn } from "@trieoh/ui-solid";
 import { For, Show, createMemo, createSignal } from "solid-js";
 import SendIcon from "~icons/lucide/send";
 import type { ApiAuth, ApiOperation } from "../model";
@@ -29,11 +29,16 @@ function pretty(text: string): string {
 }
 
 /**
- * Fill in an endpoint's request, get it as code, and send it. Nothing is sent
- * until Send is pressed; the base URL starts empty, so the page itself never
- * reaches an API.
+ * A centered overlay to fill in an endpoint's request, get it as code and
+ * send it. Nothing is sent until Send is pressed; the base URL starts empty,
+ * so the page itself never reaches an API.
  */
-export function TryPanel(props: { op: ApiOperation; auth: readonly ApiAuth[]; class?: string }) {
+export function TryOverlay(props: {
+  op: ApiOperation;
+  auth: readonly ApiAuth[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [result, setResult] = createSignal<Result | null>(null, { name: "try-result" });
   const [sending, setSending] = createSignal(false, { name: "try-sending" });
 
@@ -74,13 +79,22 @@ export function TryPanel(props: { op: ApiOperation; auth: readonly ApiAuth[]; cl
   };
 
   return (
-    <div class={cn("space-y-4 text-[13px]", props.class)}>
-      <div class="flex items-center gap-2">
-        <MethodBadge method={props.op.method} />
-        <PathText path={props.op.path} />
-      </div>
-
-      <div class="space-y-3">
+    <Dialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      size="full"
+      ariaLabel={`Try ${props.op.summary}`}
+      class="h-[min(88dvh,860px)] max-w-[1120px]"
+      contentClass="grid min-h-0 flex-1 overflow-hidden p-0 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      header={
+        <div class="flex min-w-0 items-center gap-3 pr-10">
+          <MethodBadge method={props.op.method} />
+          <PathText path={props.op.path} class="text-[14px]" />
+          <span class="ml-auto hidden shrink-0 text-[13px] text-muted-foreground lg:inline">{props.op.summary}</span>
+        </div>
+      }
+    >
+      <section aria-label="Request" class="min-h-0 space-y-3 overflow-y-auto border-border p-5 text-[13px] md:border-r">
         <div>
           <label class={label} for="try-base">Base URL</label>
           <input
@@ -150,8 +164,9 @@ export function TryPanel(props: { op: ApiOperation; auth: readonly ApiAuth[]; cl
             </div>
           )}
         </Show>
-      </div>
+      </section>
 
+      <section aria-label="Code and response" class="min-h-0 space-y-4 overflow-y-auto p-5 text-[13px]">
       <div>
         <Tabs
           ariaLabel="Snippet language"
@@ -200,6 +215,7 @@ export function TryPanel(props: { op: ApiOperation; auth: readonly ApiAuth[]; cl
           </div>
         )}
       </Show>
-    </div>
+      </section>
+    </Dialog>
   );
 }

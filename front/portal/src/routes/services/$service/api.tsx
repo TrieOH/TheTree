@@ -5,7 +5,6 @@ import { loadApi, schemaAnchor, tagAnchor, type ApiModel } from "@/features/api-
 import { ApiNav } from "@/features/api-reference/ui/ApiNav";
 import { OperationSection } from "@/features/api-reference/ui/OperationSection";
 import { SchemaView } from "@/features/api-reference/ui/SchemaView";
-import { TryPanel } from "@/features/api-reference/ui/TryPanel";
 
 export const Route = createFileRoute("/services/$service/api")({
   loader: async ({ params }) => {
@@ -17,10 +16,11 @@ export const Route = createFileRoute("/services/$service/api")({
   component: ApiPage,
 });
 
-// Floating cards beside the reference: inset from the portal's sidebar,
-// sticky, scrolling on their own.
+// The route list floats beside the reference: inset from the portal's
+// sidebar, one fixed height centered on the screen, scrolling on its own.
+const NAV_HEIGHT = "min(80dvh,760px)";
 const floating =
-  "sticky top-6 max-h-[calc(100dvh-3rem)] self-start overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-sm";
+  "sticky self-start overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-lg shadow-black/20 ring-1 ring-foreground/5 dark:shadow-black/50";
 
 function ApiPage() {
   const data = Route.useLoaderData();
@@ -64,8 +64,11 @@ function Reference(props: { api: ApiModel }) {
   });
 
   return (
-    <div class="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_360px]">
-      <aside class={`hidden lg:block ${floating}`}>
+    <div class="grid justify-center gap-8 lg:grid-cols-[250px_minmax(0,860px)]">
+      <aside
+        class={`hidden lg:block ${floating}`}
+        style={{ height: NAV_HEIGHT, top: `calc((100dvh - ${NAV_HEIGHT}) / 2)` }}
+      >
         <ApiNav api={props.api} active={activeOp()?.id ?? null} />
       </aside>
 
@@ -131,11 +134,6 @@ function Reference(props: { api: ApiModel }) {
         </section>
       </div>
 
-      <aside class={`hidden xl:block ${floating} p-4`}>
-        <Show when={activeOp()} keyed>
-          {(op) => <TryPanel op={op} auth={props.api.auth} />}
-        </Show>
-      </aside>
     </div>
   );
 }

@@ -2,12 +2,13 @@ import { CodeBlock, cn } from "@trieoh/ui-solid";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createSignal } from "solid-js";
 import ChevronIcon from "~icons/lucide/chevron-right";
+import PlayIcon from "~icons/lucide/play";
 import type { ServiceId } from "@/features/catalog/services";
 import { ProblemList } from "@/features/problems/ui/ProblemList";
 import { operationAnchor, type ApiAuth, type ApiOperation, type ApiParameter } from "../model";
 import { MethodBadge, PathText } from "./MethodBadge";
 import { SchemaView, TypeText } from "./SchemaView";
-import { TryPanel } from "./TryPanel";
+import { TryOverlay } from "./TryOverlay";
 
 const IN_ORDER: ApiParameter["in"][] = ["path", "query", "header", "cookie"];
 
@@ -25,7 +26,7 @@ function Block(props: { title: string; aside?: string; children: JSX.Element }) 
   );
 }
 
-/** One endpoint, written out in full. Below `xl` it carries its own try-it panel. */
+/** One endpoint, written out in full, with a Try it overlay. */
 export function OperationSection(props: { op: ApiOperation; service: ServiceId; auth: readonly ApiAuth[] }) {
   const [problemsOpen, setProblemsOpen] = createSignal(false, { name: "problems-open" });
   const [tryOpen, setTryOpen] = createSignal(false, { name: "try-open" });
@@ -35,9 +36,17 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
     <article id={operationAnchor(props.op)} data-operation={props.op.id} class="scroll-mt-6 space-y-5 border-b border-border pb-10">
       <header class="space-y-2">
         <h3 class="font-heading text-[17px] font-semibold">{props.op.summary}</h3>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex min-w-0 items-center gap-2">
           <MethodBadge method={props.op.method} />
           <PathText path={props.op.path} />
+          <button
+            type="button"
+            onClick={() => setTryOpen(true)}
+            class="ml-auto inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 text-[12.5px] font-medium hover:bg-foreground/5"
+          >
+            <PlayIcon class="size-3.5" />
+            Try it
+          </button>
         </div>
         <p class="text-[12.5px] text-muted-foreground">
           {props.op.auth.length ? `Auth: ${props.op.auth.join(" or ")}` : "Public: no authentication."}
@@ -111,20 +120,9 @@ export function OperationSection(props: { op: ApiOperation; service: ServiceId; 
         </section>
       </Show>
 
-      <section class="xl:hidden">
-        <button
-          type="button"
-          aria-expanded={tryOpen() ? "true" : "false"}
-          onClick={() => setTryOpen(!tryOpen())}
-          class="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
-        >
-          <ChevronIcon class={cn("size-3.5 transition-transform", tryOpen() && "rotate-90")} />
-          Try it
-        </button>
-        <Show when={tryOpen()}>
-          <TryPanel op={props.op} auth={props.auth} class="mt-3 rounded-2xl border border-border bg-card p-4" />
-        </Show>
-      </section>
+      <Show when={tryOpen()}>
+        <TryOverlay op={props.op} auth={props.auth} open={tryOpen()} onOpenChange={setTryOpen} />
+      </Show>
     </article>
   );
 }
