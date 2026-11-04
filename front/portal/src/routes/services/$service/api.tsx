@@ -1,5 +1,6 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onSettled } from "solid-js";
+import BoxIcon from "~icons/lucide/box";
 import { findService } from "@/features/catalog/services";
 import { loadApi, schemaAnchor, tagAnchor, type ApiModel } from "@/features/api-reference/model";
 import { ApiNav } from "@/features/api-reference/ui/ApiNav";
@@ -150,7 +151,8 @@ function Reference(props: { api: ApiModel }) {
           <For each={Object.entries(props.api.schemas)}>
             {([name, node]) => (
               <details id={schemaAnchor(name)} class="scroll-mt-6 rounded-xl border border-border">
-                <summary class="cursor-pointer px-3 py-2.5 font-mono text-[13px] font-medium hover:bg-foreground/5">
+                <summary class="flex cursor-pointer items-center gap-2 px-3 py-2.5 font-mono text-[13px] font-medium hover:bg-foreground/5">
+                  <BoxIcon aria-hidden="true" class="size-3.5 shrink-0 text-accent" />
                   {name}
                 </summary>
                 <div class="border-t border-border p-3">

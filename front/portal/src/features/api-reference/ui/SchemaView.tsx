@@ -1,9 +1,10 @@
 import { cn } from "@trieoh/ui-solid";
 import { For, Show, createSignal } from "solid-js";
+import BoxIcon from "~icons/lucide/box";
 import ChevronIcon from "~icons/lucide/chevron-right";
 import { refOf, schemaAnchor, typeLabel, type SchemaNode } from "../model";
 
-/** A type, linking to its model when it is (or holds) a named one. */
+/** A type, linking to its model when it is (or holds) a named one; models carry a box icon. */
 export function TypeText(props: { node: SchemaNode | null | undefined }) {
   const ref = () => refOf(props.node);
   return (
@@ -12,7 +13,12 @@ export function TypeText(props: { node: SchemaNode | null | undefined }) {
       fallback={<span class="font-mono text-[12px] text-muted-foreground">{typeLabel(props.node)}</span>}
     >
       {(name) => (
-        <a href={`#${schemaAnchor(name())}`} class="font-mono text-[12px] text-accent hover:underline">
+        <a
+          href={`#${schemaAnchor(name())}`}
+          title={`Model ${name()}`}
+          class="inline-flex items-center gap-1 font-mono text-[12px] text-accent hover:underline"
+        >
+          <BoxIcon aria-hidden="true" class="size-3.5 shrink-0" />
           {typeLabel(props.node)}
         </a>
       )}
