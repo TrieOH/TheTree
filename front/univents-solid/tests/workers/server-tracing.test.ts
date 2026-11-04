@@ -92,15 +92,15 @@ describe("server span emission", () => {
       },
       {
         TRACES_ENABLED: "true",
-        OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com/v1/traces",
-        OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer otel-token-123,X-Custom-Tenant=my-org",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com/otlp/",
+        OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer%20otel-token-123,X-Custom-Tenant=my-org",
       },
     );
 
     const { init } = spanFrom(spy);
     const calledUrl = spy.mock.calls[0]?.[0];
 
-    expect(calledUrl).toBe("https://otel.example.com/v1/traces");
+    expect(calledUrl).toBe("https://otel.example.com/otlp/v1/traces");
     expect(init.headers).toMatchObject({
       Authorization: "Bearer otel-token-123",
       "X-Custom-Tenant": "my-org",

@@ -372,7 +372,9 @@ jobs:
           # deploy the pushed image instead of rebuilding from the Dockerfile
           sed -i -E "s|\"image\": \"[^\"]*\"|\"image\": \"$IMAGE\"|; /\"image_build_context\"/d" wrangler.jsonc
           grep -n '"image"' wrangler.jsonc
+          # the container reads it as its OTel resource (lib/go/telemetry)
           pnpm exec wrangler deploy \
+            --var "OTEL_RESOURCE_ATTRIBUTES:service.version=$VERSION,deployment.environment.name=production" \
             --tag "$VERSION" --message "release: $ARTIFACT $VERSION" | tee deploy.log
           ID=$(grep -oE 'Current Version ID: [a-f0-9-]+' deploy.log | awk '{print $NF}' || true)
           echo "[release] $ARTIFACT $VERSION → Cloudflare ($IMAGE, worker version ${ID:-unknown})"

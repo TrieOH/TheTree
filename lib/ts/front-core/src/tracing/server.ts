@@ -31,8 +31,8 @@ function warnMissingCredentials(env: TracesIngestEnv): void {
   if (warnedMissingCredentials) return;
   warnedMissingCredentials = true;
   console.warn(
-    "[tracing] server spans are not being exported: configure OTEL_EXPORTER_OTLP_HEADERS or TRACES_OTLP_USER " +
-    `and TRACES_OTLP_PASSWORD (TRACES_ENABLED=${env.TRACES_ENABLED ?? "unset"})`,
+    "[tracing] server spans are not being exported: configure OTEL_EXPORTER_OTLP_ENDPOINT and " +
+    `OTEL_EXPORTER_OTLP_HEADERS (TRACES_ENABLED=${env.TRACES_ENABLED ?? "unset"})`,
   );
 }
 

@@ -44,6 +44,8 @@
 		"PROFILE_PORT": "6062",
 		"IDENTITY_X_URL": "https://api.identityx.trieoh.com",
 		"IDENTITY_X_PROJECT_ID": "01a01f27-2a79-7136-a7e8-22c8099baf71",
+		// Grafana Cloud OTLP gateway; the container appends /v1/<signal> (lib/go/telemetry).
+		"OTEL_EXPORTER_OTLP_ENDPOINT": "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp",
 	},
 	// Credentials are Worker secrets, set one at a time with
 	// `wrangler secret put NAME` and kept across deploys. Listing them makes
@@ -56,6 +58,8 @@
 			"INFORMD_POSTGRES_USER",
 			"INFORMD_POSTGRES_PASSWORD",
 			"IDENTITY_X_API_KEY",
+			// Authorization=Basic%20<base64(instanceID:token)>, from the stack's OpenTelemetry page.
+			"OTEL_EXPORTER_OTLP_HEADERS",
 		],
 	},
 }
