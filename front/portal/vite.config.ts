@@ -8,6 +8,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { fileURLToPath } from "node:url";
 import rehypeShiki from "@shikijs/rehype";
 import remarkGfm from "remark-gfm";
+import { apiModels } from "./mdx/api-plugin.ts";
 import { problems } from "./mdx/problems-plugin.ts";
 import { rehypeHeadingIds } from "./mdx/rehype-heading-ids.ts";
 import { remarkAdr } from "./mdx/remark-adr.ts";
@@ -46,6 +47,7 @@ export default defineConfig(({ mode }) => ({
       }),
     },
     problems(),
+    apiModels(),
     // Scans src/routes and generates src/routeTree.gen.ts — the typed route
     // tree — on dev and build. Must be registered before solid().
     tanstackRouter({ target: "solid", autoCodeSplitting: true }),

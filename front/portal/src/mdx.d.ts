@@ -23,3 +23,11 @@ declare module "virtual:problems" {
   const problems: Record<ProblemSet, ProblemDoc[]>;
   export default problems;
 }
+
+declare module "virtual:api/*" {
+  import type { ApiModel } from "../mdx/api-plugin";
+
+  /** null when this checkout has no generated spec (`just gen`). */
+  const model: ApiModel | null;
+  export default model;
+}
