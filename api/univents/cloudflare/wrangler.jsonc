@@ -5,9 +5,9 @@
 	"compatibility_date": "2026-10-19",
 	"observability": {
 		"enabled": true,
-		// exported to Grafana Cloud; destinations are account-level (Workers Observability)
-		"traces": { "enabled": true, "destinations": ["grafana-traces"] },
-		"logs": { "enabled": true, "destinations": ["grafana-logs"] }
+		// exported to Grafana Cloud only (persist: false); destinations are account-level (Workers Observability)
+		"traces": { "enabled": true, "destinations": ["grafana-traces"], "persist": false },
+		"logs": { "enabled": true, "destinations": ["grafana-logs"], "persist": false }
 	},
 	"routes": [{ "pattern": "api.univents.com.br", "custom_domain": true }],
 
