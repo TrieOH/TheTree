@@ -34,9 +34,10 @@ describe("problems model", () => {
   });
 
   it("builds an example body with the problem's own members", () => {
-    const body = JSON.parse(exampleBody(findProblem("payssage", "provider-unauthorized")!, "payssage"));
+    const body = JSON.parse(exampleBody(findProblem("payssage", "provider-unauthorized")!));
     expect(body).toMatchObject({
-      type: "https://api.payssage.trieoh.com/problems/provider-unauthorized",
+      // A placeholder, never a real host someone could paste and wake.
+      type: "{API_URL}/problems/provider-unauthorized",
       status: 401,
       provider: "…",
       reason: "…",
@@ -74,16 +75,18 @@ describe("<ProblemList>", () => {
     expect(slugsIn(container)).toEqual(["provider-unauthorized", "provider-conflict"]);
     expect(container.querySelectorAll("h4")).toHaveLength(0);
     expect(view.queryByRole("button", { name: "Show details" })).toBeNull();
-    expect(container.textContent).toContain('"reason"');
+    expect(container.textContent).toContain("This problem adds");
+    expect(container.textContent).toContain("{API_URL}/problems/provider-unauthorized");
+    expect(container.textContent).not.toContain("trieoh.com");
   });
 
   it("expands a row's details on click", async () => {
     const { container, view } = await renderList({ set: "payssage", only: ["provider-unauthorized"] });
 
-    expect(container.textContent).not.toContain('"reason"');
+    expect(container.textContent).not.toContain("This problem adds");
     fireEvent.click(view.getByRole("button", { name: "Show details" }));
-    // CodeBlock highlights a tick after it mounts.
-    await waitFor(() => expect(container.textContent).toContain('"reason"'));
+    await waitFor(() => expect(container.textContent).toContain("This problem adds"));
+    expect(view.getByRole("button", { name: "Copy example body" })).toBeInTheDocument();
   });
 
   it("puts descriptions inline only when asked", async () => {

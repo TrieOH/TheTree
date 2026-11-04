@@ -53,6 +53,8 @@ describe("API reference", () => {
       agent: { disabled: true },
       mcp: { disabled: true },
       forceDarkModeState: "dark",
+      urlRouting: false,
+      layout: "classic",
     });
     expect(config).not.toHaveProperty("url");
     expect(config).not.toHaveProperty("proxyUrl");

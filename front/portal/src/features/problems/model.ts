@@ -71,11 +71,19 @@ function exampleValue(member: ProblemMember): unknown {
   }
 }
 
+/**
+ * The problem's `type`. Always with a `{API_URL}` placeholder, never a real
+ * host: one to paste into a browser would wake the API, and whoever runs
+ * the API decides its URL.
+ */
+export function problemType(problem: ProblemDoc): string {
+  return `{API_URL}/problems/${problem.slug}`;
+}
+
 /** What a client receives: the standard members, then the problem's own. */
-export function exampleBody(problem: ProblemDoc, set: ProblemSet): string {
-  const api = set === "shared" ? "{API_URL}" : (findService(set)?.apiUrl ?? "{API_URL}");
+export function exampleBody(problem: ProblemDoc): string {
   const body = {
-    type: `${api}/problems/${problem.slug}`,
+    type: problemType(problem),
     status: problem.status,
     title: problem.title,
     detail: problem.description || problem.title,
