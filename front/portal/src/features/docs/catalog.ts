@@ -49,11 +49,32 @@ const decisions: DocEntry[] = Object.entries(adrMeta)
   // Newest decision first.
   .sort((a, b) => b.slug.localeCompare(a.slug));
 
+// Written docs: docs/<folder>/*.md(x), titled by their `# Heading`.
+const guideMeta = import.meta.glob<DocMeta>("../../../../../docs/{onboarding,runbooks,incidents}/*.{md,mdx}", {
+  eager: true,
+  import: "meta",
+});
+const guideContent = import.meta.glob<Awaited<ReturnType<Loader>>>(
+  "../../../../../docs/{onboarding,runbooks,incidents}/*.{md,mdx}",
+);
+const FOLDER: Record<string, DocCategoryId> = {
+  onboarding: "onboarding",
+  runbooks: "runbooks",
+  incidents: "incident-reports",
+};
+
+function guides(category: DocCategoryId): DocEntry[] {
+  return Object.entries(guideMeta)
+    .filter(([path]) => FOLDER[path.split("/").at(-2)!] === category)
+    .map(([path, meta]) => ({ category, slug: slugOf(path), meta, load: guideContent[path] as Loader }))
+    .sort((a, b) => (a.meta.title ?? a.slug).localeCompare(b.meta.title ?? b.slug));
+}
+
 const DOCS: Record<DocCategoryId, readonly DocEntry[]> = {
   decisions,
-  runbooks: [],
-  "incident-reports": [],
-  onboarding: [],
+  runbooks: guides("runbooks"),
+  "incident-reports": guides("incident-reports"),
+  onboarding: guides("onboarding"),
 };
 
 export function findCategory(id: string): DocCategory | undefined {

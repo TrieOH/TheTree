@@ -15,3 +15,10 @@ declare module "*.mdx" {
   const Content: Component<{ components?: Record<string, unknown> }>;
   export default Content;
 }
+
+declare module "virtual:problems" {
+  import type { ProblemDoc } from "../mdx/problems-plugin";
+
+  const problems: Record<string, ProblemDoc[]>;
+  export default problems;
+}
