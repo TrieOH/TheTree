@@ -61,6 +61,7 @@ jobs:
         run: pnpm --dir "$PAGES_DIRECTORY" build
 
       - name: Deploy static assets to Pages
+        id: deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
@@ -69,3 +70,18 @@ jobs:
           wranglerVersion: '4.97.0'
           workingDirectory: ${{ needs.validate.outputs.directory }}
           command: pages deploy --branch=main
+
+      # Only once the upload was attempted: a failed lint isn't a failed deploy.
+      - name: Report deploy to the portal
+        if: ${{ always() && steps.deploy.outcome != 'skipped' }}
+        uses: ./.github/actions/report-deploy
+        with:
+          status: ${{ job.status }}
+          health-url: >-
+            ${{
+              needs.validate.outputs.directory == 'front/trieoh' && 'https://trieoh.com' ||
+              needs.validate.outputs.directory == 'front/trieoh-components' && 'https://components.trieoh.com' ||
+              needs.validate.outputs.directory == 'front/trieoh-style-guide' && 'https://styles.trieoh.com' ||
+              ''
+            }}
+          secret: ${{ secrets.DEPLOY_HOOK_SECRET }}

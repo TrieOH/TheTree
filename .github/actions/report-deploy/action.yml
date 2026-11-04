@@ -1,0 +1,50 @@
+name: Report deploy to the portal
+description: >
+  Tells the dev portal (portal.trieoh.com) what a release did. On success it
+  first checks health-url, retrying while a just-deployed container starts;
+  that request is the only one the release pipeline makes to a service. The
+  portal itself never calls the services. Never fails the job.
+inputs:
+  status:
+    description: "the job's status so far: success, failure or cancelled (pass job.status)"
+    required: true
+  health-url:
+    description: "URL that answers 2xx when the release is up; empty skips the check"
+    required: false
+    default: ""
+  secret:
+    description: "DEPLOY_HOOK_SECRET"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Report
+      shell: bash
+      env:
+        STATUS: ${{ inputs.status }}
+        HEALTH_URL: ${{ inputs.health-url }}
+        SECRET: ${{ inputs.secret }}
+        TAG: ${{ github.ref_name }}
+        SHA: ${{ github.sha }}
+        ACTOR: ${{ github.actor }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -uo pipefail
+        # what shipped: the tag minus its version (identityx, univents-ui, pages/trieoh)
+        COMPONENT="${TAG%/v*}"
+        HEALTH=null
+        if [ "$STATUS" = success ] && [ -n "$HEALTH_URL" ]; then
+          HEALTH=false
+          for _ in 1 2 3 4 5 6; do
+            if curl -fsS -m 15 -o /dev/null "$HEALTH_URL"; then HEALTH=true; break; fi
+            sleep 10
+          done
+          echo "[report] health $HEALTH_URL → $HEALTH"
+        fi
+        BODY=$(printf '{"component":"%s","tag":"%s","sha":"%s","actor":"%s","status":"%s","health_ok":%s,"run_id":%s}' \
+          "$COMPONENT" "$TAG" "$SHA" "$ACTOR" "$STATUS" "$HEALTH" "$RUN_ID")
+        curl -fsS -m 15 -X POST https://portal.trieoh.com/webhooks/deploy \
+          -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" \
+          --data "$BODY" \
+          && echo "[report] $COMPONENT $TAG $STATUS" \
+          || echo "::warning::could not report the deploy to the portal"
