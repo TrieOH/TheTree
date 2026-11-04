@@ -47,6 +47,9 @@
     "remote": true
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    // exported to Grafana Cloud only (persist: false); destinations are account-level (Workers Observability)
+    "traces": { "enabled": true, "destinations": ["grafana-traces"], "persist": false },
+    "logs": { "enabled": true, "destinations": ["grafana-logs"], "persist": false }
   }
 }

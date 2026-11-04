@@ -3,7 +3,12 @@
 	"name": "informd-api",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-19",
-	"observability": { "enabled": true },
+	"observability": {
+		"enabled": true,
+		// exported to Grafana Cloud only (persist: false); destinations are account-level (Workers Observability)
+		"traces": { "enabled": true, "destinations": ["grafana-traces"], "persist": false },
+		"logs": { "enabled": true, "destinations": ["grafana-logs"], "persist": false }
+	},
 	"routes": [{ "pattern": "api.informd.trieoh.com", "custom_domain": true }],
 
 	"containers": [

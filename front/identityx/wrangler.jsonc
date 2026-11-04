@@ -12,7 +12,10 @@
   "main": "src/server.ts",
   "upload_source_maps": true,
   "observability": {
-    "enabled": true
+    "enabled": true,
+    // exported to Grafana Cloud only (persist: false); destinations are account-level (Workers Observability)
+    "traces": { "enabled": true, "destinations": ["grafana-traces"], "persist": false },
+    "logs": { "enabled": true, "destinations": ["grafana-logs"], "persist": false }
   },
   // Runtime secrets (`wrangler secret put`). Declared so `wrangler types` is
   // built from config, not a local .env, and deploys fail while one is
