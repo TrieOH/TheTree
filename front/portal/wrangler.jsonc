@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portal",
+  "compatibility_date": "2026-06-08",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "src/server.ts",
+  // Issues, PRs, deploys and metric rollups land here from webhooks and
+  // crons; pages only ever read this, never the APIs or Postgres.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portal",
+      // `wrangler d1 create portal` prints it
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // /api/* and /webhooks/* reach the Worker even when a file would match.
+    "run_worker_first": ["/api/*", "/webhooks/*"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}

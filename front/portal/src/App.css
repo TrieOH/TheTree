@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "@trieoh/ui-solid/theme.css";
+@import "@trieoh/ui-solid/tailwind.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-heading: "Space Grotesk", "Geist", sans-serif;
+  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+}
+
+/* Status colors for Operational / Degraded; Idle is a hollow dot. */
+:root {
+  --ok: oklch(0.6 0.13 155);
+  --warn: oklch(0.72 0.15 75);
+}
+.dark {
+  --ok: oklch(0.72 0.14 155);
+  --warn: oklch(0.8 0.14 80);
+}
+
+@layer base {
+  html {
+    background-color: var(--background);
+  }
+
+  body {
+    color: var(--foreground);
+    font-size: 14px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+/* Rendered Markdown/MDX. */
+.prose-doc {
+  line-height: 1.65;
+  max-width: 68ch;
+}
+.prose-doc :where(h2) {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.prose-doc :where(h3) {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.prose-doc :where(p, ul, ol, pre, table, blockquote) {
+  margin: 0 0 1rem;
+}
+.prose-doc :where(ul) {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-doc :where(ol) {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-doc :where(li) {
+  margin: 0.25rem 0;
+}
+.prose-doc :where(a) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-doc :where(code) {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+  background: var(--code-background);
+}
+.prose-doc :where(pre) {
+  overflow-x: auto;
+  padding: 0.875rem 1rem;
+  border-radius: 0.6rem;
+  background: var(--code-background);
+}
+.prose-doc :where(pre code) {
+  padding: 0;
+  background: none;
+}
+.prose-doc :where(blockquote) {
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+  color: var(--muted-foreground);
+}
+.prose-doc :where(table) {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.prose-doc :where(th, td) {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
