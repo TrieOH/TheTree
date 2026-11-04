@@ -1,3 +1,4 @@
+import { hmacSha256Hex, timingSafeEqual } from "@/shared/lib/hmac";
 import {
   deleteCycle,
   deleteIssue,
@@ -63,27 +64,6 @@ type Payload =
   | { type: "Project"; action: string; data: ProjectData; webhookTimestamp: number }
   | { type: string; action: string; data: unknown; webhookTimestamp: number };
 
-const encoder = new TextEncoder();
-
-async function hmacHex(secret: string, body: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  return [...new Uint8Array(mac)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 /** The statements that apply one event, or none for events we don't keep. */
 export function statementsFor(db: D1Database, payload: Payload): D1PreparedStatement[] {
   const removed = payload.action === "remove";
@@ -148,7 +128,7 @@ export async function handleLinearWebhook(request: Request, env: Env): Promise<R
   if (!signature) return new Response("missing signature", { status: 400 });
 
   const body = await request.text();
-  if (!timingSafeEqual(await hmacHex(env.LINEAR_WEBHOOK_SECRET, body), signature)) {
+  if (!timingSafeEqual(await hmacSha256Hex(env.LINEAR_WEBHOOK_SECRET, body), signature)) {
     return new Response("invalid signature", { status: 401 });
   }
 

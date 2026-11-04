@@ -1,6 +1,8 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 import { REPO_URL, findService } from "@/features/catalog/services";
+import { loadDelivery } from "@/features/delivery/api";
+import { tagUrl } from "@/features/delivery/model";
 import { loadIssues } from "@/features/issues/api";
 import { isOpen } from "@/features/issues/model";
 import { IssueList } from "@/features/issues/ui/IssueList";
@@ -12,8 +14,14 @@ export const Route = createFileRoute("/services/$service")({
   loader: async ({ params }) => {
     const service = findService(params.service);
     if (!service) throw notFound();
-    const { issues } = await loadIssues();
-    return { service, issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)) };
+    const [{ issues }, delivery] = await Promise.all([loadIssues(), loadDelivery().catch(() => null)]);
+    // What's running: the newest successful deploy of the service.
+    const current = delivery?.deploys.find((deploy) => deploy.component === service.id && deploy.status === "success");
+    return {
+      service,
+      tag: current?.tag ?? null,
+      issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)),
+    };
   },
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.service.name ?? "Service"} · TrieOH dev` }] }),
   component: ServicePage,
@@ -35,7 +43,16 @@ function ServicePage() {
   return (
     <>
       <PageHeader title={service().name} description={service().description}>
-        <p class="font-mono text-[12px] text-muted-foreground">{service().apiUrl.replace("https://", "")}</p>
+        <p class="flex flex-wrap gap-x-3 font-mono text-[12px] text-muted-foreground">
+          <span>{service().apiUrl.replace("https://", "")}</span>
+          <Show when={data().tag}>
+            {(tag) => (
+              <a class="hover:underline" href={tagUrl(tag())} target="_blank" rel="noopener">
+                {tag()}
+              </a>
+            )}
+          </Show>
+        </p>
         <div class="flex flex-wrap gap-2 pt-3">
           <For each={links()}>
             {(link) => (

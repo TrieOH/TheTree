@@ -3,6 +3,9 @@
 // Nothing here may call the four APIs or Postgres: they scale to zero and the
 // portal must not wake them.
 
+import { DEPLOY_HOOK_PATH, handleDeployHook } from "./features/delivery/server/deploy-hook";
+import { GITHUB_WEBHOOK_PATH, handleGitHubWebhook } from "./features/delivery/server/github-webhook";
+import { readDelivery } from "./features/delivery/server/read";
 import { LINEAR_WEBHOOK_PATH, handleLinearWebhook } from "./features/issues/server/linear-webhook";
 import { syncLinear } from "./features/issues/server/linear-sync";
 import { readIssues } from "./features/issues/server/read";
@@ -29,6 +32,10 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
     return json(await readIssues(env.DB));
   }
 
+  if (path === "/api/delivery") {
+    return json(await readDelivery(env.DB));
+  }
+
   return json({ error: "not found" }, { status: 404 });
 }
 
@@ -40,12 +47,13 @@ export default {
       return handleApi(request, env, path);
     }
 
-    if (path === LINEAR_WEBHOOK_PATH && request.method === "POST") {
-      return handleLinearWebhook(request, env);
+    if (request.method === "POST") {
+      if (path === LINEAR_WEBHOOK_PATH) return handleLinearWebhook(request, env);
+      if (path === GITHUB_WEBHOOK_PATH) return handleGitHubWebhook(request, env);
+      if (path === DEPLOY_HOOK_PATH) return handleDeployHook(request, env);
     }
 
     if (path.startsWith("/webhooks/")) {
-      // GitHub and the deploy hook arrive in phase 3.
       return json({ error: "not found" }, { status: 404 });
     }
 

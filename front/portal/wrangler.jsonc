@@ -32,7 +32,9 @@
   "secrets": {
     "required": [
       "LINEAR_API_KEY",
-      "LINEAR_WEBHOOK_SECRET"
+      "LINEAR_WEBHOOK_SECRET",
+      "GITHUB_WEBHOOK_SECRET",
+      "DEPLOY_HOOK_SECRET"
     ]
   },
   "observability": {
