@@ -17,6 +17,8 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as ServicesServiceRouteImport } from './routes/services/$service'
 import { Route as DocsCategoryIndexRouteImport } from './routes/docs/$category/index'
 import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category/$slug'
+import { Route as ProblemsSetIndexRouteImport } from './routes/problems/$set/index'
+import { Route as ProblemsSetSlugRouteImport } from './routes/problems/$set/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +60,16 @@ const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
   path: '/docs/$category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProblemsSetIndexRoute = ProblemsSetIndexRouteImport.update({
+  id: '/problems/$set/',
+  path: '/problems/$set/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProblemsSetSlugRoute = ProblemsSetSlugRouteImport.update({
+  id: '/problems/$set/$slug',
+  path: '/problems/$set/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,7 +79,9 @@ export interface FileRoutesByFullPath {
   '/services/$service': typeof ServicesServiceRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/problems/$set/$slug': typeof ProblemsSetSlugRoute
   '/docs/$category/': typeof DocsCategoryIndexRoute
+  '/problems/$set/': typeof ProblemsSetIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,7 +91,9 @@ export interface FileRoutesByTo {
   '/services/$service': typeof ServicesServiceRoute
   '/docs': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/problems/$set/$slug': typeof ProblemsSetSlugRoute
   '/docs/$category': typeof DocsCategoryIndexRoute
+  '/problems/$set': typeof ProblemsSetIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,7 +104,9 @@ export interface FileRoutesById {
   '/services/$service': typeof ServicesServiceRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/problems/$set/$slug': typeof ProblemsSetSlugRoute
   '/docs/$category/': typeof DocsCategoryIndexRoute
+  '/problems/$set/': typeof ProblemsSetIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,7 +118,9 @@ export interface FileRouteTypes {
     | '/services/$service'
     | '/docs/'
     | '/docs/$category/$slug'
+    | '/problems/$set/$slug'
     | '/docs/$category/'
+    | '/problems/$set/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -110,7 +130,9 @@ export interface FileRouteTypes {
     | '/services/$service'
     | '/docs'
     | '/docs/$category/$slug'
+    | '/problems/$set/$slug'
     | '/docs/$category'
+    | '/problems/$set'
   id:
     | '__root__'
     | '/'
@@ -120,7 +142,9 @@ export interface FileRouteTypes {
     | '/services/$service'
     | '/docs/'
     | '/docs/$category/$slug'
+    | '/problems/$set/$slug'
     | '/docs/$category/'
+    | '/problems/$set/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,7 +155,9 @@ export interface RootRouteChildren {
   ServicesServiceRoute: typeof ServicesServiceRoute
   DocsIndexRoute: typeof DocsIndexRoute
   DocsCategorySlugRoute: typeof DocsCategorySlugRoute
+  ProblemsSetSlugRoute: typeof ProblemsSetSlugRoute
   DocsCategoryIndexRoute: typeof DocsCategoryIndexRoute
+  ProblemsSetIndexRoute: typeof ProblemsSetIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -192,6 +218,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DocsCategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/problems/$set/': {
+      id: '/problems/$set/'
+      path: '/problems/$set'
+      fullPath: '/problems/$set/'
+      preLoaderRoute: typeof ProblemsSetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/problems/$set/$slug': {
+      id: '/problems/$set/$slug'
+      path: '/problems/$set/$slug'
+      fullPath: '/problems/$set/$slug'
+      preLoaderRoute: typeof ProblemsSetSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -203,7 +243,9 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesServiceRoute: ServicesServiceRoute,
   DocsIndexRoute: DocsIndexRoute,
   DocsCategorySlugRoute: DocsCategorySlugRoute,
+  ProblemsSetSlugRoute: ProblemsSetSlugRoute,
   DocsCategoryIndexRoute: DocsCategoryIndexRoute,
+  ProblemsSetIndexRoute: ProblemsSetIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
