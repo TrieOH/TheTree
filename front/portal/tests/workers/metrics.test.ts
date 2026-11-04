@@ -13,11 +13,22 @@ async function readApi(): Promise<MetricsPayload> {
 }
 
 /** Answers Cloudflare's GraphQL and Neon's API the way they answer; records every call. */
-function stubApis() {
+function stubApis(options: { coldStarts?: "ok" | "missing" } = {}) {
   const calls: string[] = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     calls.push(url);
+    if (url.includes("/analytics_engine/sql")) {
+      if (options.coldStarts === "missing") return new Response("unknown table container_cold_starts", { status: 422 });
+      // The SQL API returns numbers as strings in places; the sync coerces.
+      return Response.json({
+        data: [
+          { service: "identityx", day: "2026-11-03 00:00:00", count: "6", failed: "2", p50: "4200.5", p95: "9800" },
+          { service: "identityx", day: "2026-11-04 00:00:00", count: 3, failed: 0, p50: 3900, p95: 6100 },
+          { service: "not-a-service", day: "2026-11-04 00:00:00", count: 9, failed: 0, p50: 1, p95: 1 },
+        ],
+      });
+    }
     if (url.includes("/graphql")) {
       const { query, variables } = JSON.parse(String(init?.body));
       if (query.includes("httpRequestsAdaptiveGroups")) {
@@ -87,7 +98,7 @@ function stubApis() {
 
 beforeEach(async () => {
   await env.DB.batch(
-    ["metric_rollups", "usage_snapshots", "worker_stats", "neon_projects", "sync_state"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
+    ["metric_rollups", "usage_snapshots", "worker_stats", "neon_projects", "cold_starts", "sync_state"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
   );
   // The container guard's pool for this cycle: 2 GiB-hours so far.
   await env.BUDGET.put("awake:2026-10-24:payssage", String(2 * 3600));
@@ -113,7 +124,14 @@ describe("syncMetrics", () => {
     await syncMetrics(env, NOW);
     vi.useRealTimers();
 
-    expect(calls.every((url) => url.startsWith("https://api.cloudflare.com/client/v4/graphql") || url.startsWith("https://console.neon.tech/api/v2/"))).toBe(true);
+    expect(
+      calls.every(
+        (url) =>
+          url.startsWith("https://api.cloudflare.com/client/v4/graphql") ||
+          url.startsWith("https://api.cloudflare.com/client/v4/accounts/fdc6590fe9b028c608005c515140ff74/analytics_engine/sql") ||
+          url.startsWith("https://console.neon.tech/api/v2/"),
+      ),
+    ).toBe(true);
     expect(calls.some((url) => /api\.(identityx|payssage|univents|informd)\.|univents\.com\.br/.test(url) && !url.includes("graphql"))).toBe(false);
   });
 
@@ -150,5 +168,30 @@ describe("syncMetrics", () => {
     const elapsed = (NOW.getTime() - Date.parse("2026-11-03T14:58:42Z")) / 1000;
     expect(neon.suspendedShare).toBeCloseTo(1 - 3600 / elapsed, 6);
     expect(payload.syncedAt).toBe(NOW.toISOString());
+  });
+
+  it("stores cold starts per service per day from Analytics Engine", async () => {
+    stubApis();
+    await syncMetrics(env, NOW);
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+    const { coldStarts } = await readApi();
+    vi.useRealTimers();
+
+    expect(coldStarts).toEqual([
+      { service: "identityx", day: "2026-11-03", count: 6, failed: 2, p50Ms: 4201, p95Ms: 9800 },
+      { service: "identityx", day: "2026-11-04", count: 3, failed: 0, p50Ms: 3900, p95Ms: 6100 },
+    ]);
+  });
+
+  it("still lands the rest of the pull while the cold-start dataset doesn't exist", async () => {
+    stubApis({ coldStarts: "missing" });
+    await syncMetrics(env, NOW);
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+    const payload = await readApi();
+    vi.useRealTimers();
+
+    expect(payload.coldStarts).toEqual([]);
+    expect(payload.syncedAt).toBe(NOW.toISOString());
+    expect(payload.usage.length).toBeGreaterThan(0);
   });
 });

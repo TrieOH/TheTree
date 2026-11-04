@@ -43,3 +43,20 @@ describe("<UsageBar>", () => {
     expect(container.querySelector(".bg-ok")).not.toBeNull();
   });
 });
+
+describe("cold start summary", () => {
+  it("weights the typical time by each day's starts and keeps the worst p95", async () => {
+    const { summarize } = await import("../../src/features/metrics/cold-starts");
+    const rows = [
+      { service: "identityx" as const, day: "2026-11-03", count: 6, failed: 2, p50Ms: 4000, p95Ms: 9800 },
+      { service: "identityx" as const, day: "2026-11-04", count: 2, failed: 0, p50Ms: 2000, p95Ms: 6100 },
+      { service: "payssage" as const, day: "2026-11-04", count: 5, failed: 0, p50Ms: 1, p95Ms: 1 },
+      { service: "identityx" as const, day: "2026-10-01", count: 99, failed: 9, p50Ms: 1, p95Ms: 99_999 },
+    ];
+
+    const week = summarize(rows, "identityx", 7, new Date("2026-11-04T19:00:00Z"));
+    expect(week).toMatchObject({ count: 8, failed: 2, typicalMs: 3500, worstP95Ms: 9800 });
+    expect(week.daily).toEqual([0, 0, 0, 0, 0, 6, 2]);
+    expect(summarize(rows, "informd", 7, new Date("2026-11-04T19:00:00Z"))).toMatchObject({ count: 0, typicalMs: null });
+  });
+});
