@@ -10,7 +10,7 @@ import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
 import { PageHeader, Section } from "@/widgets/shell/PageHeader";
 import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
 
-export const Route = createFileRoute("/services/$service")({
+export const Route = createFileRoute("/services/$service/")({
   loader: async ({ params }) => {
     const service = findService(params.service);
     if (!service) throw notFound();
@@ -35,7 +35,6 @@ function ServicePage() {
   const service = () => data().service;
 
   const links = () => [
-    { label: "API reference", href: `${REPO_URL}/blob/main/${service().dir}/api-spec.yml` },
     { label: "Code", href: `${REPO_URL}/tree/main/${service().dir}` },
     { label: "Front", href: service().front },
   ];
@@ -54,6 +53,12 @@ function ServicePage() {
           </Show>
         </p>
         <div class="flex flex-wrap gap-2 pt-3">
+          <Link to="/services/$service/api" params={{ service: service().id }} class={button}>
+            API reference
+          </Link>
+          <Link to="/problems/$set" params={{ set: service().id }} class={button}>
+            Problems
+          </Link>
           <For each={links()}>
             {(link) => (
               <a class={button} href={link.href} target="_blank" rel="noopener">
