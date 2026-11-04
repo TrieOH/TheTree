@@ -51,6 +51,8 @@
 		"IDENTITY_X_PROJECT_ID": "01a01f27-2a79-7136-a7e8-22c8099baf71",
 		// Grafana Cloud OTLP gateway; the container appends /v1/<signal> (lib/go/telemetry).
 		"OTEL_EXPORTER_OTLP_ENDPOINT": "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp",
+		// lowercase name in Grafana; APP_NAME stays the product name (emails, UI)
+		"OTEL_SERVICE_NAME": "informd",
 	},
 	// Credentials are Worker secrets, set one at a time with
 	// `wrangler secret put NAME` and kept across deploys. Listing them makes
