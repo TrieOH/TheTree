@@ -13,6 +13,8 @@ export default defineConfig(async () => ({
         bindings: {
           LINEAR_API_KEY: "lin_api_test",
           LINEAR_WEBHOOK_SECRET: "whsec_test",
+          GITHUB_WEBHOOK_SECRET: "ghsec_test",
+          DEPLOY_HOOK_SECRET: "deploy_test",
           // Applied to the local D1 by tests/workers/setup.ts.
           TEST_MIGRATIONS: await readD1Migrations("./migrations"),
         },

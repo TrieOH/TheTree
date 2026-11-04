@@ -12,6 +12,7 @@ Same stack and structure as `front/univents-solid` (Solid 2, TanStack Solid Rout
 - `src/routes/`: Home, Services, Issues, Delivery, Metrics, Docs.
 - `src/features/docs/`: docs come from the repo's `docs/` at build time. `docs/adr/*.md` are compiled by MDX (`mdx/remark-adr.ts` lifts the number, title, status and date into `meta`) and rendered through `src/shared/mdx/jsx-runtime.ts`.
 - `src/features/issues/`: Linear. `POST /webhooks/linear` checks the HMAC signature and the signed timestamp, drops redeliveries and upserts into D1. An hourly cron (`syncLinear`) pulls what changed since its last run with the read-only key; its first run is the backfill. Issues map to a service through their Linear project. `GET /api/issues` serves the Issues page, the service pages and Home.
+- `src/features/delivery/`: GitHub and deploys. `POST /webhooks/github` (repo webhook: pull_request, pull_request_review, workflow_run, push for tags) checks `X-Hub-Signature-256` and dedupes on `X-GitHub-Delivery`. `POST /webhooks/deploy` takes the report the last step of `deploy.yml` and `deploy-pages.yml` sends (`.github/actions/report-deploy`, which also runs the post-deploy health check). `GET /api/delivery` serves the Delivery page. History from before the hooks: `scripts/backfill-github.mjs`.
 - `migrations/`: D1 schema.
 
 ## Develop
@@ -24,7 +25,7 @@ pnpm -F portal tsc && pnpm -F portal check && pnpm -F portal test
 
 ## Secrets
 
-`wrangler secret put` on the `portal` Worker: `LINEAR_API_KEY` (personal key, read-only, team TRI) and `LINEAR_WEBHOOK_SECRET` (the signing secret of the Linear webhook pointing at `https://portal.trieoh.com/webhooks/linear`, events Issues, Cycles and Projects).
+`wrangler secret put` on the `portal` Worker: `LINEAR_API_KEY` (personal key, read-only, team TRI) and `LINEAR_WEBHOOK_SECRET` (the signing secret of the Linear webhook pointing at `https://portal.trieoh.com/webhooks/linear`, events Issues, Cycles and Projects). `GITHUB_WEBHOOK_SECRET` is the secret of the repo webhook pointing at `https://portal.trieoh.com/webhooks/github`. `DEPLOY_HOOK_SECRET` is shared with the GitHub Actions secret of the same name.
 
 ## Deploy
 

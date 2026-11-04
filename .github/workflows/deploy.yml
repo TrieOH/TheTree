@@ -573,3 +573,24 @@ jobs:
           }
           └───────────────────────────────────────────────────────
           EOF
+
+      # ── Every non-SDK release reports to the dev portal, whatever happened
+      - name: Report deploy to the portal
+        if: ${{ always() && env.TYPE != 'sdk' }}
+        uses: ./.github/actions/report-deploy
+        with:
+          status: ${{ job.status }}
+          health-url: >-
+            ${{
+              env.ARTIFACT == 'identityx' && 'https://api.identityx.trieoh.com/health' ||
+              env.ARTIFACT == 'payssage' && 'https://api.payssage.trieoh.com/health' ||
+              env.ARTIFACT == 'univents' && 'https://api.univents.com.br/health' ||
+              env.ARTIFACT == 'informd' && 'https://api.informd.trieoh.com/health' ||
+              env.ARTIFACT == 'identityx-ui' && 'https://dev.identityx.com.br' ||
+              env.ARTIFACT == 'payssage-ui' && 'https://dev.payssage.trieoh.com' ||
+              env.ARTIFACT == 'univents-ui' && 'https://dev.univents.com.br' ||
+              env.ARTIFACT == 'informd-ui' && 'https://dev.informd.trieoh.com' ||
+              env.ARTIFACT == 'portal-ui' && 'https://portal.trieoh.com/api/health' ||
+              ''
+            }}
+          secret: ${{ secrets.DEPLOY_HOOK_SECRET }}
