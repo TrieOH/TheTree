@@ -25,16 +25,27 @@
   },
   // Hourly catch-up from Linear (the first run is the backfill). Only reads
   // Linear and writes D1.
+  // Hourly at :07, Linear's catch-up (the first run is the backfill); every
+  // 30 minutes, Cloudflare analytics and Neon. Only reads those APIs and the
+  // container budget's KV, and writes D1.
   "triggers": {
-    "crons": ["7 * * * *"]
+    "crons": ["7 * * * *", "*/30 * * * *"]
   },
+  "vars": {
+    "CLOUDFLARE_ACCOUNT_ID": "fdc6590fe9b028c608005c515140ff74"
+  },
+  // The container budget the four API Workers keep (@trieoh/container-budget).
+  // The portal only reads it.
+  "kv_namespaces": [{ "binding": "BUDGET", "id": "bc65d11390534722b1bfca37d503e99b" }],
   // Runtime secrets (`wrangler secret put`); deploys fail while one is missing.
   "secrets": {
     "required": [
       "LINEAR_API_KEY",
       "LINEAR_WEBHOOK_SECRET",
       "GITHUB_WEBHOOK_SECRET",
-      "DEPLOY_HOOK_SECRET"
+      "DEPLOY_HOOK_SECRET",
+      "CLOUDFLARE_ANALYTICS_TOKEN",
+      "NEON_API_KEY"
     ]
   },
   "observability": {

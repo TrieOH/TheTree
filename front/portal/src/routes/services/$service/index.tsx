@@ -2,6 +2,8 @@ import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
 import { For, Show } from "solid-js";
 import { REPO_URL, findService } from "@/features/catalog/services";
 import { loadDelivery } from "@/features/delivery/api";
+import { loadMetrics } from "@/features/metrics/api";
+import { formatCount, formatPercent } from "@/features/metrics/format";
 import { tagUrl } from "@/features/delivery/model";
 import { loadIssues } from "@/features/issues/api";
 import { isOpen } from "@/features/issues/model";
@@ -14,11 +16,16 @@ export const Route = createFileRoute("/services/$service/")({
   loader: async ({ params }) => {
     const service = findService(params.service);
     if (!service) throw notFound();
-    const [{ issues }, delivery] = await Promise.all([loadIssues(), loadDelivery().catch(() => null)]);
+    const [{ issues }, delivery, metrics] = await Promise.all([
+      loadIssues(),
+      loadDelivery().catch(() => null),
+      loadMetrics().catch(() => null),
+    ]);
     // What's running: the newest successful deploy of the service.
     const current = delivery?.deploys.find((deploy) => deploy.component === service.id && deploy.status === "success");
     return {
       service,
+      metrics: metrics?.services.find((s) => s.id === service.id) ?? null,
       tag: current?.tag ?? null,
       issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)),
     };
@@ -73,12 +80,14 @@ function ServicePage() {
         <KpiRow>
           <Kpi label="Status">
             <span class="inline-flex items-center gap-2">
-              <StatusDot status="unknown" />
-              {statusLabel("unknown")}
+              <StatusDot status={data().metrics?.status ?? "unknown"} />
+              {statusLabel(data().metrics?.status ?? "unknown")}
             </span>
           </Kpi>
-          <Kpi label="Success rate 30d">—</Kpi>
-          <Kpi label="p95">—</Kpi>
+          <Kpi label="Success rate 30d">{formatPercent(data().metrics?.successRate30d ?? null)}</Kpi>
+          <Kpi label="Requests 24h">
+            {data().metrics?.requests24h == null ? "—" : formatCount(data().metrics!.requests24h!)}
+          </Kpi>
           <Kpi label="Open issues">{data().issues.length}</Kpi>
         </KpiRow>
       </Section>

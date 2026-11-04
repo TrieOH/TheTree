@@ -9,6 +9,8 @@ import { readDelivery } from "./features/delivery/server/read";
 import { LINEAR_WEBHOOK_PATH, handleLinearWebhook } from "./features/issues/server/linear-webhook";
 import { syncLinear } from "./features/issues/server/linear-sync";
 import { readIssues } from "./features/issues/server/read";
+import { readMetrics } from "./features/metrics/server/read";
+import { syncMetrics } from "./features/metrics/server/sync";
 
 function json(body: unknown, init?: ResponseInit): Response {
   return Response.json(body, {
@@ -36,6 +38,10 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
     return json(await readDelivery(env.DB));
   }
 
+  if (path === "/api/metrics") {
+    return json(await readMetrics(env.DB));
+  }
+
   return json({ error: "not found" }, { status: 404 });
 }
 
@@ -60,7 +66,11 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(syncLinear(env).then((result) => console.log("linear sync", result)));
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (controller.cron === "7 * * * *") {
+      ctx.waitUntil(syncLinear(env).then((result) => console.log("linear sync", result)));
+    } else {
+      ctx.waitUntil(syncMetrics(env).then((result) => console.log("metrics sync", result)));
+    }
   },
 } satisfies ExportedHandler<Env>;

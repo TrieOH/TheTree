@@ -1,7 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { Link, useLocation } from "@tanstack/solid-router";
 import { cn } from "@trieoh/ui-solid";
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal, onSettled } from "solid-js";
 import BookIcon from "~icons/lucide/book-open";
 import BoxIcon from "~icons/lucide/box";
 import ChartIcon from "~icons/lucide/chart-line";
@@ -17,6 +17,8 @@ import SunIcon from "~icons/lucide/sun";
 import XIcon from "~icons/lucide/x";
 import { REPO_URL, SERVICES } from "@/features/catalog/services";
 import { DOC_CATEGORIES } from "@/features/docs/catalog";
+import { loadMetrics } from "@/features/metrics/api";
+import type { MetricsPayload } from "@/features/metrics/model";
 import { useTheme } from "@/shared/lib/theme";
 import { StatusDot } from "./StatusDot";
 
@@ -120,7 +122,15 @@ function ThemeToggle() {
   );
 }
 
+// The sidebar's status dots; loaded once, after the page is up.
+const [metrics, setMetrics] = createSignal<MetricsPayload | null>(null, { name: "sidebar-metrics" });
+
 function SidebarContent() {
+  onSettled(() => {
+    if (!metrics()) loadMetrics().then(setMetrics, () => {});
+  });
+  const statusOf = (id: string) => metrics()?.services.find((s) => s.id === id)?.status ?? "unknown";
+
   return (
     <>
       <div class="px-2 pb-3.5 pt-1">
@@ -142,8 +152,7 @@ function SidebarContent() {
           <For each={SERVICES}>
             {(service) => (
               <NavLink to={`/services/${service.id}`}>
-                {/* Status comes from Cloudflare analytics in phase 5. */}
-                <StatusDot status="unknown" />
+                <StatusDot status={statusOf(service.id)} />
                 {service.name}
               </NavLink>
             )}
