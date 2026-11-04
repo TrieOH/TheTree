@@ -22,16 +22,25 @@ export const STATUS_WINDOW_HOURS = 24;
 /** Degraded at this share of 5xx answers, once there are this many. */
 export const DEGRADED_SHARE = 0.05;
 export const DEGRADED_MIN_ERRORS = 3;
+/**
+ * Also degraded when the container's p95 over the window is above this, once
+ * there are this many requests. Measured inside the container, so cold
+ * starts don't count.
+ */
+export const DEGRADED_P95_MS = 1500;
+export const DEGRADED_MIN_REQUESTS_FOR_LATENCY = 20;
 
 /**
  * Idle when nobody called the API in the window: a sleeping service is not a
  * broken one. "unknown" until the first pull has run.
  */
-export function statusOf(requests: number | null, errors5xx: number | null): ServiceStatus {
+export function statusOf(requests: number | null, errors5xx: number | null, p95Ms: number | null = null): ServiceStatus {
   if (requests === null) return "unknown";
   if (requests === 0) return "idle";
   const errors = errors5xx ?? 0;
-  return errors >= DEGRADED_MIN_ERRORS && errors / requests >= DEGRADED_SHARE ? "degraded" : "operational";
+  if (errors >= DEGRADED_MIN_ERRORS && errors / requests >= DEGRADED_SHARE) return "degraded";
+  if (p95Ms !== null && p95Ms > DEGRADED_P95_MS && requests >= DEGRADED_MIN_REQUESTS_FOR_LATENCY) return "degraded";
+  return "operational";
 }
 
 export interface ServiceMetrics {
@@ -44,6 +53,29 @@ export interface ServiceMetrics {
   /** Requests per hour, the last 24 hours, oldest first. */
   hourly: number[];
   lastRequestAt: string | null;
+  /** The container's p95 over the 24 hours before the last pull (Grafana); null without data. */
+  p95Ms24h: number | null;
+  /** p95 per hour, the last 24 hours, oldest first; null for an hour without requests. */
+  p95Hourly: (number | null)[];
+}
+
+/** One endpoint over the last 7 days, from the containers' own metrics. */
+export interface EndpointStats {
+  service: ServiceId;
+  method: string;
+  /** The route template, e.g. /auth/login; never a concrete path. */
+  route: string;
+  requests: number;
+  /** The worst day's p95 in the window. */
+  p95Ms: number | null;
+}
+
+/** Problem answers by type slug over the last 7 days: slugs and counts only. */
+export interface ProblemStats {
+  service: ServiceId;
+  problem: string;
+  status: number;
+  count: number;
 }
 
 export interface Usage {
@@ -99,6 +131,10 @@ export interface MetricsPayload {
   neon: NeonStats[];
   /** Container cold starts per service per day, the last 30 days, oldest first. */
   coldStarts: ColdStartDay[];
+  /** Slowest first. Empty until Grafana has been pulled. */
+  endpoints: EndpointStats[];
+  /** Most frequent first. */
+  problems: ProblemStats[];
   /** When Cloudflare and Neon were last pulled; null before the first run. */
   syncedAt: string | null;
 }

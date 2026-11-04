@@ -26,13 +26,16 @@
   // Hourly catch-up from Linear (the first run is the backfill). Only reads
   // Linear and writes D1.
   // Hourly at :07, Linear's catch-up (the first run is the backfill); every
-  // 30 minutes, Cloudflare analytics and Neon. Only reads those APIs and the
+  // 30 minutes, Cloudflare analytics, Neon and Grafana Cloud. Only reads those APIs and the
   // container budget's KV, and writes D1.
   "triggers": {
     "crons": ["7 * * * *", "*/30 * * * *"]
   },
   "vars": {
-    "CLOUDFLARE_ACCOUNT_ID": "fdc6590fe9b028c608005c515140ff74"
+    "CLOUDFLARE_ACCOUNT_ID": "fdc6590fe9b028c608005c515140ff74",
+    // Grafana Cloud's Prometheus query API (latency, endpoints, error types).
+    "GRAFANA_PROM_URL": "https://prometheus-prod-40-prod-sa-east-1.grafana.net/api/prom",
+    "GRAFANA_PROM_USER": "3613302"
   },
   // The container budget the four API Workers keep (@trieoh/container-budget).
   // The portal only reads it.
@@ -45,7 +48,9 @@
       "GITHUB_WEBHOOK_SECRET",
       "DEPLOY_HOOK_SECRET",
       "CLOUDFLARE_ANALYTICS_TOKEN",
-      "NEON_API_KEY"
+      "NEON_API_KEY",
+      // Grafana Cloud access policy token: metrics, logs and traces read only.
+      "GRAFANA_READ_TOKEN"
     ]
   },
   "observability": {

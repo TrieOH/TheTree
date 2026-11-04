@@ -1,5 +1,6 @@
 import { COLD_START_DATASET, cycleStart, spentGiBSeconds } from "@trieoh/container-budget";
 import { SERVICES } from "@/features/catalog/services";
+import { syncGrafana } from "./grafana";
 
 // Every 30 minutes: plan usage, per-service traffic and per-Worker stats from
 // Cloudflare's GraphQL Analytics API (read-only token), the container budget
@@ -331,7 +332,7 @@ async function syncNeon(env: Env, now: Date): Promise<D1PreparedStatement[]> {
 }
 
 export async function syncMetrics(env: Env, now = new Date()): Promise<{ statements: number }> {
-  const [traffic, account, neonRows, coldStarts] = await Promise.all([
+  const [traffic, account, neonRows, coldStarts, grafana] = await Promise.all([
     syncTraffic(env, now),
     syncAccount(env, now),
     syncNeon(env, now),
@@ -341,12 +342,18 @@ export async function syncMetrics(env: Env, now = new Date()): Promise<{ stateme
       console.warn("cold starts not pulled:", error instanceof Error ? error.message : error);
       return [];
     }),
+    // Latency and error types are extra: a Grafana outage leaves the rest.
+    syncGrafana(env, now).catch((error: unknown) => {
+      console.warn("grafana not pulled:", error instanceof Error ? error.message : error);
+      return [];
+    }),
   ]);
   const statements = [
     ...traffic,
     ...account,
     ...neonRows,
     ...coldStarts,
+    ...grafana,
     env.DB.prepare(
       `INSERT INTO sync_state (source, synced_at) VALUES ('metrics', ?)
        ON CONFLICT (source) DO UPDATE SET synced_at = excluded.synced_at`,

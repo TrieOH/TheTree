@@ -6,8 +6,10 @@ import {
   statusOf,
   type MetricsPayload,
   type ColdStartDay,
+  type EndpointStats,
   type NeonStats,
   type PlanResource,
+  type ProblemStats,
   type ServiceMetrics,
   type Usage,
   type WorkerStats,
@@ -19,7 +21,7 @@ const HOUR = 3_600_000;
 
 interface Rollup {
   service: ServiceId;
-  metric: "requests" | "errors_5xx";
+  metric: "requests" | "errors_5xx" | "p95_ms" | "p95_ms_24h";
   bucket: string;
   value: number;
 }
@@ -29,10 +31,11 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
   const end = new Date(`${period}T00:00:00Z`);
   end.setUTCMonth(end.getUTCMonth() + 1);
   const since30d = new Date(now.getTime() - 30 * 24 * HOUR).toISOString();
+  const since7d = new Date(now.getTime() - 7 * 24 * HOUR).toISOString().slice(0, 10);
 
-  const [rollups, usage, workers, neon, sync, cold] = await db.batch<unknown>([
+  const [rollups, usage, workers, neon, sync, cold, endpointRows, problemRows] = await db.batch<unknown>([
     db.prepare(
-      "SELECT service, metric, bucket, value FROM metric_rollups WHERE metric IN ('requests', 'errors_5xx') AND bucket >= ? ORDER BY bucket",
+      "SELECT service, metric, bucket, value FROM metric_rollups WHERE metric IN ('requests', 'errors_5xx', 'p95_ms', 'p95_ms_24h') AND bucket >= ? ORDER BY bucket",
     ).bind(since30d),
     db.prepare("SELECT resource, used, included FROM usage_snapshots WHERE period = ?").bind(period),
     db.prepare(
@@ -43,6 +46,14 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
     db.prepare(
       "SELECT resource, day, count, failed, p50_ms, p95_ms FROM cold_starts WHERE kind = 'container' AND day >= ? ORDER BY day",
     ).bind(since30d.slice(0, 10)),
+    db.prepare(
+      `SELECT service, method, route, SUM(requests) AS requests, MAX(p95_ms) AS p95_ms FROM endpoint_rollups
+       WHERE day >= ? GROUP BY service, method, route ORDER BY p95_ms DESC NULLS LAST, requests DESC LIMIT 50`,
+    ).bind(since7d),
+    db.prepare(
+      `SELECT service, problem, MAX(status) AS status, SUM(count) AS count FROM problem_rollups
+       WHERE day >= ? GROUP BY service, problem ORDER BY count DESC LIMIT 50`,
+    ).bind(since7d),
   ]);
 
   const rows = rollups.results as Rollup[];
@@ -53,20 +64,27 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
     const mine = rows.filter((row) => row.service === service.id);
     const total = (metric: Rollup["metric"], from: Date) =>
       mine.filter((row) => row.metric === metric && Date.parse(row.bucket) >= from.getTime()).reduce((n, row) => n + row.value, 0);
-    const hasData = mine.length > 0;
+    const hasData = mine.some((row) => row.metric === "requests");
     const requests24h = hasData ? total("requests", windowStart) : null;
     const errors24h = hasData ? total("errors_5xx", windowStart) : null;
     const requests30d = total("requests", new Date(since30d));
-    const hourly = Array.from({ length: STATUS_WINDOW_HOURS }, (_, i) => {
-      const bucket = new Date(Math.floor(now.getTime() / HOUR) * HOUR - (STATUS_WINDOW_HOURS - 1 - i) * HOUR)
+    const buckets = Array.from({ length: STATUS_WINDOW_HOURS }, (_, i) =>
+      new Date(Math.floor(now.getTime() / HOUR) * HOUR - (STATUS_WINDOW_HOURS - 1 - i) * HOUR)
         .toISOString()
-        .replace(".000Z", "Z");
-      return mine.find((row) => row.metric === "requests" && row.bucket === bucket)?.value ?? 0;
-    });
+        .replace(".000Z", "Z"),
+    );
+    const at = (metric: Rollup["metric"], bucket: string) =>
+      mine.find((row) => row.metric === metric && row.bucket === bucket)?.value;
+    const hourly = buckets.map((bucket) => at("requests", bucket) ?? 0);
     const last = [...mine].reverse().find((row) => row.metric === "requests" && row.value > 0);
+    // Only a recent pull's 24h p95 speaks for the status window.
+    const p95 = [...mine].reverse().find((row) => row.metric === "p95_ms_24h");
+    const p95Ms24h = p95 && Date.parse(p95.bucket) >= windowStart.getTime() ? p95.value : null;
     return {
       id: service.id,
-      status: statusOf(requests24h, errors24h),
+      status: statusOf(requests24h, errors24h, p95Ms24h),
+      p95Ms24h,
+      p95Hourly: buckets.map((bucket) => at("p95_ms", bucket) ?? null),
       requests24h,
       errors24h,
       successRate30d: requests30d ? 1 - total("errors_5xx", new Date(since30d)) / requests30d : null,
@@ -163,9 +181,18 @@ export async function readMetrics(db: D1Database, now = new Date()): Promise<Met
     }),
   );
 
+  const endpoints = (
+    endpointRows.results as { service: ServiceId; method: string; route: string; requests: number; p95_ms: number | null }[]
+  ).map((row): EndpointStats => ({ service: row.service, method: row.method, route: row.route, requests: row.requests, p95Ms: row.p95_ms }));
+  const problems = (problemRows.results as { service: ServiceId; problem: string; status: number; count: number }[]).map(
+    (row): ProblemStats => ({ service: row.service, problem: row.problem, status: row.status, count: row.count }),
+  );
+
   return {
     cycle: { start: `${period}T00:00:00Z`, end: end.toISOString() },
     coldStarts,
+    endpoints,
+    problems,
     services,
     usage: usageOut,
     workers: workersOut,
