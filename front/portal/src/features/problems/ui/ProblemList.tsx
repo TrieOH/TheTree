@@ -150,11 +150,11 @@ function ProblemRow(props: { row: Row; open: boolean; inline: boolean; showStatu
         <span class="ml-auto hidden truncate text-[13px] text-muted-foreground sm:inline">{props.row.problem.title}</span>
       </div>
       <Show when={description()}>
-        <p class="mt-1 pl-8 text-[13px] text-muted-foreground">{description()}</p>
+        <p class="mt-1 text-[13px] text-muted-foreground">{description()}</p>
       </Show>
       <Show when={open()}>
-        <div class={cn("mt-3", !props.open && "pl-8")}>
-          <ProblemDetails problem={props.row.problem} set={props.row.set} />
+        <div class="mt-3">
+          <ProblemDetails problem={props.row.problem} />
         </div>
       </Show>
     </li>

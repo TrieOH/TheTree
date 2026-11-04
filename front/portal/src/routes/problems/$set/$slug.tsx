@@ -38,7 +38,7 @@ function ProblemPage() {
       <Show when={extraDescription(problem())}>
         <p class="mb-6">{extraDescription(problem())}</p>
       </Show>
-      <ProblemDetails problem={problem()} set={data().set} />
+      <ProblemDetails problem={problem()} />
     </>
   );
 }

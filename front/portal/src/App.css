@@ -57,66 +57,67 @@
   }
 }
 
-/* Rendered Markdown/MDX. */
+/* Rendered Markdown/MDX. Components inside a doc mark themselves
+   `not-prose`, and none of this reaches into them. */
 .prose-doc {
   line-height: 1.65;
   max-width: 68ch;
 }
-.prose-doc :where(h2) {
+.prose-doc :where(h2):not(:where(.not-prose, .not-prose *)) {
   margin: 2rem 0 0.75rem;
   font-size: 1.125rem;
   font-weight: 600;
 }
-.prose-doc :where(h3) {
+.prose-doc :where(h3):not(:where(.not-prose, .not-prose *)) {
   margin: 1.5rem 0 0.5rem;
   font-size: 1rem;
   font-weight: 600;
 }
-.prose-doc :where(p, ul, ol, pre, table, blockquote) {
+.prose-doc :where(p, ul, ol, pre, table, blockquote):not(:where(.not-prose, .not-prose *)) {
   margin: 0 0 1rem;
 }
-.prose-doc :where(ul) {
+.prose-doc :where(ul):not(:where(.not-prose, .not-prose *)) {
   list-style: disc;
   padding-left: 1.25rem;
 }
-.prose-doc :where(ol) {
+.prose-doc :where(ol):not(:where(.not-prose, .not-prose *)) {
   list-style: decimal;
   padding-left: 1.25rem;
 }
-.prose-doc :where(li) {
+.prose-doc :where(li):not(:where(.not-prose, .not-prose *)) {
   margin: 0.25rem 0;
 }
-.prose-doc :where(a) {
+.prose-doc :where(a):not(:where(.not-prose, .not-prose *)) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.prose-doc :where(code) {
+.prose-doc :where(code):not(:where(.not-prose, .not-prose *)) {
   font-size: 0.85em;
   padding: 0.1em 0.35em;
   border-radius: 0.3rem;
   background: var(--code-background);
 }
-.prose-doc :where(pre) {
+.prose-doc :where(pre):not(:where(.not-prose, .not-prose *)) {
   overflow-x: auto;
   padding: 0.875rem 1rem;
   border-radius: 0.6rem;
   background: var(--code-background);
 }
-.prose-doc :where(pre code) {
+.prose-doc :where(pre code):not(:where(.not-prose, .not-prose *)) {
   padding: 0;
   background: none;
 }
-.prose-doc :where(blockquote) {
+.prose-doc :where(blockquote):not(:where(.not-prose, .not-prose *)) {
   padding-left: 1rem;
   border-left: 2px solid var(--border);
   color: var(--muted-foreground);
 }
-.prose-doc :where(table) {
+.prose-doc :where(table):not(:where(.not-prose, .not-prose *)) {
   display: block;
   overflow-x: auto;
   border-collapse: collapse;
 }
-.prose-doc :where(th, td) {
+.prose-doc :where(th, td):not(:where(.not-prose, .not-prose *)) {
   padding: 0.4rem 0.75rem;
   border-bottom: 1px solid var(--border);
   text-align: left;
