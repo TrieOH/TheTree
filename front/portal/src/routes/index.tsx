@@ -4,11 +4,18 @@ import { docsIn, type DocCategoryId } from "@/features/docs/catalog";
 import { loadIssues } from "@/features/issues/api";
 import { isOpen, type IssuesPayload } from "@/features/issues/model";
 import { IssueList } from "@/features/issues/ui/IssueList";
+import { findService } from "@/features/catalog/services";
+import { loadMetrics } from "@/features/metrics/api";
+import type { MetricsPayload } from "@/features/metrics/model";
 import { Section } from "@/widgets/shell/PageHeader";
+import { StatusDot } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/")({
-  // Home still renders when the issues can't load; attention just says so.
-  loader: (): Promise<IssuesPayload | null> => loadIssues().catch(() => null),
+  // Home still renders when a source can't load; attention just says so.
+  loader: async (): Promise<{ issues: IssuesPayload | null; metrics: MetricsPayload | null }> => {
+    const [issues, metrics] = await Promise.all([loadIssues().catch(() => null), loadMetrics().catch(() => null)]);
+    return { issues, metrics };
+  },
   component: Home,
 });
 
@@ -31,7 +38,8 @@ const chip =
 function Home() {
   const decisions = docsIn("decisions");
   const data = Route.useLoaderData();
-  const urgent = () => data()?.issues.filter((issue) => isOpen(issue) && issue.priority === 1) ?? [];
+  const urgent = () => data().issues?.issues.filter((issue) => isOpen(issue) && issue.priority === 1) ?? [];
+  const degraded = () => data().metrics?.services.filter((service) => service.status === "degraded") ?? [];
 
   return (
     <>
@@ -53,11 +61,32 @@ function Home() {
       </section>
 
       <Section title="Needs attention">
+        <Show when={degraded().length > 0}>
+          <ul class="mb-3 divide-y divide-border rounded-xl border border-warn/40">
+            <For each={degraded()}>
+              {(service) => (
+                <li>
+                  <Link
+                    to="/services/$service"
+                    params={{ service: service.id }}
+                    class="flex items-center gap-3 px-3 py-2.5 text-[13.5px] hover:bg-foreground/5"
+                  >
+                    <StatusDot status="degraded" />
+                    <span class="font-medium">{findService(service.id)?.name} is degraded</span>
+                    <span class="ml-auto text-[12.5px] tabular-nums text-muted-foreground">
+                      {service.errors24h} of {service.requests24h} requests answered 5xx in 24h
+                    </span>
+                  </Link>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
         <Show
-          when={data()}
+          when={data().issues}
           fallback={<p class="text-[13px] text-muted-foreground">Couldn't load issues right now.</p>}
         >
-          <IssueList issues={urgent()} empty="Nothing needs attention." />
+          <IssueList issues={urgent()} empty={degraded().length ? "No urgent issues." : "Nothing needs attention."} />
         </Show>
       </Section>
 
