@@ -82,7 +82,12 @@ catalog:
   remark-gfm: ^4.0.1
   yaml: ^2.9.1
   mermaid: ^12.3.0
-  '@scalar/api-reference': ^1.76.4
+  '@scalar/openapi-parser': ^0.29.19
+  openapi-sampler: ^1.7.10
+  unified: ^11.0.5
+  remark-parse: ^11.0.0
+  remark-rehype: ^11.1.2
+  rehype-stringify: ^10.0.1
 
   # === Testing & Quality ===
   vitest: ^4.0.0
@@ -186,8 +191,6 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   workerd: true
-  # Picks Vue 2 or 3 at install; its default is already Vue 3 (Scalar's).
-  vue-demi: false
 
 packageExtensions:
   '@tanstack/devtools':
