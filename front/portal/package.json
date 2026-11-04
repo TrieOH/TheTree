@@ -1,0 +1,53 @@
+{
+  "name": "portal",
+  "version": "0.1.0",
+  "description": "TrieOH dev portal",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "pnpm test:workers && pnpm test:ui",
+    "test:workers": "vitest run --config vitest.workers.config.ts",
+    "test:ui": "vitest run --config vite.config.ts --passWithNoTests",
+    "test:watch": "vitest --config vite.config.ts --passWithNoTests",
+    "check": "oxlint src tests",
+    "lint": "oxlint src tests",
+    "tsc": "tsc --noEmit",
+    "db:migrate": "wrangler d1 migrations apply portal --remote",
+    "db:migrate:local": "wrangler d1 migrations apply portal --local",
+    "deploy": "pnpm build && wrangler deploy --config wrangler.jsonc",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "@cloudflare/vitest-plugin": "catalog:",
+    "@iconify-json/lucide": "catalog:",
+    "@mdx-js/mdx": "catalog:",
+    "@mdx-js/rollup": "catalog:",
+    "@solidjs/diagnostics": "catalog:solid",
+    "@solidjs/testing-library": "catalog:solid",
+    "@solidjs/vite-plugin": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@types/mdx": "catalog:",
+    "@types/node": "catalog:",
+    "eslint-plugin-solid": "catalog:solid",
+    "jsdom": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  },
+  "dependencies": {
+    "@solidjs/web": "catalog:solid",
+    "@tanstack/solid-router": "catalog:solid",
+    "@trieoh/ui-solid": "workspace:*",
+    "solid-js": "catalog:solid",
+    "unplugin-icons": "catalog:"
+  }
+}

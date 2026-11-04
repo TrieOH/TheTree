@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // General
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
+    "target": "ESNext",
+    // Modules
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "noEmit": true,
+    // vite.config.ts imports mdx/remark-adr.ts with its extension, as Vite's
+    // native config loader requires.
+    "allowImportingTsExtensions": true,
+    // Type Checking & Safety
+    "strict": true,
+    "skipLibCheck": true,
+    "types": [
+      "vite/client",
+      "@cloudflare/vitest-plugin"
+    ]
+  }
+}
