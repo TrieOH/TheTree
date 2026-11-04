@@ -35,6 +35,7 @@ concurrency:
       startsWith(github.ref_name, 'informd-ui/') && 'informd-ui' ||
       startsWith(github.ref_name, 'payssage-ui/') && 'payssage-ui' ||
       startsWith(github.ref_name, 'univents-ui/') && 'univents-ui' ||
+      startsWith(github.ref_name, 'portal-ui/') && 'portal-ui' ||
       github.ref_name
     }}
   cancel-in-progress: false
@@ -83,7 +84,7 @@ jobs:
             front)
               FRONT_NAME="${ARTIFACT%-ui}"
               case "$FRONT_NAME" in
-                identityx|informd|payssage|univents) ;;
+                identityx|informd|payssage|univents|portal) ;;
                 *) echo "::error::unknown front '$ARTIFACT'"; exit 1 ;;
               esac
               ;;
@@ -202,7 +203,7 @@ jobs:
         run: pnpm -F "$FRONT_NAME" tsc
 
       - name: R4 front test
-        if: ${{ env.TYPE == 'front' && env.LANE == 'full' && env.FRONT_NAME == 'univents' }}
+        if: ${{ env.TYPE == 'front' && env.LANE == 'full' && (env.FRONT_NAME == 'univents' || env.FRONT_NAME == 'portal') }}
         run: pnpm -F "$FRONT_NAME" test
 
       # ── SDK version guard (always — cheap, gates the publish) ───────────
@@ -501,6 +502,33 @@ jobs:
       - name: Promote univents to production
         if: ${{ env.ARTIFACT == 'univents-ui' }}
         run: pnpm -F univents exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Build & upload version (portal)
+        if: ${{ env.ARTIFACT == 'portal-ui' }}
+        run: |
+          set -euo pipefail
+          pnpm -F portal build
+          ID=$(pnpm -F portal exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Migrations only add tables and columns, so the old version keeps
+      # working against the migrated database until the promote below.
+      - name: Apply D1 migrations (portal)
+        if: ${{ env.ARTIFACT == 'portal-ui' }}
+        run: pnpm -F portal exec wrangler d1 migrations apply portal --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote portal to production
+        if: ${{ env.ARTIFACT == 'portal-ui' }}
+        run: pnpm -F portal exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
