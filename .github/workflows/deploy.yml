@@ -506,6 +506,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # The portal deploys with its own token (Workers Scripts, D1, Account
+      # Settings), so the shared one needs no D1 access.
       - name: Build & upload version (portal)
         if: ${{ env.ARTIFACT == 'portal-ui' }}
         run: |
@@ -514,7 +516,7 @@ jobs:
           ID=$(pnpm -F portal exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
           echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.PORTAL_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Migrations only add tables and columns, so the old version keeps
@@ -523,14 +525,14 @@ jobs:
         if: ${{ env.ARTIFACT == 'portal-ui' }}
         run: pnpm -F portal exec wrangler d1 migrations apply portal --remote
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.PORTAL_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Promote portal to production
         if: ${{ env.ARTIFACT == 'portal-ui' }}
         run: pnpm -F portal exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.PORTAL_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: release.json (front)
