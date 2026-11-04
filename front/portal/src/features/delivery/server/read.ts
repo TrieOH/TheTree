@@ -67,10 +67,10 @@ export async function readDelivery(db: D1Database, now = new Date()): Promise<De
   const [production, deploys, pulls, runs, tags] = await db.batch<unknown>([
     db.prepare(
       `SELECT ${DEPLOY_COLUMNS} FROM (
-         SELECT *, ROW_NUMBER() OVER (PARTITION BY component ORDER BY at DESC) AS n FROM deploys
+         SELECT *, ROW_NUMBER() OVER (PARTITION BY component ORDER BY at DESC, id DESC) AS n FROM deploys
        ) WHERE n = 1 ORDER BY component`,
     ),
-    db.prepare(`SELECT ${DEPLOY_COLUMNS} FROM deploys WHERE at >= ? ORDER BY at DESC`).bind(days(60)),
+    db.prepare(`SELECT ${DEPLOY_COLUMNS} FROM deploys WHERE at >= ? ORDER BY at DESC, id DESC`).bind(days(60)),
     db.prepare(
       `SELECT number, title, author, state, draft, review_state, opened_at, merged_at FROM pull_requests
        WHERE state = 'open' OR (state = 'merged' AND merged_at >= ?)
