@@ -1,8 +1,8 @@
-import { cleanup, fireEvent, render, within } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, waitFor, within } from "@solidjs/testing-library";
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/solid-router";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadApi, typeLabel } from "../../src/features/api-reference/model";
-import { OperationCard } from "../../src/features/api-reference/ui/OperationCard";
+import { OperationSection } from "../../src/features/api-reference/ui/OperationSection";
 
 window.scrollTo = () => {};
 afterEach(cleanup);
@@ -26,28 +26,25 @@ describe("API reference", () => {
     expect(api?.baseUrl).toBe("{API_URL}");
   });
 
-  it("shows an endpoint collapsed, then everything about it", async () => {
+  it("writes an endpoint out in full, problems folded", async () => {
     const api = (await loadApi("payssage"))!;
     const op = api.tags.flatMap((tag) => tag.operations).find((o) => o.id === "listOrganizationMembers")!;
     const router = createRouter({
-      routeTree: createRootRoute({ component: () => <OperationCard op={op} service="payssage" /> }),
+      routeTree: createRootRoute({
+        component: () => <OperationSection op={op} service="payssage" auth={api.auth} />,
+      }),
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     const { container } = render(() => <RouterProvider router={router} />);
     const view = within(container);
-    const header = await view.findByRole("button", { expanded: false });
 
-    expect(header.textContent).toContain("/organizations/{organization_id}/members");
-    expect(view.queryByText("Parameters")).toBeNull();
-
-    fireEvent.click(header);
-    // Solid 2 applies the update on the next tick.
-    expect(await view.findByText("Parameters")).toBeInTheDocument();
+    expect(await view.findByText("List organization members")).toBeInTheDocument();
     expect(view.getByText("organization_id")).toBeInTheDocument();
     expect(view.getByText(/Auth: bearerAuth/)).toBeInTheDocument();
-    // Its problems, shared ones included, through the problems list.
-    expect(container.querySelector("a[href='/problems/shared/not-found']")).not.toBeNull();
-    // The response's items link to their model.
     expect(container.querySelector("a[href='#model-OrganizationMember']")?.textContent).toBe("OrganizationMember[]");
+
+    expect(container.querySelector("a[href='/problems/shared/not-found']")).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: /Problems/ }));
+    await waitFor(() => expect(container.querySelector("a[href='/problems/shared/not-found']")).not.toBeNull());
   });
 });
