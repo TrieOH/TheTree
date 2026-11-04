@@ -48,6 +48,11 @@ export function ApiReference(props: { service: ServiceId }) {
     agent: { disabled: true },
     mcp: { disabled: true },
     documentDownloadType: "yaml",
+    // Scalar rewrites the URL as you scroll, wiping the router's history
+    // state, and the two then fight over the scroll position.
+    urlRouting: false,
+    // One column: the portal's sidebar is already there.
+    layout: "classic",
   });
 
   let content = "";
