@@ -193,8 +193,16 @@ async function syncAccount(env: Env, now: Date): Promise<D1PreparedStatement[]> 
 
 // ── Neon, per service ───────────────────────────────────────────────────────
 
+// GET /projects/{id} names these differently from the list endpoint
+// (`active_time_seconds` there is `active_time` here), and carries the
+// project's own consumption period.
 interface NeonProject {
-  project: { active_time?: number; compute_last_active_at?: string; quota_reset_at?: string };
+  project: {
+    active_time_seconds?: number;
+    compute_last_active_at?: string;
+    consumption_period_start?: string;
+    consumption_period_end?: string;
+  };
 }
 interface NeonBranches {
   branches: { default?: boolean; primary?: boolean; logical_size?: number }[];
@@ -219,10 +227,12 @@ async function syncNeon(env: Env, now: Date): Promise<D1PreparedStatement[]> {
       neon<NeonProject>(env, `/projects/${id}`),
       neon<NeonBranches>(env, `/projects/${id}/branches`),
     ]);
-    // Neon's own month: its quota resets on quota_reset_at.
-    const end = project.quota_reset_at ? new Date(project.quota_reset_at) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    const start = new Date(end);
-    start.setUTCMonth(start.getUTCMonth() - 1);
+    // Neon's own consumption period, which needn't start on the 1st.
+    const end = project.consumption_period_end
+      ? new Date(project.consumption_period_end)
+      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const start = project.consumption_period_start ? new Date(project.consumption_period_start) : new Date(end);
+    if (!project.consumption_period_start) start.setUTCMonth(start.getUTCMonth() - 1);
 
     const resumes: number[] = [];
     let cursor: string | undefined;
@@ -252,7 +262,7 @@ async function syncNeon(env: Env, now: Date): Promise<D1PreparedStatement[]> {
         start.toISOString(),
         end.toISOString(),
         branch?.logical_size ?? null,
-        project.active_time ?? null,
+        project.active_time_seconds ?? null,
         project.compute_last_active_at ?? null,
         resumes.length,
         median(resumes),

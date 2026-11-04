@@ -72,7 +72,12 @@ function stubApis() {
         });
       }
       return Response.json({
-        project: { active_time: 3600, compute_last_active_at: "2026-11-04T18:21:00Z", quota_reset_at: "2026-12-01T00:00:00Z" },
+        project: {
+          active_time_seconds: 3600,
+          compute_last_active_at: "2026-11-04T18:21:00Z",
+          consumption_period_start: "2026-11-03T14:58:42Z",
+          consumption_period_end: "2026-12-01T00:00:00Z",
+        },
       });
     }
     throw new Error(`unexpected fetch ${url}`);
@@ -139,9 +144,10 @@ describe("syncMetrics", () => {
     expect(payload.workers[0].wallP99Ms).toBe(8000);
 
     const neon = payload.neon.find((n) => n.service === "payssage")!;
-    expect(neon).toMatchObject({ storageBytes: 30_000_000, activeSeconds: 3600, resumes: 2, resumeMaxMs: 1583 });
-    // Neon's month began Nov 1; an hour awake by Nov 4 18:40 is ~98.9% asleep.
-    const elapsed = (NOW.getTime() - Date.parse("2026-11-01T00:00:00Z")) / 1000;
+    // Only resumes inside the project's consumption period (from Nov 3, 14:58).
+    expect(neon).toMatchObject({ storageBytes: 30_000_000, activeSeconds: 3600, resumes: 1, resumeMaxMs: 1583 });
+    expect(neon.periodStart).toBe("2026-11-03T14:58:42.000Z");
+    const elapsed = (NOW.getTime() - Date.parse("2026-11-03T14:58:42Z")) / 1000;
     expect(neon.suspendedShare).toBeCloseTo(1 - 3600 / elapsed, 6);
     expect(payload.syncedAt).toBe(NOW.toISOString());
   });
