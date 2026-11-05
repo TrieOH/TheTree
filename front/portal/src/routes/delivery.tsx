@@ -7,6 +7,9 @@ import {
   pullUrl,
   runUrl,
   tagUrl,
+  type CiPayload,
+  type CiRun,
+  type CiStepStat,
   type Deploy,
   type PullRequest,
   type WorkflowRun,
@@ -15,6 +18,8 @@ import {
   changeFailureRate,
   deploysPerWeek,
   formatDuration,
+  formatMetric,
+  formatStepTime,
   prLeadTime,
   timeAgo,
   timeToRestore,
@@ -73,6 +78,7 @@ function DeliveryPage() {
           </Match>
           <Match when={tab() === "ci"}>
             <Ci runs={data().runs} />
+            <Pipelines ci={data().ci} />
           </Match>
           <Match when={tab() === "tags"}>
             <Show when={data().tags.length > 0} fallback={<Empty>No tags yet.</Empty>}>
@@ -285,6 +291,153 @@ function Ci(props: { runs: readonly WorkflowRun[] }) {
           )}
         </For>
       </ul>
+    </Show>
+  );
+}
+
+const PIPELINES: Record<string, string> = { service: "Services", front: "Fronts", sdk: "SDKs", pages: "Pages" };
+
+function stagePill(run: CiRun): { tone: "ok" | "bad" | "warn" | "muted"; label: string } {
+  if (run.status === "cancelled") return { tone: "muted", label: "Cancelled" };
+  if (run.status === "failure") return run.stage === "publish" ? { tone: "bad", label: "Failed" } : { tone: "warn", label: `Blocked at ${run.stage}` };
+  return { tone: "ok", label: run.type === "sdk" ? "Gate passed" : "Shipped" };
+}
+
+/** Each step's recent times as bars, scaled to the slowest one. */
+function Spark(props: { values: readonly number[] }) {
+  const max = () => Math.max(...props.values, 1);
+  return (
+    <span class="flex h-5 items-end gap-px" aria-hidden="true">
+      <For each={props.values}>
+        {(ms) => <span class="w-1.5 rounded-[1px] bg-muted-foreground/50" style={{ height: `${Math.max(8, (ms / max()) * 100)}%` }} />}
+      </For>
+    </span>
+  );
+}
+
+function Pipelines(props: { ci: CiPayload }) {
+  const types = createMemo(() => Object.keys(PIPELINES).filter((type) => props.ci.runs.some((run) => run.type === type)));
+  const [pipeline, setPipeline] = createSignal<string>("service", { name: "delivery-pipeline" });
+  const current = () => (types().includes(pipeline()) ? pipeline() : (types()[0] ?? "service"));
+  const steps = createMemo(() => props.ci.steps.filter((step) => step.type === current()));
+  const metrics = createMemo(() => props.ci.metrics.filter((metric) => metric.type === current()));
+  const stepLabel = (step: CiStepStat) => `${step.job} · ${step.step}`;
+
+  return (
+    <Show when={props.ci.runs.length > 0} fallback={<p class="mt-8 text-[13px] text-muted-foreground">No step timings reported yet.</p>}>
+      <div class="mt-10">
+        <Tabs
+          ariaLabel="Pipelines"
+          items={types().map((type) => ({ id: type, label: PIPELINES[type] }))}
+          value={current()}
+          onChange={setPipeline}
+        />
+      </div>
+
+      <div class="mt-6">
+        <Section title="Step times" aside={`last ${Math.max(0, ...steps().map((s) => s.runs))} runs`}>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-[13.5px]">
+              <thead class="text-[12px] text-muted-foreground">
+                <tr class="border-b border-border">
+                  <th class="py-2 pr-4 font-normal">Step</th>
+                  <th class="py-2 pr-4 text-right font-normal">Median</th>
+                  <th class="py-2 pr-4 text-right font-normal">p90</th>
+                  <th class="py-2 pr-4 text-right font-normal">Last</th>
+                  <th class="py-2 font-normal">Recent</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <For each={steps()}>
+                  {(step) => (
+                    <tr>
+                      <td class="py-2 pr-4">
+                        <span class="text-muted-foreground">{step.job} · </span>
+                        {step.step}
+                      </td>
+                      <td class="py-2 pr-4 text-right tabular-nums">{formatStepTime(step.medianMs)}</td>
+                      <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatStepTime(step.p90Ms)}</td>
+                      <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatStepTime(step.lastMs)}</td>
+                      <td class="py-2" title={stepLabel(step)}>
+                        <Spark values={step.recentMs} />
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
+        <Section title="Measurements" aside="from .github/scripts/metric">
+          <Show when={metrics().length > 0} fallback={<Empty>No measurements for this pipeline yet.</Empty>}>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-[13.5px]">
+                <thead class="text-[12px] text-muted-foreground">
+                  <tr class="border-b border-border">
+                    <th class="py-2 pr-4 font-normal">Measurement</th>
+                    <th class="py-2 pr-4 text-right font-normal">Last</th>
+                    <th class="py-2 pr-4 text-right font-normal">Median</th>
+                    <th class="py-2 text-right font-normal">Runs</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  <For each={metrics()}>
+                    {(metric) => (
+                      <tr>
+                        <td class="py-2 pr-4">
+                          <span class="text-muted-foreground">
+                            {metric.job} · {metric.source} ·{" "}
+                          </span>
+                          {metric.name}
+                          <For each={Object.entries(metric.labels)}>
+                            {([key, value]) => (
+                              <span class="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                {key}={value}
+                              </span>
+                            )}
+                          </For>
+                        </td>
+                        <td class="py-2 pr-4 text-right tabular-nums">{formatMetric(metric.name, metric.last)}</td>
+                        <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatMetric(metric.name, metric.median)}</td>
+                        <td class="py-2 text-right tabular-nums text-muted-foreground">{metric.runs}</td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
+            </div>
+          </Show>
+        </Section>
+
+        <Section title="Release runs" aside="newest first, all pipelines">
+          <ul class="divide-y divide-border border-y border-border">
+            <For each={props.ci.runs}>
+              {(run) => {
+                const pill = stagePill(run);
+                const ms = run.startedAt && run.completedAt ? Date.parse(run.completedAt) - Date.parse(run.startedAt) : null;
+                return (
+                  <li>
+                    <a href={runUrl(run.runId)} {...external} class="flex items-center gap-3 py-2.5 text-[13.5px] hover:bg-foreground/5">
+                      <span class="min-w-0 flex-1 truncate font-mono text-[12.5px]">{run.tag}</span>
+                      <Show when={run.lane === "express"}>
+                        <Pill tone="muted">hotfix</Pill>
+                      </Show>
+                      <span class="hidden shrink-0 text-[12px] tabular-nums text-muted-foreground sm:inline">
+                        {formatDuration(ms)}
+                      </span>
+                      <span class="hidden w-20 shrink-0 text-right text-[12px] text-muted-foreground sm:inline">
+                        {run.startedAt ? timeAgo(run.startedAt) : ""}
+                      </span>
+                      <Pill tone={pill.tone}>{pill.label}</Pill>
+                    </a>
+                  </li>
+                );
+              }}
+            </For>
+          </ul>
+        </Section>
+      </div>
     </Show>
   );
 }

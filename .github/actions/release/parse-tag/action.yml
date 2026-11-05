@@ -1,0 +1,85 @@
+name: Parse release tag
+description: >
+  Turns the release tag into what the pipeline needs, finding the artifact
+  from the repo layout instead of a hard-coded list:
+    <service>/v1.2.3           service  api/<service>/cloudflare/wrangler.jsonc
+    <front>-ui/v1.2.3          front    the front/* package named <front> with a wrangler.jsonc
+    <sdk>-sdk-ts/v1.2.3        sdk      sdk/ts/<sdk>
+    pages/<dir>/v1.2.3         pages    front/<dir> with a wrangler.jsonc
+  A -hotfix.N version takes the express lane (compile + unit only, §3.5).
+outputs:
+  artifact:
+    description: the tag minus its version (identityx, univents-ui, pages/trieoh)
+    value: ${{ steps.tag.outputs.artifact }}
+  type:
+    description: service, front, sdk or pages
+    value: ${{ steps.tag.outputs.type }}
+  lane:
+    description: full or express
+    value: ${{ steps.tag.outputs.lane }}
+  version:
+    description: the tag's version, e.g. v1.2.3
+    value: ${{ steps.tag.outputs.version }}
+  package:
+    description: the pnpm package name (empty for services)
+    value: ${{ steps.tag.outputs.package }}
+  dir:
+    description: where the artifact lives, e.g. api/identityx, front/univents-solid
+    value: ${{ steps.tag.outputs.dir }}
+runs:
+  using: composite
+  steps:
+    - name: Parse
+      id: tag
+      shell: bash
+      env:
+        TAG: ${{ github.ref_name }}
+      run: |
+        set -euo pipefail
+        fail() { echo "::error::$*"; exit 1; }
+        [[ "$TAG" =~ ^(.+)/(v[0-9]+\.[0-9]+\.[0-9]+(-hotfix\.[0-9]+)?)$ ]] \
+          || fail "expected <artifact>/v<major>.<minor>.<patch>[-hotfix.<n>], got '$TAG'"
+        ARTIFACT="${BASH_REMATCH[1]}"
+        VERSION="${BASH_REMATCH[2]}"
+        LANE=full
+        [ -n "${BASH_REMATCH[3]}" ] && LANE=express
+
+        PACKAGE=""
+        case "$ARTIFACT" in
+          pages/*)
+            TYPE=pages
+            DIR="front/${ARTIFACT#pages/}"
+            [ -f "$DIR/wrangler.jsonc" ] || fail "no Pages site at $DIR"
+            ;;
+          *-ui)
+            TYPE=front
+            NAME="${ARTIFACT%-ui}"
+            DIR=""
+            for pkg in front/*/package.json; do
+              d=$(dirname "$pkg")
+              if [ "$(jq -r .name "$pkg")" = "$NAME" ] && [ -f "$d/wrangler.jsonc" ]; then DIR="$d"; fi
+            done
+            [ -n "$DIR" ] || fail "no front package named '$NAME' with a wrangler.jsonc"
+            ;;
+          *-sdk-ts)
+            TYPE=sdk
+            DIR="sdk/ts/${ARTIFACT%-sdk-ts}"
+            [ -f "$DIR/package.json" ] || fail "no SDK at $DIR"
+            ;;
+          *)
+            TYPE=service
+            DIR="api/$ARTIFACT"
+            [ -f "$DIR/cloudflare/wrangler.jsonc" ] || fail "no service at $DIR (needs cloudflare/wrangler.jsonc)"
+            ;;
+        esac
+        [ "$TYPE" = service ] || PACKAGE=$(jq -r .name "$DIR/package.json")
+
+        {
+          echo "artifact=$ARTIFACT"
+          echo "type=$TYPE"
+          echo "lane=$LANE"
+          echo "version=$VERSION"
+          echo "package=$PACKAGE"
+          echo "dir=$DIR"
+        } >> "$GITHUB_OUTPUT"
+        echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION package=${PACKAGE:-none} dir=$DIR"

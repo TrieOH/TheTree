@@ -1,4 +1,5 @@
 import type { DeliveryPayload, Deploy, DeployStatus, PullRequest, Tag, WorkflowRun } from "../model";
+import { readCi } from "./ci-read";
 
 // GET /api/delivery: one small payload for the Delivery page and the service
 // pages' current tag.
@@ -46,6 +47,9 @@ interface TagRow {
 }
 
 const DEPLOY_COLUMNS = "component, tag, sha, actor, status, at, run_id";
+// Releases stopped at parse or checks never shipped: they are neither what's
+// running nor a deploy for the DORA numbers (the CI tab shows them).
+const SHIPPED = "COALESCE(stage, 'publish') = 'publish'";
 
 function toDeploy(row: DeployRow): Deploy {
   return {
@@ -62,13 +66,17 @@ function toDeploy(row: DeployRow): Deploy {
 export async function readDelivery(db: D1Database, now = new Date()): Promise<DeliveryPayload> {
   const days = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
 
+  const ci = readCi(db);
   const [production, deploys, pulls, runs, tags] = await db.batch<unknown>([
     db.prepare(
       `SELECT ${DEPLOY_COLUMNS} FROM (
          SELECT *, ROW_NUMBER() OVER (PARTITION BY component ORDER BY at DESC, id DESC) AS n FROM deploys
+         WHERE ${SHIPPED}
        ) WHERE n = 1 ORDER BY component`,
     ),
-    db.prepare(`SELECT ${DEPLOY_COLUMNS} FROM deploys WHERE at >= ? ORDER BY at DESC, id DESC`).bind(days(60)),
+    db
+      .prepare(`SELECT ${DEPLOY_COLUMNS} FROM deploys WHERE at >= ? AND ${SHIPPED} ORDER BY at DESC, id DESC`)
+      .bind(days(60)),
     db.prepare(
       `SELECT number, title, author, state, draft, review_state, opened_at, merged_at FROM pull_requests
        WHERE state = 'open' OR (state = 'merged' AND merged_at >= ?)
@@ -122,5 +130,6 @@ export async function readDelivery(db: D1Database, now = new Date()): Promise<De
         createdAt: row.created_at,
       }),
     ),
+    ci: await ci,
   };
 }

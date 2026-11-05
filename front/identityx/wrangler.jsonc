@@ -21,7 +21,15 @@
   // built from config, not a local .env, and deploys fail while one is
   // missing. Local dev also only loads the .env keys declared here; build-time
   // VITE_* values are inlined by Vite, not read from the Worker env.
-  "secrets": { "required": ["AUTH_SESSION_PASSWORD"] }
+  "secrets": { "required": ["AUTH_SESSION_PASSWORD"] },
+  // Production config, reviewed with the code. `vite build` inlines the VITE_*
+  // ones into the bundle (@trieoh/front-core/vite/wrangler-vars); dev reads .env.
+  "vars": {
+    "VITE_APP_TITLE": "IdentityX",
+    "VITE_API_URL": "https://api.identityx.trieoh.com",
+    "VITE_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+    "VITE_PUBLIC_POSTHOG_KEY": "phc_"
+  }
   /**
     * Smart Placement
     * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

@@ -1,0 +1,33 @@
+name: Go test
+description: >
+  gotestsum over one module. mode=short skips the testcontainers-backed tests
+  (see lib/go/testdb), the express lane's only test stage; mode=integration
+  runs everything against Docker. Records the test counts and the ten
+  slowest tests. Requires setup/go-tools and go/generate.
+inputs:
+  dir:
+    description: the module, e.g. api/identityx
+    required: true
+  mode:
+    description: short or integration
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Test
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        MODE: ${{ inputs.mode }}
+      run: |
+        set -uo pipefail
+        case "$MODE" in
+          short)       ARGS=(-short -timeout 5m) ;;
+          integration) ARGS=(-count=1) ;;
+          *) echo "::error::mode must be short or integration, got '$MODE'"; exit 1 ;;
+        esac
+        EVENTS="$RUNNER_TEMP/gotest-$MODE.json"
+        gotestsum --format standard-verbose --jsonfile "$EVENTS" -- "${ARGS[@]}" ./...
+        rc=$?
+        python3 "$GITHUB_WORKSPACE/.github/scripts/gotest-metrics.py" "$EVENTS" "$MODE" || true
+        exit $rc

@@ -1,0 +1,36 @@
+name: Deploy Pages
+description: >
+  Uploads a static site that front/build already built (its `dist` artifact
+  downloaded into dir) to its Cloudflare Pages project, from the
+  wrangler.jsonc next to it (name, pages_build_output_dir). Requires
+  setup/node with the package installed.
+inputs:
+  dir:
+    description: the package dir, e.g. front/trieoh
+    required: true
+  api-token:
+    description: Cloudflare API token (Pages)
+    required: true
+  account-id:
+    description: Cloudflare account id
+    required: true
+outputs:
+  url:
+    description: the deployment URL
+    value: ${{ steps.ship.outputs.url }}
+runs:
+  using: composite
+  steps:
+    - name: Ship
+      id: ship
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: |
+        set -euo pipefail
+        LOG="$RUNNER_TEMP/wrangler-pages.log"
+        pnpm exec wrangler pages deploy --branch=main --commit-hash "$GITHUB_SHA" 2>&1 | tee "$LOG"
+        URL=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' "$LOG" | tail -1 || true)
+        echo "url=$URL" >> "$GITHUB_OUTPUT"

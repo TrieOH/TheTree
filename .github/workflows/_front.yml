@@ -1,0 +1,138 @@
+name: Front release
+# Called by deploy.yml for <front>-ui/v* tags. checks: generate → lint →
+# typecheck → test → trivy (full lane), then build once and hand the build
+# to publish as the `dist` artifact. publish: upload that build as a Worker
+# version and promote it; the portal instead migrates its D1 and deploys
+# with its own token. Production config is in each front's wrangler.jsonc.
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: e.g. identityx-ui
+        type: string
+        required: true
+      package:
+        description: the pnpm package, e.g. univents
+        type: string
+        required: true
+      dir:
+        description: the package dir, e.g. front/univents-solid
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      lane:
+        description: full or express
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      # tools/problemgen bundles the specs orval reads
+      - name: Setup Go
+        uses: ./.github/actions/setup/go
+        with:
+          cache-scope: fronts
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup/node
+        with:
+          install: 'true'
+
+      - name: Generate
+        uses: ./.github/actions/front/generate
+        with:
+          package: ${{ inputs.package }}
+
+      - name: Lint
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/front/check
+        with:
+          package: ${{ inputs.package }}
+
+      - name: Typecheck
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/front/typecheck
+        with:
+          package: ${{ inputs.package }}
+
+      - name: Test
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/front/test
+        with:
+          package: ${{ inputs.package }}
+
+      # the lockfile lives at the root; the app dir alone has no dep files
+      - name: Trivy
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/scan/trivy
+        with:
+          paths: ${{ inputs.dir }} pnpm-lock.yaml
+
+      - name: Build
+        uses: ./.github/actions/front/build
+        with:
+          package: ${{ inputs.package }}
+          dir: ${{ inputs.dir }}
+
+      - name: Flush metrics
+        if: always()
+        uses: ./.github/actions/metrics/flush
+
+  publish:
+    needs: checks
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      # wrangler only: this front, not the whole workspace
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup/node
+        with:
+          install: 'true'
+          filter: ./${{ inputs.dir }}
+
+      - name: Download build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: ${{ inputs.dir }}
+
+      # The portal deploys with its own token (Workers Scripts, D1, Account
+      # Settings), so the shared one needs no D1 access, and with `wrangler
+      # deploy`, so its first release could create the Worker.
+      - name: Deploy to Cloudflare
+        id: deploy
+        uses: ./.github/actions/deploy/worker
+        with:
+          dir: ${{ inputs.dir }}
+          mode: ${{ inputs.package == 'portal' && 'deploy' || 'upload' }}
+          d1: ${{ inputs.package == 'portal' && 'portal' || '' }}
+          artifact: ${{ inputs.artifact }}
+          version: ${{ inputs.version }}
+          api-token: ${{ inputs.package == 'portal' && secrets.PORTAL_CLOUDFLARE_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: release.json
+        uses: ./.github/actions/release/summary
+        with:
+          release: >-
+            {"tag": "${{ inputs.version }}", "artifact": "${{ inputs.artifact }}", "type": "front",
+             "worker_version_id": "${{ steps.deploy.outputs.version-id }}"}
+
+      - name: Flush metrics
+        if: always()
+        uses: ./.github/actions/metrics/flush

@@ -1,0 +1,71 @@
+name: SDK release
+# Called by deploy.yml for <sdk>-sdk-ts/v* tags: the gate only. It checks the
+# tag names the package.json version, builds the SDK and scans it, and fails
+# like any other release. Publishing stays by hand: npm requires staged
+# publishing for these packages (E_STAGE_REQUIRED), approved by a person.
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: the npm package, e.g. @trieoh/identityx-access-sdk-ts
+        type: string
+        required: true
+      dir:
+        description: e.g. sdk/ts/identityx-access
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      lane:
+        description: full or express
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup/node
+        with:
+          install: 'true'
+          filter: ./${{ inputs.dir }}
+
+      - name: Version guard
+        uses: ./.github/actions/sdk/version-guard
+        with:
+          dir: ${{ inputs.dir }}
+          version: ${{ inputs.version }}
+
+      - name: Build
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: pnpm -F "$PACKAGE" build
+
+      - name: Trivy
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/scan/trivy
+        with:
+          paths: ${{ inputs.dir }} pnpm-lock.yaml
+
+      - name: release.json
+        uses: ./.github/actions/release/summary
+        with:
+          release: >-
+            {"tag": "${{ inputs.version }}", "type": "sdk", "package": "${{ inputs.package }}",
+             "npm_version": "${{ inputs.version }}", "published": "by hand (npm staged publishing)"}
+
+      - name: Flush metrics
+        if: always()
+        uses: ./.github/actions/metrics/flush

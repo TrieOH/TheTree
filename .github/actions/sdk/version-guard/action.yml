@@ -1,0 +1,34 @@
+name: SDK version guard
+description: >
+  Fails when the tag's version is not the package.json version, so the tag
+  names exactly what gets published to npm (by hand: npm requires staged
+  publishing for these packages). Only warns when that version is on npm
+  already.
+inputs:
+  dir:
+    description: the SDK dir, e.g. sdk/ts/identityx-access
+    required: true
+  version:
+    description: the tag's version, e.g. v0.1.8
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Guard
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        PKG_NAME=$(jq -r .name package.json)
+        PKG_VERSION=$(jq -r .version package.json)
+        echo "package: $PKG_NAME@$PKG_VERSION (tag: $VERSION)"
+        # tags carry a leading v (v0.1.8); package.json does not
+        if [ "$PKG_VERSION" != "${VERSION#v}" ]; then
+          echo "::error::tag version is $VERSION but package.json version is $PKG_VERSION"
+          exit 1
+        fi
+        if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+          echo "::warning::$PKG_NAME@$PKG_VERSION is already on npm"
+        fi

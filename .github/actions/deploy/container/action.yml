@@ -1,0 +1,59 @@
+name: Deploy container
+description: >
+  Ships a backend to Cloudflare: the SAME image just pushed to GHCR (pulled by
+  digest) → Cloudflare's registry → Worker + Container rollout. Config is the
+  Worker's wrangler.jsonc vars; credentials are Worker secrets set with
+  `wrangler secret put`, kept across deploys. Requires setup/node with
+  api/<service>/cloudflare installed.
+inputs:
+  service:
+    description: the service, e.g. identityx
+    required: true
+  version:
+    description: the tag's version, e.g. v0.48.0
+    required: true
+  digest:
+    description: the GHCR image digest (sha256:...)
+    required: true
+  api-token:
+    description: Cloudflare API token (Workers, Containers, Queues)
+    required: true
+  account-id:
+    description: Cloudflare account id
+    required: true
+outputs:
+  version-id:
+    description: the Worker Version ID now in production
+    value: ${{ steps.ship.outputs.version-id }}
+runs:
+  using: composite
+  steps:
+    - name: Ship
+      id: ship
+      shell: bash
+      working-directory: api/${{ inputs.service }}/cloudflare
+      env:
+        SERVICE: ${{ inputs.service }}
+        VERSION: ${{ inputs.version }}
+        DIGEST: ${{ inputs.digest }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: |
+        set -euo pipefail
+        SRC="ghcr.io/trieoh/$SERVICE@$DIGEST"
+        LOCAL="$SERVICE-api:$VERSION"
+        docker pull "$SRC"
+        docker tag "$SRC" "$LOCAL"
+        pnpm exec wrangler containers push "$LOCAL"
+        IMAGE="registry.cloudflare.com/$CLOUDFLARE_ACCOUNT_ID/$LOCAL"
+        # deploy the pushed image instead of rebuilding from the Dockerfile
+        sed -i -E "s|\"image\": \"[^\"]*\"|\"image\": \"$IMAGE\"|; /\"image_build_context\"/d" wrangler.jsonc
+        grep -n '"image"' wrangler.jsonc
+        LOG="$RUNNER_TEMP/wrangler-deploy.log"
+        # the container reads it as its OTel resource (lib/go/telemetry)
+        pnpm exec wrangler deploy \
+          --var "OTEL_RESOURCE_ATTRIBUTES:service.version=$VERSION,deployment.environment.name=production" \
+          --tag "$VERSION" --message "release: $SERVICE $VERSION" 2>&1 | tee "$LOG"
+        ID=$(grep -oE 'Current Version ID: [a-f0-9-]+' "$LOG" | awk '{print $NF}' || true)
+        echo "version-id=$ID" >> "$GITHUB_OUTPUT"
+        echo "[release] $SERVICE $VERSION → Cloudflare ($IMAGE, worker version ${ID:-unknown})"

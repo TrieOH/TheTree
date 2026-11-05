@@ -82,7 +82,17 @@ const report = (overrides: Record<string, unknown> = {}) => ({
 
 beforeEach(async () => {
   await env.DB.batch(
-    ["pull_requests", "workflow_runs", "tags", "deploys", "webhook_deliveries"].map((table) =>
+    [
+      "pull_requests",
+      "workflow_runs",
+      "tags",
+      "deploys",
+      "webhook_deliveries",
+      "ci_runs",
+      "ci_jobs",
+      "ci_steps",
+      "ci_metrics",
+    ].map((table) =>
       env.DB.prepare(`DELETE FROM ${table}`),
     ),
   );
@@ -176,5 +186,121 @@ describe("POST /webhooks/deploy", () => {
       expect.objectContaining({ component: "portal-ui", tag: "portal-ui/v0.2.0", runId: 41863939045 }),
     ]);
     expect(deploys).toHaveLength(3);
+  });
+
+  it("keeps a release blocked at checks out of production and the DORA list", async () => {
+    await deploy(report({ stage: "publish" }));
+    await deploy(report({ tag: "portal-ui/v0.3.0", status: "failure", stage: "checks" }));
+
+    const { production, deploys } = await readApi();
+    expect(production).toEqual([expect.objectContaining({ tag: "portal-ui/v0.2.0", status: "success" })]);
+    expect(deploys).toHaveLength(1);
+  });
+
+  it("rejects an unknown stage", async () => {
+    expect((await deploy(report({ stage: "lint" }))).status).toBe(400);
+  });
+});
+
+async function ci(body: object, secret = "deploy_test") {
+  return worker.fetch(
+    new Request("http://localhost/webhooks/ci", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+    env,
+  );
+}
+
+const at = (seconds: number) => new Date(Date.UTC(2026, 10, 5, 19, 0, seconds)).toISOString();
+
+const step = (number: number, name: string, from: number, to: number, status = "success") => ({
+  number,
+  name,
+  status,
+  started_at: at(from),
+  completed_at: at(to),
+});
+
+const ciReport = (overrides: Record<string, unknown> = {}) => ({
+  run_id: 42091066478,
+  attempt: 1,
+  component: "identityx",
+  tag: "identityx/v0.48.0",
+  sha: "859c2fe6",
+  type: "service",
+  lane: "full",
+  status: "success",
+  stage: "publish",
+  jobs: [
+    {
+      name: "service / checks",
+      status: "success",
+      queued_at: at(0),
+      started_at: at(4),
+      completed_at: at(60),
+      runner: "blacksmith-1",
+      steps: [step(1, "Set up job", 4, 5), step(2, "Setup Go", 5, 11), step(3, "Lint", 11, 11, "skipped")],
+    },
+  ],
+  // 20 metrics: more than fit in one INSERT under D1's 100-parameter limit
+  metrics: Array.from({ length: 20 }, (_, i) => ({
+    job: "service / checks",
+    source: "go/test",
+    name: "slow_test_seconds",
+    value: i / 10,
+    labels: { test: `Test${i}`, mode: "short" },
+  })),
+  ...overrides,
+});
+
+describe("POST /webhooks/ci", () => {
+  it("needs the shared secret", async () => {
+    expect((await ci(ciReport(), "wrong")).status).toBe(401);
+  });
+
+  it("rejects a malformed report", async () => {
+    expect((await ci(ciReport({ stage: "deploy" }))).status).toBe(400);
+    expect((await ci(ciReport({ metrics: [{ job: "x", source: "y", name: "z", value: "1", labels: {} }] }))).status).toBe(400);
+  });
+
+  it("serves step times, queue time and metrics per pipeline", async () => {
+    expect((await ci(ciReport())).status).toBe(204);
+
+    const { ci: payload } = await readApi();
+    expect(payload.runs).toEqual([
+      expect.objectContaining({ runId: 42091066478, stage: "publish", startedAt: at(4), completedAt: at(60) }),
+    ]);
+    expect(payload.steps.map((s) => [s.job, s.step, s.medianMs])).toEqual([
+      ["checks", "Waiting for a runner", 4000],
+      ["checks", "Set up job", 1000],
+      ["checks", "Setup Go", 6000],
+    ]);
+    expect(payload.metrics).toHaveLength(20);
+    expect(payload.metrics[0]).toEqual(
+      expect.objectContaining({ job: "checks", source: "go/test", labels: { mode: "short", test: "Test0" }, last: 0 }),
+    );
+  });
+
+  it("keeps the same metric from two jobs apart", async () => {
+    const pnpm = (job: string, value: number) => ({ job, source: "setup/node", name: "pnpm_downloaded", value, labels: {} });
+    await ci(ciReport({ metrics: [pnpm("service / checks", 1129), pnpm("service / publish", 3)] }));
+
+    const { ci: payload } = await readApi();
+    expect(payload.metrics.map((m) => [m.job, m.last])).toEqual([
+      ["checks", 1129],
+      ["publish", 3],
+    ]);
+  });
+
+  it("replaces a resent attempt instead of doubling it", async () => {
+    await ci(ciReport());
+    await ci(ciReport({ status: "failure", stage: "checks" }));
+
+    const { ci: payload } = await readApi();
+    expect(payload.runs).toEqual([expect.objectContaining({ status: "failure", stage: "checks" })]);
+    expect(payload.metrics).toHaveLength(20);
+    expect(payload.steps.find((s) => s.step === "Setup Go")?.runs).toBe(1);
   });
 });

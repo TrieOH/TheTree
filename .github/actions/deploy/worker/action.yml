@@ -1,0 +1,79 @@
+name: Deploy Worker
+description: >
+  Ships a front that front/build already built (its `dist` artifact
+  downloaded into dir). mode=upload uploads a Worker version and promotes
+  that same version to production (staging/E2E slots in between later);
+  mode=deploy runs `wrangler deploy` instead, for a Worker that may not exist
+  yet (`versions upload` can't create one). With d1, applies that database's
+  migrations first: they only add tables and columns, so the running version
+  keeps working against them. wrangler's output is always printed. Requires
+  setup/node with the package installed.
+inputs:
+  dir:
+    description: the package dir, e.g. front/identityx
+    required: true
+  mode:
+    description: upload or deploy
+    required: false
+    default: upload
+  d1:
+    description: "D1 database whose migrations to apply first (empty: none)"
+    required: false
+    default: ""
+  artifact:
+    description: the release artifact, e.g. identityx-ui (for the version message)
+    required: true
+  version:
+    description: the tag's version, e.g. v0.9.0
+    required: true
+  api-token:
+    description: Cloudflare API token
+    required: true
+  account-id:
+    description: Cloudflare account id
+    required: true
+outputs:
+  version-id:
+    description: the Worker Version ID now in production
+    value: ${{ steps.ship.outputs.version-id }}
+runs:
+  using: composite
+  steps:
+    - name: Apply D1 migrations
+      if: inputs.d1 != ''
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        D1: ${{ inputs.d1 }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: pnpm exec wrangler d1 migrations apply "$D1" --remote
+
+    - name: Ship
+      id: ship
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        MODE: ${{ inputs.mode }}
+        ARTIFACT: ${{ inputs.artifact }}
+        VERSION: ${{ inputs.version }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: |
+        set -euo pipefail
+        LOG="$RUNNER_TEMP/wrangler-$MODE.log"
+        case "$MODE" in
+          upload)
+            pnpm exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | tee "$LOG"
+            ID=$(grep -oE 'Worker Version ID: [a-f0-9-]+' "$LOG" | awk '{print $NF}' || true)
+            [ -n "$ID" ] || { echo "::error::no Worker Version ID in wrangler's output"; exit 1; }
+            pnpm exec wrangler versions deploy --version-id "$ID" --yes 2>&1 | tee -a "$LOG"
+            ;;
+          deploy)
+            pnpm exec wrangler deploy --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | tee "$LOG"
+            ID=$(grep -oE 'Current Version ID: [a-f0-9-]+' "$LOG" | awk '{print $NF}' || true)
+            ;;
+          *) echo "::error::mode must be upload or deploy, got '$MODE'"; exit 1 ;;
+        esac
+        echo "version-id=$ID" >> "$GITHUB_OUTPUT"
+        echo "[release] $ARTIFACT $VERSION → worker version ${ID:-unknown}"

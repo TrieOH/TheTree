@@ -7,4 +7,6 @@ export interface DocMeta {
   date?: string;
   scope?: string;
   supersedes?: string;
+  /** Reading order within a folder, e.g. "1". Docs without one come after, by title. */
+  order?: string;
 }

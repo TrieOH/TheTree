@@ -1,0 +1,14 @@
+name: Front check
+description: The package's `check` script (lint + format). Requires setup/node with the workspace installed.
+inputs:
+  package:
+    description: pnpm package name
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check
+      shell: bash
+      run: pnpm -F "$PACKAGE" check
+      env:
+        PACKAGE: ${{ inputs.package }}

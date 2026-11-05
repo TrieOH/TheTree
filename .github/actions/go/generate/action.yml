@@ -1,0 +1,23 @@
+name: Go generate
+description: >
+  sqlc, problemgen, oapi-codegen and strictmount for one service: the
+  generated code is gitignored, same recipe as `just gen`. Requires setup/go
+  and setup/go-tools.
+inputs:
+  dir:
+    description: the service module, e.g. api/identityx
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Generate
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      run: |
+        set -euo pipefail
+        sqlc generate
+        go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
+        oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml
+        oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
+        go run tools/strictmount internal/openapi/mount.gen.go
+        go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"

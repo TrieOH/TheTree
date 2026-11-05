@@ -17,4 +17,14 @@
   // missing. Local dev also only loads the .env keys declared here; build-time
   // VITE_* values are inlined by Vite, not read from the Worker env.
   "secrets": { "required": ["AUTH_SESSION_PASSWORD"] },
+  // Production config, reviewed with the code. `vite build` inlines the VITE_*
+  // ones into the bundle (@trieoh/front-core/vite/wrangler-vars); dev reads .env.
+  "vars": {
+    "VITE_APP_TITLE": "Informd",
+    "VITE_API_URL": "https://api.informd.trieoh.com",
+    "VITE_AUTH_API_URL": "https://api.identityx.trieoh.com",
+    "VITE_POSTHOG_HOST": "https://us.i.posthog.com",
+    "VITE_POSTHOG_KEY": "phc_",
+    "VITE_TRIEOH_AUTH_PROJECT_ID": "01a01f27-2a79-7136-a7e8-22c8099baf71" // public: inlined into the browser bundle. gitleaks:allow
+  },
 }

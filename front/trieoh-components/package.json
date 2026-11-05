@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "oxlint src",
-    "typecheck": "tsc --noEmit"
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@solidjs/web": "catalog:solid",
@@ -24,6 +24,7 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "unplugin-icons": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "wrangler": "catalog:"
   }
 }

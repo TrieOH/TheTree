@@ -6,14 +6,18 @@
     "nodejs_compat"
   ],
   "main": "src/server.ts",
+  // Production config, reviewed with the code. `vite build` inlines the VITE_*
+  // ones into the bundle (@trieoh/front-core/vite/wrangler-vars); dev reads .env.
   "vars": {
     "TRACES_ENABLED": "true",
+    "VITE_APP_TITLE": "Univents",
     "VITE_API_URL": "https://api.univents.com.br",
     "VITE_AUTH_API_URL": "https://api.identityx.trieoh.com",
     "VITE_STORAGE_URL": "https://media.univents.com.br",
     "VITE_TRACING_ENABLED": "true",
-    // set per release by deploy.yml (`--var`, from a GitHub secret)
-    "VITE_TRIEOH_AUTH_PROJECT_ID": "",
+    "VITE_POSTHOG_HOST": "https://us.i.posthog.com",
+    "VITE_POSTHOG_KEY": "phc_wXcugn9T53MaiGnmE9wnUD42VJ2fgARse93wi2PCZnVH", // public: inlined into the browser bundle. gitleaks:allow
+    "VITE_TRIEOH_AUTH_PROJECT_ID": "01a00284-7b25-7f91-8e29-bdf7b4708fba", // public: inlined into the browser bundle. gitleaks:allow
     // optional overrides; empty means the defaults in storage-handlers.ts
     "STORAGE_IMAGE_ALLOWED_TYPES": "",
     "STORAGE_IMAGE_MAX_SIZE_BYTES": "",

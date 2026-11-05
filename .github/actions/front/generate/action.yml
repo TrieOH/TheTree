@@ -1,0 +1,24 @@
+name: Front generate
+description: >
+  The gitignored generated code a front needs: the bundled specs
+  (tools/problemgen), the orval TS clients in lib/ts/<svc>/client (`just
+  gen-ts`) and worker-configuration.d.ts (`just gen-cf`). Requires setup/go
+  and setup/node with the workspace installed.
+inputs:
+  package:
+    description: the front's pnpm package name, e.g. portal
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Generate
+      shell: bash
+      env:
+        PACKAGE: ${{ inputs.package }}
+      run: |
+        set -euo pipefail
+        for svc in identityx informd payssage univents; do
+          (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
+        done
+        pnpm orval
+        pnpm -F "$PACKAGE" exec wrangler types --strict-vars=false

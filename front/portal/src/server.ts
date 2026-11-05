@@ -3,6 +3,7 @@
 // Nothing here may call the four APIs or Postgres: they scale to zero and the
 // portal must not wake them.
 
+import { CI_HOOK_PATH, handleCiHook } from "./features/delivery/server/ci-hook";
 import { DEPLOY_HOOK_PATH, handleDeployHook } from "./features/delivery/server/deploy-hook";
 import { GITHUB_WEBHOOK_PATH, handleGitHubWebhook } from "./features/delivery/server/github-webhook";
 import { readDelivery } from "./features/delivery/server/read";
@@ -57,6 +58,7 @@ export default {
       if (path === LINEAR_WEBHOOK_PATH) return handleLinearWebhook(request, env);
       if (path === GITHUB_WEBHOOK_PATH) return handleGitHubWebhook(request, env);
       if (path === DEPLOY_HOOK_PATH) return handleDeployHook(request, env);
+      if (path === CI_HOOK_PATH) return handleCiHook(request, env);
     }
 
     if (path.startsWith("/webhooks/")) {

@@ -1136,6 +1136,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.155.0(@types/node@24.19.2)
 
   front/trieoh-components:
     dependencies:
@@ -1176,6 +1179,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.155.0(@types/node@24.19.2)
 
   front/trieoh-style-guide:
     dependencies:
@@ -1213,6 +1219,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.155.0(@types/node@24.19.2)
 
   front/univents:
     dependencies:
@@ -1630,6 +1639,9 @@ importers:
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
         version: 0.16.4
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.155.0(@types/node@24.19.2)
 
   lib/ts/front-core-react:
     dependencies:

@@ -3,6 +3,8 @@ import type { Deploy, PullRequest } from "../../src/features/delivery/model";
 import {
   changeFailureRate,
   deploysPerWeek,
+  formatMetric,
+  formatStepTime,
   prLeadTime,
   timeToRestore,
 } from "../../src/features/delivery/stats";
@@ -67,5 +69,20 @@ describe("DORA numbers", () => {
 
     // a: 10h → 6h = 4h; b: 5h → 4h = 1h; c is not restored yet.
     expect(timeToRestore(deploys, now)).toBe(2.5 * 3_600_000);
+  });
+});
+
+describe("CI formatting", () => {
+  it("shows step times at a useful precision", () => {
+    expect(formatStepTime(2_340)).toBe("2.3 s");
+    expect(formatStepTime(45_400)).toBe("45 s");
+    expect(formatStepTime(150_000)).toBe("2.5 min");
+  });
+
+  it("formats metrics by their unit suffix", () => {
+    expect(formatMetric("dist_bytes", 432_021_946)).toBe("412 MB");
+    expect(formatMetric("mod_cache_bytes", 5_731_279)).toBe("5.5 MB");
+    expect(formatMetric("slow_test_seconds", 0.02)).toBe("0.02 s");
+    expect(formatMetric("tests_pass", 128)).toBe("128");
   });
 });

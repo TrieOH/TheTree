@@ -1,0 +1,64 @@
+name: Setup Node + pnpm
+description: >
+  Node (NODE_VERSION from tools.versions) and pnpm (the version package.json's
+  packageManager pins), with the pnpm store on a Blacksmith sticky disk so a
+  release tag reuses what the last one downloaded. Optionally runs
+  `pnpm install --frozen-lockfile`, for the whole workspace or one filter.
+inputs:
+  install:
+    description: "run `pnpm install --frozen-lockfile` (true/false)"
+    required: false
+    default: "false"
+  filter:
+    description: "install only this pnpm filter and its dependencies, e.g. ./front/portal (empty: whole workspace)"
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup/versions
+
+    # no version input: action-setup reads package.json's packageManager
+    - name: pnpm
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+    - name: Toolchain
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Locate store
+      id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Mount store
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-pnpm-store
+        path: ${{ steps.store.outputs.path }}
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      env:
+        FILTER: ${{ inputs.filter }}
+      run: |
+        set -euo pipefail
+        LOG="$RUNNER_TEMP/pnpm-install.log"
+        pnpm install --frozen-lockfile ${FILTER:+--filter "$FILTER..."} 2>&1 | tee "$LOG"
+        # last progress line: "Progress: resolved N, reused R, downloaded D, added A, done"
+        LINE=$(grep -oE 'resolved [0-9]+, reused [0-9]+, downloaded [0-9]+' "$LOG" | tail -1 || true)
+        if [ -n "$LINE" ]; then
+          read -r RESOLVED REUSED DOWNLOADED <<< "$(grep -oE '[0-9]+' <<< "$LINE" | xargs)"
+          M="$GITHUB_WORKSPACE/.github/scripts/metric"
+          "$M" setup/node pnpm_resolved "$RESOLVED"
+          "$M" setup/node pnpm_reused "$REUSED"
+          "$M" setup/node pnpm_downloaded "$DOWNLOADED"
+        fi
+
+    - name: Report
+      shell: bash
+      run: |
+        node --version
+        pnpm --version
