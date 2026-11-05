@@ -256,29 +256,9 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 	known := make(map[string]bool, len(ops))
 	for _, op := range ops {
 		known[op.OperationID] = true
-		for _, block := range op.Blocks {
-			if len(block) > 1 {
-				return nil, fmt.Errorf("authz resolver: %s %s: security block lists multiple schemes %v (AND) — express OR as separate blocks", op.Method, op.OperationID, block)
-			}
-		}
-		if op.Cache != "" {
-			if op.Cache != cacheShared {
-				return nil, fmt.Errorf("authz resolver: %s %s: unknown x-cache %q (want %q)", op.Method, op.OperationID, op.Cache, cacheShared)
-			}
-			if op.Method != http.MethodGet || len(op.Schemes) > 0 {
-				return nil, fmt.Errorf("authz resolver: %s %s: x-cache %q on an operation that is not a public GET", op.Method, op.OperationID, op.Cache)
-			}
-		}
-		if op.Scope != "" {
-			if len(op.Schemes) == 0 {
-				return nil, fmt.Errorf("authz resolver: %s %s: x-scope %q on an operation with no security schemes (a scope implies authentication)", op.Method, op.OperationID, op.Scope)
-			}
-			if primitives.Scopes == nil || primitives.Scopes[op.Scope] == nil {
-				return nil, fmt.Errorf("authz resolver: %s %s: no scope checker registered for x-scope %q", op.Method, op.OperationID, op.Scope)
-			}
-			if opts.WriteError == nil {
-				return nil, fmt.Errorf("authz resolver: %s %s: x-scope %q needs Options.WriteError", op.Method, op.OperationID, op.Scope)
-			}
+		err = validateOperation(op, primitives, opts)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -314,6 +294,38 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 		r.chains[GeneratedOperationID(op.OperationID)] = chain
 	}
 	return r, nil
+}
+
+// validateOperation checks one operation's declarations against what the
+// backend registered: OR-only security blocks, x-cache only on a public GET,
+// and x-scope only with authentication, a registered checker and a writer.
+func validateOperation(op ResolvedOperation, primitives Primitives, opts Options) error {
+	for _, block := range op.Blocks {
+		if len(block) > 1 {
+			return fmt.Errorf("authz resolver: %s %s: security block lists multiple schemes %v (AND) — express OR as separate blocks", op.Method, op.OperationID, block)
+		}
+	}
+	if op.Cache != "" {
+		if op.Cache != cacheShared {
+			return fmt.Errorf("authz resolver: %s %s: unknown x-cache %q (want %q)", op.Method, op.OperationID, op.Cache, cacheShared)
+		}
+		if op.Method != http.MethodGet || len(op.Schemes) > 0 {
+			return fmt.Errorf("authz resolver: %s %s: x-cache %q on an operation that is not a public GET", op.Method, op.OperationID, op.Cache)
+		}
+	}
+	if op.Scope == "" {
+		return nil
+	}
+	if len(op.Schemes) == 0 {
+		return fmt.Errorf("authz resolver: %s %s: x-scope %q on an operation with no security schemes (a scope implies authentication)", op.Method, op.OperationID, op.Scope)
+	}
+	if primitives.Scopes == nil || primitives.Scopes[op.Scope] == nil {
+		return fmt.Errorf("authz resolver: %s %s: no scope checker registered for x-scope %q", op.Method, op.OperationID, op.Scope)
+	}
+	if opts.WriteError == nil {
+		return fmt.Errorf("authz resolver: %s %s: x-scope %q needs Options.WriteError", op.Method, op.OperationID, op.Scope)
+	}
+	return nil
 }
 
 // Chains returns every resolved chain, keyed by generated-form operationId

@@ -1,6 +1,7 @@
 package httpcache
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func serve(h http.Handler) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	Middleware(h).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	Middleware(h).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 	return rec
 }
 
@@ -75,8 +76,8 @@ func TestHandlerPolicyWins(t *testing.T) {
 	}
 }
 
-func TestNoMiddlewareIsNoop(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
+func TestNoMiddlewareIsNoop(_ *testing.T) {
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	Tag(r.Context(), "x")
 	Purge(r.Context(), "x")
 }
