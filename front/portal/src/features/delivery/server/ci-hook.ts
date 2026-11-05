@@ -12,6 +12,7 @@ const STAGES = new Set(["parse", "checks", "publish"]);
 // far above a real run (~5 jobs, ~60 steps, ~80 metrics)
 const MAX_JOBS = 30;
 const MAX_STEPS = 100;
+const MAX_SUBSTEPS = 300;
 const MAX_METRICS = 1000;
 // D1 binds at most 100 parameters per statement
 const MAX_PARAMS = 100;
@@ -24,6 +25,16 @@ interface StepReport {
   completed_at: string | null;
 }
 
+/** An action inside a composite step, from the job's log. */
+interface SubstepReport {
+  step: number | null;
+  action_id: string;
+  name: string;
+  depth: number;
+  completed_at: string;
+  duration_ms: number;
+}
+
 interface JobReport {
   name: string;
   status: string | null;
@@ -32,6 +43,8 @@ interface JobReport {
   completed_at: string | null;
   runner: string | null;
   steps: StepReport[];
+  /** Optional: reports from before the substeps went without. */
+  substeps?: SubstepReport[];
 }
 
 interface MetricReport {
@@ -64,6 +77,18 @@ function isStep(value: unknown): value is StepReport {
   return Number.isInteger(step?.number) && str(step!.name) && optStr(step!.status) && optStr(step!.started_at) && optStr(step!.completed_at);
 }
 
+function isSubstep(value: unknown): value is SubstepReport {
+  const sub = value as Partial<SubstepReport> | null;
+  return (
+    (sub?.step === null || Number.isInteger(sub?.step)) &&
+    str(sub!.action_id) &&
+    str(sub!.name) &&
+    Number.isInteger(sub!.depth) &&
+    str(sub!.completed_at) &&
+    Number.isInteger(sub!.duration_ms)
+  );
+}
+
 function isJob(value: unknown): value is JobReport {
   const job = value as Partial<JobReport> | null;
   return (
@@ -75,7 +100,9 @@ function isJob(value: unknown): value is JobReport {
     optStr(job!.runner) &&
     Array.isArray(job!.steps) &&
     job!.steps.length <= MAX_STEPS &&
-    job!.steps.every(isStep)
+    job!.steps.every(isStep) &&
+    (job!.substeps === undefined ||
+      (Array.isArray(job!.substeps) && job!.substeps.length <= MAX_SUBSTEPS && job!.substeps.every(isSubstep)))
   );
 }
 
@@ -153,7 +180,7 @@ export async function handleCiHook(request: Request, env: Env): Promise<Response
   const [startedAt, completedAt] = bounds(report.jobs);
 
   await db.batch([
-    ...["ci_runs", "ci_jobs", "ci_steps", "ci_metrics"].map((table) =>
+    ...["ci_runs", "ci_jobs", "ci_steps", "ci_substeps", "ci_metrics"].map((table) =>
       db.prepare(`DELETE FROM ${table} WHERE run_id = ? AND attempt = ?`).bind(...key),
     ),
     db
@@ -185,6 +212,23 @@ export async function handleCiHook(request: Request, env: Env): Promise<Response
       ["run_id", "attempt", "job", "number", "name", "status", "started_at", "completed_at"],
       report.jobs.flatMap((job) =>
         job.steps.map((step) => [...key, job.name, step.number, step.name, step.status, step.started_at, step.completed_at]),
+      ),
+    ),
+    ...inserts(
+      db,
+      "ci_substeps",
+      ["run_id", "attempt", "job", "step", "action_id", "name", "depth", "completed_at", "duration_ms"],
+      report.jobs.flatMap((job) =>
+        (job.substeps ?? []).map((sub) => [
+          ...key,
+          job.name,
+          sub.step,
+          sub.action_id,
+          sub.name,
+          sub.depth,
+          sub.completed_at,
+          sub.duration_ms,
+        ]),
       ),
     ),
     ...inserts(

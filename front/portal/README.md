@@ -17,6 +17,27 @@ Same stack and structure as `front/univents-solid` (Solid 2, TanStack Solid Rout
 - `src/features/problems/`: `/problems/<svc>` and `/problems/<svc>/<slug>`, and the `<Problems>` doc component, from `api/problems.yml` and `api/<svc>/problems.yml`.
 - `migrations/`: D1 schema.
 
+## Query the data
+
+Everything under `/api` is public and read-only, with open CORS, so a script or an agent can ask the portal directly instead of calling GitHub, Linear or Grafana. `GET https://portal.trieoh.com/api/ci` lists the CI endpoints and their filters.
+
+| Endpoint | One row per |
+|---|---|
+| `/api/ci/runs` | release run, with `duration_ms` |
+| `/api/ci/runs/{run_id}` | one run in full: jobs (with `queue_ms`), their steps, each step's substeps, and the metrics |
+| `/api/ci/steps` | top-level step per run, with `duration_ms` |
+| `/api/ci/substeps` | action inside a composite step, with the step it ran in |
+| `/api/ci/metrics` | number an action recorded with `.github/scripts/metric` |
+
+Every list takes `type`, `component`, `tag`, `status`, `stage`, `lane`, `since` and `until`, newest first, plus `limit` (default 200, at most 5000) and `format=csv`. Steps and substeps also take `job` and `name` (substeps: `step` for the step's name), metrics take `job`, `source`, `name` and `label.<key>=<value>`. For example:
+
+```sh
+# how long Setup Node + pnpm took in every front run this week, as CSV
+curl 'https://portal.trieoh.com/api/ci/steps?type=front&name=Setup%20Node%20%2B%20pnpm&since=2026-11-01&format=csv'
+# what inside it took the time
+curl 'https://portal.trieoh.com/api/ci/substeps?type=front&step=Setup%20Node%20%2B%20pnpm'
+```
+
 ## Develop
 
 ```sh

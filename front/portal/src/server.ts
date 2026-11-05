@@ -3,6 +3,7 @@
 // Nothing here may call the four APIs or Postgres: they scale to zero and the
 // portal must not wake them.
 
+import { handleCiApi } from "./features/delivery/server/ci-api";
 import { CI_HOOK_PATH, handleCiHook } from "./features/delivery/server/ci-hook";
 import { DEPLOY_HOOK_PATH, handleDeployHook } from "./features/delivery/server/deploy-hook";
 import { GITHUB_WEBHOOK_PATH, handleGitHubWebhook } from "./features/delivery/server/github-webhook";
@@ -16,7 +17,8 @@ import { syncMetrics } from "./features/metrics/server/sync";
 function json(body: unknown, init?: ResponseInit): Response {
   return Response.json(body, {
     ...init,
-    headers: { "Cache-Control": "no-store", ...init?.headers },
+    // the read API is public: anyone may query it, from anywhere
+    headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", ...init?.headers },
   });
 }
 
@@ -41,6 +43,10 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
 
   if (path === "/api/metrics") {
     return json(await readMetrics(env.DB));
+  }
+
+  if (path === "/api/ci" || path.startsWith("/api/ci/")) {
+    return handleCiApi(request, env.DB, path);
   }
 
   return json({ error: "not found" }, { status: 404 });

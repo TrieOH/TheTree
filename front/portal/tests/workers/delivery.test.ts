@@ -92,6 +92,7 @@ beforeEach(async () => {
       "ci_jobs",
       "ci_steps",
       "ci_metrics",
+      "ci_substeps",
     ].map((table) =>
       env.DB.prepare(`DELETE FROM ${table}`),
     ),
@@ -242,6 +243,10 @@ const ciReport = (overrides: Record<string, unknown> = {}) => ({
       completed_at: at(60),
       runner: "blacksmith-1",
       steps: [step(1, "Set up job", 4, 5), step(2, "Setup Go", 5, 11), step(3, "Lint", 11, 11, "skipped")],
+      substeps: [
+        { step: 2, action_id: "__self.__actions_setup-go", name: "Toolchain", depth: 1, completed_at: at(9), duration_ms: 3652 },
+        { step: 2, action_id: "__self.__useblacksmith_stickydisk", name: "Mount module cache", depth: 1, completed_at: at(6), duration_ms: 449 },
+      ],
     },
   ],
   // 20 metrics: more than fit in one INSERT under D1's 100-parameter limit
@@ -302,5 +307,62 @@ describe("POST /webhooks/ci", () => {
     expect(payload.runs).toEqual([expect.objectContaining({ status: "failure", stage: "checks" })]);
     expect(payload.metrics).toHaveLength(20);
     expect(payload.steps.find((s) => s.step === "Setup Go")?.runs).toBe(1);
+  });
+});
+
+async function api(path: string): Promise<Response> {
+  return worker.fetch(new Request(`http://localhost${path}`), env);
+}
+
+describe("GET /api/ci", () => {
+  it("describes itself", async () => {
+    const response = await api("/api/ci");
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(Object.keys((await response.json<{ endpoints: object }>()).endpoints)).toContain("/api/ci/substeps");
+  });
+
+  it("filters runs and gives their duration", async () => {
+    await ci(ciReport());
+    await ci(ciReport({ run_id: 2, component: "univents-ui", tag: "univents-ui/v0.16.1", type: "front" }));
+
+    const runs = await (await api("/api/ci/runs?type=front")).json<{ tag: string; duration_ms: number }[]>();
+    expect(runs).toEqual([expect.objectContaining({ tag: "univents-ui/v0.16.1", duration_ms: 56_000 })]);
+  });
+
+  it("serves steps, substeps and metrics as rows, by job and name", async () => {
+    await ci(ciReport());
+
+    const steps = await (await api("/api/ci/steps?job=checks&name=Setup%20Go")).json<{ duration_ms: number }[]>();
+    expect(steps).toEqual([expect.objectContaining({ job: "service / checks", duration_ms: 6000 })]);
+
+    const subs = await (await api("/api/ci/substeps?step=Setup%20Go&name=Toolchain")).json<object[]>();
+    expect(subs).toEqual([expect.objectContaining({ step: "Setup Go", step_number: 2, duration_ms: 3652 })]);
+
+    const metrics = await (await api("/api/ci/metrics?name=slow_test_seconds&label.test=Test3")).json<{ value: number }[]>();
+    expect(metrics).toEqual([expect.objectContaining({ value: 0.3, labels: { mode: "short", test: "Test3" } })]);
+  });
+
+  it("answers in CSV", async () => {
+    await ci(ciReport());
+
+    const response = await api("/api/ci/steps?format=csv&name=Setup%20Go");
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    const [header, row] = (await response.text()).trim().split("\n");
+    expect(header.split(",")).toContain("duration_ms");
+    expect(row).toContain("Setup Go");
+  });
+
+  it("serves one run with its steps nesting their substeps", async () => {
+    await ci(ciReport());
+
+    const run = await (await api("/api/ci/runs/42091066478")).json<{
+      jobs: { queue_ms: number; steps: { name: string; substeps: { name: string }[] }[] }[];
+    }>();
+    expect(run.jobs[0].queue_ms).toBe(4000);
+    expect(run.jobs[0].steps.find((s) => s.name === "Setup Go")?.substeps.map((s) => s.name)).toEqual([
+      "Mount module cache",
+      "Toolchain",
+    ]);
+    expect((await api("/api/ci/runs/1")).status).toBe(404);
   });
 });
