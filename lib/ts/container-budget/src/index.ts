@@ -80,12 +80,19 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 
 	private total?: { seconds: number; readAt: number };
 
+	// The start in progress: when its first request arrived, and when the
+	// port answered (onStart). Requests that arrive during the same start
+	// wait on it too but do not count it again.
+	private boot?: { since: number; readyAt?: number };
+
 	override async fetch(request: Request): Promise<Response> {
-		// Asleep when the request arrived: this request pays for the start.
-		const cold = !this.ctx.container?.running;
+		// Asleep when the request arrived: this request pays for the start,
+		// unless another request already started it.
+		const asleep = !this.ctx.container?.running;
+		const cold = asleep && this.boot === undefined;
 		// Not running with a start on record: it stopped and the library has
 		// not reported it yet. Close that run before starting a new one.
-		await this.flush(cold);
+		await this.flush(asleep);
 		if (await this.overBudget()) {
 			return new Response("Paused: this month's compute budget is spent.", {
 				status: 503,
@@ -97,26 +104,31 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 
 		// Time from the request to the container's first answer, which is what
 		// the caller waited: the boot plus that one response.
-		const started = Date.now();
+		const boot: { since: number; readyAt?: number } = { since: Date.now() };
+		this.boot = boot;
+		let status = 0;
 		try {
 			const response = await super.fetch(request);
-			this.recordColdStart(Date.now() - started, response.status);
+			status = response.status;
 			return response;
-		} catch (error) {
-			this.recordColdStart(Date.now() - started, 0);
-			throw error;
+		} finally {
+			this.boot = undefined;
+			this.recordColdStart(boot, Date.now(), status);
 		}
 	}
 
 	// One data point per cold start: index and blob1 the app, blob2 "ok" or
-	// "failed" (a 5xx or no answer), double1 the milliseconds, double2 the
-	// status (0 when the container never answered).
-	private recordColdStart(ms: number, status: number): void {
+	// "failed" (a 5xx or no answer), double1 the milliseconds to the first
+	// answer, double2 the status (0 when the container never answered),
+	// double3 the milliseconds until the port answered (0 when it never did).
+	// double3 is Cloudflare's start plus the process's own boot, which the
+	// process traces as its `boot` span; the rest of double1 is the request.
+	private recordColdStart(boot: { since: number; readyAt?: number }, end: number, status: number): void {
 		try {
 			this.env.COLD_STARTS?.writeDataPoint({
 				indexes: [this.app],
 				blobs: [this.app, status === 0 || status >= 500 ? "failed" : "ok"],
-				doubles: [ms, status],
+				doubles: [end - boot.since, status, boot.readyAt === undefined ? 0 : boot.readyAt - boot.since],
 			});
 		} catch {
 			// Metrics never get in the way of the request.
@@ -125,6 +137,8 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 
 	override async onStart(): Promise<void> {
 		const now = Date.now();
+		// The library calls this once the port answers.
+		if (this.boot) this.boot.readyAt = now;
 		await this.ctx.storage.put({ [STARTED_AT]: now, [LAST_REQUEST]: now });
 		await this.schedule(new Date(now + WATCHDOG_MS), "watchdog");
 	}
