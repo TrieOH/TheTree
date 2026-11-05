@@ -46,6 +46,7 @@ type Manager struct {
 	cfg      Config
 	gen      func(models.CryptoKeyType) (*crypto.KeyPair, error)
 	now      func() time.Time
+	onChange func(context.Context)
 }
 
 // Option configures a Manager at construction.
@@ -55,6 +56,13 @@ type Option func(*Manager)
 // boundaries instead of sleeping.
 func WithClock(now func() time.Time) Option {
 	return func(m *Manager) { m.now = now }
+}
+
+// WithOnChange runs fn whenever a call creates or rotates a key, or
+// EnsureAll's sweep retires one. It is best effort: the keys are already
+// stored when fn runs, and fn cannot fail the call.
+func WithOnChange(fn func(context.Context)) Option {
+	return func(m *Manager) { m.onChange = fn }
 }
 
 // WithKeyGen overrides key generation — an internal seam for tests, which
@@ -94,61 +102,116 @@ func (m *Manager) Ensure(ctx context.Context, scope *uuid.UUID) error {
 	defer span.End()
 
 	now := m.now()
+	changed := false
 	for _, t := range keyTypes {
 		active, err := m.keys.GetActive(ctx, t, scope)
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return err
-			}
-			err = m.create(ctx, scope, t, now)
-			if err != nil {
-				return err
-			}
-			continue
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return err
 		}
-		if !m.needsRotation(active, now) {
-			continue
-		}
-		// Retire conditionally (active → retiring): a concurrent worker
-		// that already retired the key makes Retire a no-op, and we skip
-		// creation, so overlapping runs cannot double-create.
-		rotated, err := m.keys.Retire(ctx, active.ID, now)
+		c, err := m.ensureType(ctx, scope, t, active, now)
 		if err != nil {
 			return err
 		}
-		if rotated {
-			err = m.create(ctx, scope, t, now)
-			if err != nil {
-				return err
-			}
-		}
+		changed = changed || c
 	}
-	return m.sweep(ctx, scope, now)
+	err := m.sweep(ctx, scope, now)
+	if err != nil {
+		return err
+	}
+	if changed {
+		m.notify(ctx)
+	}
+	return nil
 }
 
-// EnsureAll makes every scope healthy: the platform (nil scope) and every
-// Project. Boot calls it once (replacing the old per-project enqueue);
-// the periodic rotation worker calls it on each tick.
+// EnsureAll is Ensure for every scope: the platform (nil scope) and every
+// Project. It reads the projects and every active key in two queries and
+// sweeps all scopes in a third, so its cost does not grow with the number
+// of projects; only a scope that is missing a key or due for rotation
+// takes more round trips. Boot runs it before the router accepts traffic,
+// and the periodic rotation worker runs it on each tick.
 func (m *Manager) EnsureAll(ctx context.Context) error {
 	ctx, span := telemetry.StartSpan(ctx, "keys.EnsureAll")
 	defer span.End()
 
-	err := m.Ensure(ctx, nil)
-	if err != nil {
-		return err
-	}
 	projects, err := m.projects.ListAll(ctx)
 	if err != nil {
 		return err
 	}
+	active, err := m.keys.ListActive(ctx)
+	if err != nil {
+		return err
+	}
+	current := make(map[uuid.UUID]map[models.CryptoKeyType]*models.CryptoKey, len(projects)+1)
+	for i := range active {
+		k := &active[i]
+		id := scopeOf(k.ProjectID)
+		if current[id] == nil {
+			current[id] = make(map[models.CryptoKeyType]*models.CryptoKey, len(keyTypes))
+		}
+		current[id][k.Type] = k
+	}
+
+	scopes := make([]*uuid.UUID, 0, len(projects)+1)
+	scopes = append(scopes, nil)
 	for i := range projects {
-		pid := projects[i].ID
-		err = m.Ensure(ctx, &pid)
-		if err != nil {
-			return err
+		scopes = append(scopes, &projects[i].ID)
+	}
+
+	now := m.now()
+	changed := false
+	for _, scope := range scopes {
+		for _, t := range keyTypes {
+			c, err := m.ensureType(ctx, scope, t, current[scopeOf(scope)][t], now)
+			if err != nil {
+				return err
+			}
+			changed = changed || c
 		}
 	}
+	swept, err := m.keys.SweepAllRetiring(ctx, now.Add(-m.cfg.RefreshTTL))
+	if err != nil {
+		return err
+	}
+	if changed || swept > 0 {
+		m.notify(ctx)
+	}
 	return nil
+}
+
+// ensureType makes one key type of one scope healthy, given its active key
+// (nil when there is none). It reports whether it created a key.
+func (m *Manager) ensureType(ctx context.Context, scope *uuid.UUID, t models.CryptoKeyType, active *models.CryptoKey, now time.Time) (bool, error) {
+	if active == nil {
+		return true, m.create(ctx, scope, t, now)
+	}
+	if !m.needsRotation(active, now) {
+		return false, nil
+	}
+	// Retire conditionally (active → retiring): a concurrent worker that
+	// already retired the key makes Retire a no-op, and we skip creation,
+	// so overlapping runs cannot double-create.
+	rotated, err := m.keys.Retire(ctx, active.ID, now)
+	if err != nil || !rotated {
+		return false, err
+	}
+	return true, m.create(ctx, scope, t, now)
+}
+
+// scopeOf keys a scope in a map: uuid.Nil stands for the platform.
+func scopeOf(scope *uuid.UUID) uuid.UUID {
+	if scope == nil {
+		return uuid.Nil
+	}
+	return *scope
+}
+
+// notify tells the OnChange hook that keys were created, rotated or
+// retired, so copies of the public keys held elsewhere can be dropped.
+func (m *Manager) notify(ctx context.Context) {
+	if m.onChange != nil {
+		m.onChange(ctx)
+	}
 }
 
 // needsRotation reports whether the active key must be rotated: it is

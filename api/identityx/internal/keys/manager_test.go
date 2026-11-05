@@ -40,6 +40,9 @@ type fakeKeys struct {
 	// retireGives overrides Retire's faithful answer — used to simulate a
 	// concurrent worker that already retired the key.
 	retireGives *bool
+	// perScopeReads counts the per-scope calls (GetActive, SweepRetiring),
+	// which EnsureAll must not make.
+	perScopeReads int
 }
 
 func sameScope(a, b *uuid.UUID) bool {
@@ -73,6 +76,7 @@ func (f *fakeKeys) toModel(k *fakeKey) *models.CryptoKey {
 }
 
 func (f *fakeKeys) GetActive(_ context.Context, typ models.CryptoKeyType, scope *uuid.UUID) (*models.CryptoKey, error) {
+	f.perScopeReads++
 	for i := range f.keys {
 		k := &f.keys[i]
 		if k.typ == typ && k.status == models.CryptoKeyStatusActive && sameScope(k.scope, scope) {
@@ -116,6 +120,7 @@ func (f *fakeKeys) Retire(_ context.Context, id uuid.UUID, rotatedAt time.Time) 
 }
 
 func (f *fakeKeys) SweepRetiring(_ context.Context, scope *uuid.UUID, before time.Time) error {
+	f.perScopeReads++
 	for i := range f.keys {
 		k := &f.keys[i]
 		if k.status != models.CryptoKeyStatusRetiring || k.rotatedAt == nil || !sameScope(k.scope, scope) {
@@ -126,6 +131,28 @@ func (f *fakeKeys) SweepRetiring(_ context.Context, scope *uuid.UUID, before tim
 		}
 	}
 	return nil
+}
+
+func (f *fakeKeys) ListActive(_ context.Context) ([]models.CryptoKey, error) {
+	var out []models.CryptoKey
+	for i := range f.keys {
+		if f.keys[i].status == models.CryptoKeyStatusActive {
+			out = append(out, *f.toModel(&f.keys[i]))
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeKeys) SweepAllRetiring(_ context.Context, before time.Time) (int64, error) {
+	var n int64
+	for i := range f.keys {
+		k := &f.keys[i]
+		if k.status == models.CryptoKeyStatusRetiring && k.rotatedAt != nil && k.rotatedAt.Before(before) {
+			k.status = models.CryptoKeyStatusRetired
+			n++
+		}
+	}
+	return n, nil
 }
 
 type fakeProjects struct {
@@ -174,6 +201,8 @@ type fixture struct {
 	keys *fakeKeys
 	now  time.Time
 	ctx  context.Context
+	// changes counts the OnChange notifications.
+	changes int
 }
 
 func newFixture(t *testing.T, projects []models.Project) *fixture {
@@ -189,6 +218,7 @@ func newFixture(t *testing.T, projects []models.Project) *fixture {
 		WithKeyGen(func(models.CryptoKeyType) (*crypto.KeyPair, error) {
 			return &crypto.KeyPair{Public: "pub", EncryptedPrivate: "enc", Algorithm: "test"}, nil
 		}),
+		WithOnChange(func(context.Context) { f.changes++ }),
 	)
 	return f
 }
@@ -425,5 +455,79 @@ func TestEnsureAllCoversPlatformAndEveryProject(t *testing.T) {
 		if f.active(&pid, models.EncryptionCryptoKeyType) == nil {
 			t.Fatalf("project %s has no encryption key", pid)
 		}
+	}
+}
+
+func TestEnsureAllMakesNoPerScopeCalls(t *testing.T) {
+	projects := make([]models.Project, 0, 20)
+	for range 20 {
+		projects = append(projects, models.Project{ID: uuid.New()})
+	}
+	f := newFixture(t, projects)
+	f.mustEnsureAll(t)
+	f.keys.perScopeReads = 0
+
+	f.mustEnsureAll(t)
+
+	if f.keys.perScopeReads != 0 {
+		t.Fatalf("EnsureAll made %d per-scope calls, want 0", f.keys.perScopeReads)
+	}
+}
+
+func TestEnsureAllSweepsEveryScope(t *testing.T) {
+	pid := new(uuid.New())
+	f := newFixture(t, []models.Project{{ID: *pid}})
+	f.mustEnsureAll(t)
+
+	// A retiring key in each scope, rotated before the grace period began.
+	rotated := f.now.Add(-testRefreshTTL - time.Minute)
+	for _, scope := range []*uuid.UUID{nil, pid} {
+		f.keys.keys = append(f.keys.keys, fakeKey{
+			id: uuid.New(), scope: scope, typ: models.SigningCryptoKeyType,
+			status: models.CryptoKeyStatusRetiring, rotatedAt: &rotated,
+		})
+	}
+
+	f.mustEnsureAll(t)
+
+	for _, k := range f.keys.keys {
+		if k.status == models.CryptoKeyStatusRetiring {
+			t.Fatalf("key %s still retiring after EnsureAll", k.id)
+		}
+	}
+}
+
+func TestEnsureAllNotifiesOnlyWhenKeysChange(t *testing.T) {
+	f := newFixture(t, []models.Project{{ID: uuid.New()}})
+
+	f.mustEnsureAll(t)
+	if f.changes != 1 {
+		t.Fatalf("changes = %d after provisioning, want 1", f.changes)
+	}
+
+	f.mustEnsureAll(t)
+	if f.changes != 1 {
+		t.Fatalf("changes = %d after a pass with nothing to do, want 1", f.changes)
+	}
+
+	// A sweep alone changes the published keys too.
+	rotated := f.now.Add(-testRefreshTTL - time.Minute)
+	f.keys.keys = append(f.keys.keys, fakeKey{
+		id: uuid.New(), typ: models.SigningCryptoKeyType,
+		status: models.CryptoKeyStatusRetiring, rotatedAt: &rotated,
+	})
+	f.mustEnsureAll(t)
+	if f.changes != 2 {
+		t.Fatalf("changes = %d after a sweep, want 2", f.changes)
+	}
+}
+
+func TestEnsureNotifiesWhenItCreates(t *testing.T) {
+	f := newFixture(t, nil)
+
+	f.mustEnsure(t, new(uuid.New()))
+
+	if f.changes != 1 {
+		t.Fatalf("changes = %d, want 1", f.changes)
 	}
 }
