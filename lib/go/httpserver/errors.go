@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -97,6 +98,20 @@ func operationMiddleware() StrictMiddlewareFunc {
 	}
 }
 
+// countProblem counts the answer by its type slug, never its message, so
+// dashboards and the portal can rank error types.
+func countProblem(r *http.Request, slug string, status int) {
+	c, err := collectors()
+	if err != nil {
+		return
+	}
+	operation := ""
+	if slot, ok := r.Context().Value(operationSlotKey{}).(*operationSlot); ok {
+		operation = slot.id
+	}
+	c.problems.WithLabelValues(operation, slug, strconv.Itoa(status)).Inc()
+}
+
 // checkListed reports a problem the answering operation's x-problems
 // doesn't list. Requests outside an operation (routing, param binding, the
 // router middlewares) go unchecked.
@@ -155,6 +170,7 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		telemetry.Log().Error("request failed", zap.Int("status", p.Status), zap.String("path", r.URL.Path), zap.Error(err))
 	}
 	checkListed(r, p.Type)
+	countProblem(r, p.Type, p.Status)
 	p = p.Clone()
 	p.Type = problemType(base, p.Type)
 	p.Instance = r.URL.Path
