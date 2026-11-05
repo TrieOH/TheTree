@@ -191,7 +191,8 @@ func newCollectors(reg prometheus.Registerer) (*httpCollectors, error) {
 }
 
 // metrics counts and times requests per route outside skip. The status
-// label is the status text ("OK"), as dashboards already expect.
+// label is the status text ("OK"), as dashboards already expect. Realtime
+// streams are counted but not timed (see realtime).
 func metrics(c *httpCollectors, skip []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +205,9 @@ func metrics(c *httpCollectors, skip []string) func(http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 			route := routePattern(r)
 			c.requests.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
-			c.duration.WithLabelValues(route).Observe(time.Since(start).Seconds())
+			if !realtime(r) {
+				c.duration.WithLabelValues(route).Observe(time.Since(start).Seconds())
+			}
 		})
 	}
 }
