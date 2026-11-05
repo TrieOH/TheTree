@@ -26,4 +26,9 @@ type CryptoKeysRepo interface {
 	// before: their grace period has elapsed, so nothing valid is signed by
 	// them anymore.
 	SweepRetiring(ctx context.Context, projectID *uuid.UUID, before time.Time) error
+	// ListActive returns the active keys of every scope at once.
+	ListActive(ctx context.Context) ([]models.CryptoKey, error)
+	// SweepAllRetiring is SweepRetiring across every scope at once. It
+	// reports how many keys it retired.
+	SweepAllRetiring(ctx context.Context, before time.Time) (int64, error)
 }

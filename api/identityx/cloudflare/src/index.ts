@@ -26,13 +26,16 @@ const JOBS_HOST = "jobs.internal";
 // may reach it.
 const EVENTS_PATH = "/_jobs";
 
-// Public signing keys. Every other API fetches them on its cold start, so
+// Public signing keys. Every other API fetches them to verify tokens, so
 // the Worker answers from the edge cache, then from KV (shared by every
 // location), and only wakes the container when both miss. Keys only change
-// while the container runs: on boot (EnsureAll), in the daily keys.rotate
-// job, and when a project is created. The KV copy is dropped at each of
-// those, so it can otherwise live as long as a key does.
+// while the container runs, and the container says so: whenever it creates,
+// rotates or retires a key it sends a JWKS_CHANGED envelope, and the KV copy
+// is dropped then. Project creation also drops it, as a backstop. Otherwise
+// the copy lives as long as a key does; a boot alone changes nothing.
 const JWKS_PATH = "/.well-known/jwks.json";
+// Matches JWKSChangedArgs.Kind() in internal/jobs.
+const JWKS_CHANGED = "jwks.changed";
 const JWKS_EDGE_TTL_SECONDS = 300;
 const JWKS_KV_TTL_SECONDS = 7 * 24 * 3600;
 const JWKS_KV_PREFIX = "jwks:";
@@ -66,6 +69,11 @@ export class IdentityXContainer extends BudgetedContainer<Env> {
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
 			const envelope = await req.json<Envelope>();
+			// Not work for the queue: the keys changed, so drop the cached JWKS.
+			if (envelope.kind === JWKS_CHANGED) {
+				await forgetJWKS(env);
+				return new Response(null, { status: 202 });
+			}
 			await env.JOBS.send(envelope, { contentType: "json" });
 			return new Response(null, { status: 202 });
 		},
@@ -76,12 +84,6 @@ export class IdentityXContainer extends BudgetedContainer<Env> {
 		// Vars and secrets become the container's environment; a running
 		// container keeps what it started with until it restarts.
 		this.envVars = { ...stringBindings(env), JOBS_URL: `http://${JOBS_HOST}/enqueue` };
-	}
-
-	// Boot runs EnsureAll, which may rotate keys.
-	override async onStart(): Promise<void> {
-		await super.onStart();
-		await forgetJWKS(this.env);
 	}
 }
 
@@ -178,10 +180,8 @@ export default {
 				continue;
 			}
 			try {
-				if (await deliver(env, message.body)) {
-					if (message.body.kind === "keys.rotate") await forgetJWKS(env);
-					message.ack();
-				} else message.retry();
+				if (await deliver(env, message.body)) message.ack();
+				else message.retry();
 			} catch (err) {
 				console.error("job delivery failed", err);
 				message.retry();

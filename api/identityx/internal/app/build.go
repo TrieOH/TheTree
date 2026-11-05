@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,9 +31,12 @@ import (
 	"IdentityX/internal/sqlc"
 	"IdentityX/internal/tokens"
 	"lib/backend"
+	carrier "lib/backend/jobs"
 	"lib/oauth"
+	"lib/telemetry"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"resty.dev/v3"
 )
 
@@ -72,7 +76,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 			KeyLifetime:    cfg.KeyLifetime,
 			RefreshTTL:     cfg.RefreshTokenLifetime,
 			RotateInterval: cfg.RotateKeysJobDuration,
-		})
+		}, keys.WithOnChange(announceJWKSChange(d.Jobs)))
 		// Every scope has keys before the router accepts traffic; the
 		// periodic RotateKeys job keeps them fresh afterwards.
 		err := keysMgr.EnsureAll(ctx)
@@ -140,5 +144,18 @@ func Build(cfg config.Config) backend.BuildFunc {
 		}
 		openapi.Mount(r, newServer(ops, setupState), chains)
 		return nil
+	}
+}
+
+// announceJWKSChange tells whoever caches the JWKS that the keys changed: on
+// Cloudflare the Worker in front of the container drops its copy. In-process
+// nothing caches it, and an enqueue before Serve has nowhere to go, so that
+// failure is expected and dropped.
+func announceJWKSChange(j backend.Jobs) func(context.Context) {
+	return func(ctx context.Context) {
+		err := j.Enqueue(ctx, jobs.JWKSChangedArgs{})
+		if err != nil && !errors.Is(err, carrier.ErrNotServing) {
+			telemetry.Log().Warn("could not announce a JWKS change", zap.Error(err))
+		}
 	}
 }

@@ -29,6 +29,7 @@ func Registry(d Deps) *libjobs.Registry {
 	libjobs.Register(reg, NewCleanupBlacklistWorker(d.Queries).Work)
 	libjobs.Register(reg, NewCleanupActionTokensWorker(d.ActionTokens).Work)
 	libjobs.Register(reg, NewRotateKeysWorker(d.Keys).Work)
+	libjobs.Register(reg, workJWKSChanged)
 	libjobs.Register(reg, NewSendAuthEmailWorker(d.Email, email_templates.NewRepo(d.Queries)).Work)
 	libjobs.Register(reg, NewSendTosUpdateWorker(d.Email, actors.NewRepo(d.Queries), email_templates.NewRepo(d.Queries)).Work)
 	return reg

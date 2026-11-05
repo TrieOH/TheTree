@@ -115,3 +115,17 @@ func (repo *Repo) SweepRetiring(ctx context.Context, projectID *uuid.UUID, befor
 	})
 	return repo.dbe(err)
 }
+
+// ListActive returns every scope's active keys in one query, so a pass over
+// all scopes costs one round trip instead of one per scope and key type.
+func (repo *Repo) ListActive(ctx context.Context) ([]models.CryptoKey, error) {
+	sqlcKeys, err := repo.db(ctx).ListActiveCryptoKeys(ctx)
+	return database.Many(sqlcKeys, err, repo.dbe, mapKeys)
+}
+
+// SweepAllRetiring retires every scope's keys whose grace period has
+// elapsed, and reports how many it retired.
+func (repo *Repo) SweepAllRetiring(ctx context.Context, before time.Time) (int64, error) {
+	n, err := repo.db(ctx).SweepAllRetiringCryptoKeys(ctx, &before)
+	return n, repo.dbe(err)
+}

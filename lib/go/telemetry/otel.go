@@ -27,8 +27,8 @@ import (
 
 var serviceName string
 
-func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) { //nolint:ireturn
-	return otel.Tracer(serviceName).Start(ctx, name) //nolint:spancheck
+func StartSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) { //nolint:ireturn
+	return otel.Tracer(serviceName).Start(ctx, name, opts...) //nolint:spancheck
 }
 
 // Signal is one OTLP signal. Each is pushed to wherever the standard

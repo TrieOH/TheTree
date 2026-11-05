@@ -29,12 +29,16 @@ import (
 	"lib/httpserver"
 	libjobs "lib/jobs"
 	"lib/jobs/httpjobs"
+	"lib/telemetry"
 
 	idx "sdk/identityx"
 
 	fp "github.com/MintzyG/problematic"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // App is what a Backend declares about itself.
@@ -192,10 +196,13 @@ func start(ctx context.Context, app App) (http.Handler, func(context.Context) er
 		Problems:           app.Problems,
 		RateLimit:          app.Server.RateLimit,
 		Routes: func(r *chi.Mux) {
-			buildErr = app.Build(ctx, d, r)
+			buildCtx, span := telemetry.StartSpan(ctx, "boot.build")
+			defer span.End()
+			buildErr = app.Build(buildCtx, d, r)
 			if buildErr == nil {
 				buildErr = mountJobs(d, r)
 			}
+			endBootStep(span, buildErr)
 		},
 	})
 	if buildErr != nil {
@@ -221,7 +228,7 @@ func openModules(ctx context.Context, d *Deps, modules []Module) (func(context.C
 		return errors.Join(errs...)
 	}
 	for _, m := range modules {
-		closeFn, err := m.Open(ctx, d)
+		closeFn, err := openModule(ctx, m, d)
 		if err != nil {
 			_ = closeAll(ctx)
 			return nil, fmt.Errorf("open %s: %w", m.Name, err)
@@ -231,6 +238,25 @@ func openModules(ctx context.Context, d *Deps, modules []Module) (func(context.C
 		}
 	}
 	return closeAll, nil
+}
+
+// openModule opens one module under its own boot span, so a boot trace shows
+// what each module cost.
+func openModule(ctx context.Context, m Module, d *Deps) (Close, error) {
+	ctx, span := telemetry.StartSpan(ctx, "boot.module",
+		trace.WithAttributes(attribute.String("boot.module", m.Name)))
+	defer span.End()
+	closeFn, err := m.Open(ctx, d)
+	endBootStep(span, err)
+	return closeFn, err
+}
+
+// endBootStep marks a boot span failed when its step failed.
+func endBootStep(span trace.Span, err error) {
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
 }
 
 type namedClose struct {

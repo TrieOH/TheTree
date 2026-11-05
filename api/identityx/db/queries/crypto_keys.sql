@@ -51,3 +51,14 @@ WHERE status = 'retiring'
   AND rotated_at IS NOT NULL
   AND rotated_at < @before
   AND (project_id = @project_id OR (project_id IS NULL AND @project_id IS NULL));
+-- name: ListActiveCryptoKeys :many
+SELECT *
+FROM crypto_keys
+WHERE status = 'active';
+
+-- name: SweepAllRetiringCryptoKeys :execrows
+UPDATE crypto_keys
+SET status = 'retired'
+WHERE status = 'retiring'
+  AND rotated_at IS NOT NULL
+  AND rotated_at < @before;
