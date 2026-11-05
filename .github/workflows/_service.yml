@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup Go
         uses: ./.github/actions/setup/go
+        with:
+          cache-scope: ${{ inputs.service }}
 
       - name: Setup Go tools
         uses: ./.github/actions/setup/go-tools
@@ -112,8 +114,9 @@ jobs:
         id: img
         uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
         env:
-          # skip the build-record export (pulls dockereng/export-build each run)
-          DOCKER_BUILD_RECORD_UPLOAD: "false"
+          # no build summary: it exports a build record through a
+          # dockereng/export-build container, pulled on every run (~3 s)
+          DOCKER_BUILD_SUMMARY: "false"
         with:
           context: .
           file: api/${{ inputs.service }}/Dockerfile

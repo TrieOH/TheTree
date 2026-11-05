@@ -44,6 +44,8 @@ jobs:
       # tools/problemgen bundles the specs orval reads
       - name: Setup Go
         uses: ./.github/actions/setup/go
+        with:
+          cache-scope: fronts
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup/node

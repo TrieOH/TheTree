@@ -5,6 +5,13 @@ description: >
   so a release tag reuses what the last release saved; the Actions cache
   that setup-go would use is visible only to the tag that saved it, so it is
   off. Run before setup/go-tools (which needs `go install`).
+inputs:
+  cache-scope:
+    description: >
+      which disks to use, e.g. the service name, or fronts. A disk keeps what
+      the last job that used it saved, so workloads with different
+      dependencies (a backend, the fronts' problemgen runs) each get their own.
+    required: true
 runs:
   using: composite
   steps:
@@ -23,14 +30,14 @@ runs:
     - name: Mount module cache
       uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
       with:
-        key: ${{ github.repository }}-go-mod
+        key: ${{ github.repository }}-go-mod-${{ inputs.cache-scope }}
         path: ~/go/pkg/mod
 
     # build outputs are only valid for one compiler
     - name: Mount build cache
       uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
       with:
-        key: ${{ github.repository }}-go-build-${{ env.GO_VERSION }}
+        key: ${{ github.repository }}-go-build-${{ inputs.cache-scope }}-${{ env.GO_VERSION }}
         path: ~/.cache/go-build
 
     - name: Toolchain
