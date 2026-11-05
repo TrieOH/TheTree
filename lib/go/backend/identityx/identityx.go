@@ -75,8 +75,11 @@ func HTTPClient(c *http.Client) Option {
 	return func(o *options) { o.httpClient = c }
 }
 
-// Module bootstraps the IdentityX SDK client and fills Deps.IDX with it and
-// the auth primitives.
+// Module builds the IdentityX SDK client and fills Deps.IDX with it and the
+// auth primitives. It makes no call at boot: the JWKS is fetched on the first
+// token to verify. A boot-time fetch woke IdentityX on every cold start of a
+// consumer, and failed the boot whenever IdentityX was slower to start than
+// the fetch's timeout.
 func Module(cfg libconfig.IdentityX, opts ...Option) backend.Module {
 	o := options{httpClient: &http.Client{Timeout: introspectTimeout}}
 	for _, opt := range opts {
@@ -84,8 +87,8 @@ func Module(cfg libconfig.IdentityX, opts ...Option) backend.Module {
 	}
 	return backend.Module{
 		Name: "identityx",
-		Open: func(ctx context.Context, d *backend.Deps) (backend.Close, error) {
-			client, err := idx.Bootstrap(ctx, libconfig.IdentityXConfig(cfg, o.debug))
+		Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {
+			client, err := idx.NewClient(libconfig.IdentityXConfig(cfg, o.debug))
 			if err != nil {
 				return nil, err
 			}
