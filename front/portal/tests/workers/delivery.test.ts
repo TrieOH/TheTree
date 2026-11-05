@@ -76,7 +76,6 @@ const report = (overrides: Record<string, unknown> = {}) => ({
   sha: "cc44557c",
   actor: "MintzyG",
   status: "success",
-  health_ok: true,
   run_id: 41863939045,
   ...overrides,
 });
@@ -163,18 +162,18 @@ describe("POST /webhooks/deploy", () => {
 
   it("rejects a malformed report", async () => {
     expect((await deploy(report({ status: "great" }))).status).toBe(400);
-    expect((await deploy(report({ health_ok: "yes" }))).status).toBe(400);
+    expect((await deploy(report({ run_id: "41863939045" }))).status).toBe(400);
   });
 
   it("serves the latest deploy of each component as production", async () => {
     await deploy(report({ tag: "portal-ui/v0.1.1" }));
     await deploy(report());
-    await deploy(report({ component: "identityx", tag: "identityx/v0.42.0", status: "failure", health_ok: null }));
+    await deploy(report({ component: "identityx", tag: "identityx/v0.42.0", status: "failure" }));
 
     const { production, deploys } = await readApi();
     expect(production).toEqual([
-      expect.objectContaining({ component: "identityx", status: "failure", healthOk: null }),
-      expect.objectContaining({ component: "portal-ui", tag: "portal-ui/v0.2.0", healthOk: true, runId: 41863939045 }),
+      expect.objectContaining({ component: "identityx", status: "failure" }),
+      expect.objectContaining({ component: "portal-ui", tag: "portal-ui/v0.2.0", runId: 41863939045 }),
     ]);
     expect(deploys).toHaveLength(3);
   });

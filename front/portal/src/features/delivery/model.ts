@@ -11,8 +11,6 @@ export interface Deploy {
   sha: string;
   actor: string;
   status: DeployStatus;
-  /** null when no health check ran (failed deploy, SDKs, Pages sites). */
-  healthOk: boolean | null;
   at: string;
   runId: number | null;
 }

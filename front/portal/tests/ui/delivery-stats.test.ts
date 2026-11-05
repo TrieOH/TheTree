@@ -16,7 +16,6 @@ const deploy = (component: string, h: number, overrides: Partial<Deploy> = {}): 
   sha: "abc",
   actor: "MintzyG",
   status: "success",
-  healthOk: true,
   at: hoursAgo(h),
   runId: null,
   ...overrides,
@@ -44,12 +43,12 @@ describe("DORA numbers", () => {
     expect(prLeadTime([pull(10, 8), pull(10, 4), pull(10, 0), pull(5, null)], now)).toBe(6 * 3_600_000);
   });
 
-  it("counts failed and unhealthy deploys against the change failure rate", () => {
+  it("counts failed deploys against the change failure rate", () => {
     const deploys = [
       deploy("a", 1),
-      deploy("a", 2, { status: "failure", healthOk: null }),
-      deploy("b", 3, { healthOk: false }),
-      deploy("b", 4, { status: "cancelled", healthOk: null }),
+      deploy("a", 2, { status: "failure" }),
+      deploy("b", 3, { status: "failure" }),
+      deploy("b", 4, { status: "cancelled" }),
     ];
 
     expect(changeFailureRate(deploys, now)).toBeCloseTo(2 / 3);
@@ -58,12 +57,12 @@ describe("DORA numbers", () => {
 
   it("measures time to restore from the first failure to the next good deploy", () => {
     const deploys = [
-      deploy("a", 10, { status: "failure", healthOk: null }),
-      deploy("a", 8, { status: "failure", healthOk: null }),
+      deploy("a", 10, { status: "failure" }),
+      deploy("a", 8, { status: "failure" }),
       deploy("a", 6),
-      deploy("b", 5, { healthOk: false }),
+      deploy("b", 5, { status: "failure" }),
       deploy("b", 4),
-      deploy("c", 3, { status: "failure", healthOk: null }),
+      deploy("c", 3, { status: "failure" }),
     ];
 
     // a: 10h → 6h = 4h; b: 5h → 4h = 1h; c is not restored yet.
