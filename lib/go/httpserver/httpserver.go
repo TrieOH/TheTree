@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -168,7 +169,7 @@ func NewRouter(cfg Config) http.Handler {
 	// Realtime requests are still traced, but kept out of the duration
 	// histogram: their "duration" is how long the client stayed connected.
 	unmeasured := otelhttp.NewHandler(r, "http.server",
-		append(opts[:len(opts):len(opts)], otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
+		append(slices.Clip(opts), otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if realtime(req) {
 			unmeasured.ServeHTTP(w, req)

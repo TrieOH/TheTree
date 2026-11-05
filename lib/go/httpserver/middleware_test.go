@@ -195,7 +195,7 @@ func TestRealtimeStaysOutOfLatency(t *testing.T) {
 		{"Upgrade": "websocket", "Connection": "Upgrade"},
 		{},
 	} {
-		req := httptest.NewRequest(http.MethodGet, "/stream", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/stream", nil)
 		for k, v := range head {
 			req.Header.Set(k, v)
 		}
