@@ -113,10 +113,8 @@ jobs:
       - name: Build & push image
         id: img
         uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
-        env:
-          # no build summary: it exports a build record through a
-          # dockereng/export-build container, pulled on every run (~3 s)
-          DOCKER_BUILD_SUMMARY: "false"
+        # The ~3 s dockereng/export-build pull after each build is Blacksmith's
+        # own build reporting; it runs whatever DOCKER_BUILD_SUMMARY says.
         with:
           context: .
           file: api/${{ inputs.service }}/Dockerfile
