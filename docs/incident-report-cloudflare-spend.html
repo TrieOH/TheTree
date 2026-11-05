@@ -320,8 +320,45 @@ on Nov 1 covers up to 1.4M, and the day used ~2.7k.
   <p>On an idle day: IdentityX only for the 03:00 cron (~5 min), Payssage and Informd 0, Univents only with real use. Target under 0.3 GiB-h/day idle, about 7 GiB-h a cycle, leaving the rest for real users.</p>
 </div>
 
+<h2>Day-3 follow-up (2026-11-05)</h2>
+<p class="big">
+24 hours from Nov 4 15:00 → Nov 5 15:00 UTC, ending before the edge-cache and cold-start deploys (15:52 UTC). It still
+includes the Nov 4 deploys (~21:11 UTC). <b>#70 works:</b> the quiet night (Nov 5 00:00–13:00 UTC) cost
+<b>~0.04 GiB-h</b>, well under the 0.3 GiB-h/day target. The full day came to <b>~3.4 DO-hours</b> (5.8 on day 1) and
+<b>~2.7k GiB-s</b> (~0.75 GiB-h, 3.1k on day 1), almost all from deploys and real use.
+</p>
+<div class="tablewrap">
+<table>
+  <tr><th>App</th><th>DO awake</th><th>Container awake</th><th>Quiet night</th><th>Why</th></tr>
+  <tr><td>univents</td><td class="num hl">110 min</td><td class="num">98 min</td><td>02, 04, 05 UTC (~2 min each)</td><td>Real use 13–14 UTC (~60 min), Nov 4 deploy, unexplained night wakes</td></tr>
+  <tr><td>identityx</td><td class="num">60 min</td><td class="num">55 min</td><td>02, 03, 04 UTC (~2 min each)</td><td>Nov 4 deploy (18–22 UTC), 03:00 cron, wakes alongside Univents</td></tr>
+  <tr><td>payssage</td><td class="num">26 min</td><td class="num">16 min</td><td>0</td><td>Nov 4 deploy only; redrive skipped at 00/06/12 UTC</td></tr>
+  <tr><td>informd</td><td class="num">9 min</td><td class="num">9 min</td><td>0</td><td>Nov 4 deploy only</td></tr>
+</table>
+</div>
+<ul>
+  <li><b>JWKS copy holds:</b> 3 <code>jwks:</code> keys in KV, and other APIs' cold starts no longer chain into IdentityX.</li>
+  <li><b>Redrive skip holds:</b> <code>payssage:lastRedrive</code> is still the first run (~Nov 4 00:00 UTC); idle crons since then did not wake Payssage.</li>
+  <li><b>Workers:</b> 0 errors on all scripts. API Workers saw ~1.2k requests, fronts and portal ~3.3k.</li>
+  <li><b>Spend guard:</b> 11.6k GiB-s this cycle, ~3.2 of the 22.5 GiB-h cutoff, resetting Nov 24.</li>
+</ul>
+
+<div class="action">
+  <p><span class="badge b-ok">Done</span><span class="title">Day-3 target met on idle hours</span></p>
+  <p>Payssage and Informd stay asleep when idle. The only idle cost left is ~6 min of IdentityX and ~6 min of Univents a night.</p>
+</div>
+<div class="action">
+  <p><span class="badge b-future">Next</span><span class="title">Checks still to run</span></p>
+  <ul>
+    <li><b>Univents night wakes (02, 04, 05 UTC):</b> find what calls Univents (cron, job or scanner) in the Worker logs, and whether it drags IdentityX awake at 02 and 04.</li>
+    <li><b>After the edge-cache and cold-start deploys (Nov 5 15:52–16:09 UTC):</b> re-run the same 24 h queries for Nov 6 15:00 → Nov 7 15:00 UTC, an idle window clear of deploys. Expect cached GETs to answer without waking a container and fewer failed cold starts.</li>
+    <li><b>Cold-start success rate:</b> compare failed vs. successful cold starts from the new tracking, before and after the fixes.</li>
+    <li><b>Headroom:</b> at day 3's ~0.75 GiB-h/day the cycle ends near 17.5 of 22.5 GiB-h; deploy days cost the most. Recheck weekly until Nov 24.</li>
+  </ul>
+</div>
+
 <div class="foot">
-  Produced 2026-11-02, follow-up 2026-11-03 ·Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69) ·
+  Produced 2026-11-02, follow-ups 2026-11-03 and 2026-11-05 ·Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69, #70) ·
   <span style="color:var(--orange)">TrieOH platform</span>
 </div>
 
