@@ -1862,6 +1862,7 @@ paths:
     get:
       tags: [profiles]
       operationId: getProjectProfile
+      x-cache: shared
       summary: Get a project actor's profile
       description: |
         Fetches the project-scoped profile of the given actor within the
@@ -1912,6 +1913,7 @@ paths:
     get:
       tags: [profiles]
       operationId: getProfileByHandle
+      x-cache: shared
       summary: Get a profile by handle
       description: |
         Fetches the profile with the given handle. Handles are unique when

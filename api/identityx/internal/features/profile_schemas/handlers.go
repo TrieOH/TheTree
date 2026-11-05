@@ -3,9 +3,11 @@ package profile_schemas
 import (
 	"context"
 
+	"IdentityX/internal/cachetags"
 	"IdentityX/internal/features/profile_schemas/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
+	"lib/httpcache"
 )
 
 type Handlers struct {
@@ -38,6 +40,7 @@ func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req openapi.
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Profiles(nil), cachetags.ProfilesByHandle)
 	return openapi.UpsertPlatformProfileSchema200JSONResponse(*schema), nil
 }
 
@@ -50,5 +53,6 @@ func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req openapi.U
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Profiles(&req.ProjectId), cachetags.ProfilesByHandle)
 	return openapi.UpsertProjectProfileSchema200JSONResponse(*schema), nil
 }
