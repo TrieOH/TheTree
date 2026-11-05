@@ -386,7 +386,9 @@ function Pipelines(props: { ci: CiPayload }) {
                     {(metric) => (
                       <tr>
                         <td class="py-2 pr-4">
-                          <span class="text-muted-foreground">{metric.source} · </span>
+                          <span class="text-muted-foreground">
+                            {metric.job} · {metric.source} ·{" "}
+                          </span>
                           {metric.name}
                           <For each={Object.entries(metric.labels)}>
                             {([key, value]) => (

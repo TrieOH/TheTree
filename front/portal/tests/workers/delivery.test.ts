@@ -279,8 +279,19 @@ describe("POST /webhooks/ci", () => {
     ]);
     expect(payload.metrics).toHaveLength(20);
     expect(payload.metrics[0]).toEqual(
-      expect.objectContaining({ source: "go/test", labels: { mode: "short", test: "Test0" }, last: 0 }),
+      expect.objectContaining({ job: "checks", source: "go/test", labels: { mode: "short", test: "Test0" }, last: 0 }),
     );
+  });
+
+  it("keeps the same metric from two jobs apart", async () => {
+    const pnpm = (job: string, value: number) => ({ job, source: "setup/node", name: "pnpm_downloaded", value, labels: {} });
+    await ci(ciReport({ metrics: [pnpm("service / checks", 1129), pnpm("service / publish", 3)] }));
+
+    const { ci: payload } = await readApi();
+    expect(payload.metrics.map((m) => [m.job, m.last])).toEqual([
+      ["checks", 1129],
+      ["publish", 3],
+    ]);
   });
 
   it("replaces a resent attempt instead of doubling it", async () => {

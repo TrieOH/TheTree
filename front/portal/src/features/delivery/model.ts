@@ -83,6 +83,8 @@ export interface CiStepStat {
 /** A number the actions recorded (.github/scripts/metric), over recent runs. */
 export interface CiMetricStat {
   type: string;
+  /** checks or publish */
+  job: string;
   source: string;
   name: string;
   labels: Record<string, string>;

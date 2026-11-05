@@ -35,6 +35,7 @@ interface StepRow {
 interface MetricRow {
   type: string;
   run_at: string | null;
+  job: string;
   source: string;
   name: string;
   value: number;
@@ -84,7 +85,7 @@ export async function readCi(db: D1Database): Promise<CiPayload> {
     ),
     db.prepare(
       `${RECENT_RUNS}
-       SELECT r.type, r.run_at, m.source, m.name, m.value, m.labels
+       SELECT r.type, r.run_at, m.job, m.source, m.name, m.value, m.labels
        FROM ci_metrics m JOIN recent r USING (run_id, attempt)
        ORDER BY r.run_at`,
     ),
@@ -148,10 +149,22 @@ export function stepStats(rows: StepRow[]): CiStepStat[] {
 
 /** Rows oldest run first. */
 export function metricStats(rows: MetricRow[]): CiMetricStat[] {
-  const groups = new Map<string, { type: string; source: string; name: string; labels: string; values: number[] }>();
+  const groups = new Map<
+    string,
+    { type: string; job: string; source: string; name: string; labels: string; values: number[] }
+  >();
   for (const row of rows) {
-    const key = `${row.type}\u0000${row.source}\u0000${row.name}\u0000${row.labels}`;
-    const group = groups.get(key) ?? { type: row.type, source: row.source, name: row.name, labels: row.labels, values: [] };
+    // the same action runs in several jobs (setup/node in checks and publish)
+    const job = jobOf(row.job);
+    const key = `${row.type}\u0000${job}\u0000${row.source}\u0000${row.name}\u0000${row.labels}`;
+    const group = groups.get(key) ?? {
+      type: row.type,
+      job,
+      source: row.source,
+      name: row.name,
+      labels: row.labels,
+      values: [],
+    };
     group.values.push(row.value);
     groups.set(key, group);
   }
@@ -159,6 +172,7 @@ export function metricStats(rows: MetricRow[]): CiMetricStat[] {
     .map(
       (group): CiMetricStat => ({
         type: group.type,
+        job: group.job,
         source: group.source,
         name: group.name,
         labels: JSON.parse(group.labels) as Record<string, string>,
@@ -170,6 +184,7 @@ export function metricStats(rows: MetricRow[]): CiMetricStat[] {
     .sort(
       (a, b) =>
         a.type.localeCompare(b.type) ||
+        JOB_ORDER.indexOf(a.job) - JOB_ORDER.indexOf(b.job) ||
         a.source.localeCompare(b.source) ||
         a.name.localeCompare(b.name) ||
         JSON.stringify(a.labels).localeCompare(JSON.stringify(b.labels)),

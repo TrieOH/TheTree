@@ -1,4 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
+import { Dynamic } from "@solidjs/web";
 import { Show } from "solid-js";
 import { findCategory, findDoc } from "@/features/docs/catalog";
 import { docComponents } from "@/features/docs/components";
@@ -18,7 +19,6 @@ export const Route = createFileRoute("/docs/$category/$slug")({
 
 function DocPage() {
   const data = Route.useLoaderData();
-  const Content = data().Content;
 
   return (
     <>
@@ -37,7 +37,8 @@ function DocPage() {
         </div>
       </PageHeader>
       <article class="prose-doc">
-        <Content components={docComponents} />
+        {/* Dynamic, so moving to another doc swaps the body, not just the header. */}
+        <Dynamic component={data().Content} components={docComponents} />
       </article>
     </>
   );

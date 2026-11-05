@@ -67,7 +67,12 @@ function guides(category: DocCategoryId): DocEntry[] {
   return Object.entries(guideMeta)
     .filter(([path]) => FOLDER[path.split("/").at(-2)!] === category)
     .map(([path, meta]) => ({ category, slug: slugOf(path), meta, load: guideContent[path] as Loader }))
-    .sort((a, b) => (a.meta.title ?? a.slug).localeCompare(b.meta.title ?? b.slug));
+    .sort((a, b) => rank(a) - rank(b) || (a.meta.title ?? a.slug).localeCompare(b.meta.title ?? b.slug));
+}
+
+function rank(doc: DocEntry): number {
+  const order = Number(doc.meta.order);
+  return Number.isFinite(order) && doc.meta.order ? order : Infinity;
 }
 
 const DOCS: Record<DocCategoryId, readonly DocEntry[]> = {
