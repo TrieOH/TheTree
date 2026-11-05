@@ -7,7 +7,10 @@ import (
 	"net/url"
 	"time"
 
+	"lib/telemetry"
+
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type Config struct {
@@ -52,23 +55,29 @@ func (c Config) port() string {
 // SetupDB is the Postgres adapter's one boot entry point: connect to the
 // service database, run migrations, and validate that every constraint
 // carries a registered message. It returns errors instead of exiting so the
-// caller's boot path owns process failure.
-func SetupDB(cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
-	return setupDB(cfg, constraints, true)
+// caller's boot path owns process failure. Its spans join ctx's trace, so
+// a boot traces its connect and constraint check.
+func SetupDB(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
+	return setupDB(ctx, cfg, constraints, true)
 }
 
 // SetupDBWithoutMigrations connects to the service database and validates its
 // constraints without changing its schema. Use this when schema migrations
 // are owned by a separate deployment or developer command.
-func SetupDBWithoutMigrations(cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
-	return setupDB(cfg, constraints, false)
+func SetupDBWithoutMigrations(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
+	return setupDB(ctx, cfg, constraints, false)
 }
 
-func setupDB(cfg Config, constraints ConstraintErrors, runMigrations bool) (*pgxpool.Pool, error) {
-	db, err := WaitForDB(30*time.Second, cfg)
+func setupDB(ctx context.Context, cfg Config, constraints ConstraintErrors, runMigrations bool) (*pgxpool.Pool, error) {
+	connectCtx, span := telemetry.StartSpan(ctx, "db.connect")
+	db, err := WaitForDB(connectCtx, 30*time.Second, cfg)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "connect")
+		span.End()
 		return nil, fmt.Errorf("connect: %w", err)
 	}
+	span.End()
 	if runMigrations {
 		err = RunMigrations(db, cfg.MigrationPath)
 		if err != nil {
@@ -77,8 +86,10 @@ func setupDB(cfg Config, constraints ConstraintErrors, runMigrations bool) (*pgx
 		}
 	}
 	UseConstraints(constraints)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	checkCtx, span := telemetry.StartSpan(ctx, "db.constraints")
+	defer span.End()
+	checkCtx, cancel := context.WithTimeout(checkCtx, 10*time.Second)
 	defer cancel()
-	validateConstraints(ctx, db)
+	validateConstraints(checkCtx, db)
 	return db, nil
 }

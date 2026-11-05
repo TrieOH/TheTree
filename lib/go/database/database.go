@@ -16,8 +16,8 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func WaitForDB(ctx context.Context, timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	pool, err := tryConnect(ctx, cfg.DSN(), cfg.MaxConns, 5)

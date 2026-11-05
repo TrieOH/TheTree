@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -44,8 +45,10 @@ func Boot(cfg Config, start StartFunc) error {
 		return fmt.Errorf("%s boot: %w", cfg.AppName, err)
 	}
 
-	handler, shutdown, err := start(ctx)
+	bootCtx, bootSpan := startBoot(ctx, cfg.AppName)
+	handler, shutdown, err := start(bootCtx)
 	if err != nil {
+		failBoot(bootSpan, err)
 		telemetry.Shutdown(ctx, shutdownTelemetry, cfg.AppName)
 		return fmt.Errorf("%s boot: %w", cfg.AppName, err)
 	}
@@ -68,8 +71,21 @@ func Boot(cfg Config, start StartFunc) error {
 		_ = srv.Shutdown(drainCtx)
 	}()
 
-	log.Printf("%s listening on :%s", cfg.AppName, cfg.Port)
-	serveErr := srv.ListenAndServe()
+	// The boot ends once the port is bound: from then on the platform's
+	// readiness check gets an answer.
+	var serveErr error
+	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", srv.Addr)
+	if err != nil {
+		failBoot(bootSpan, err)
+		serveErr = err
+	} else {
+		bootSpan.End()
+		if telemetry.Traces.Enabled() {
+			go probeEgress(bootCtx)
+		}
+		log.Printf("%s listening on :%s", cfg.AppName, cfg.Port)
+		serveErr = srv.Serve(ln)
+	}
 	if errors.Is(serveErr, http.ErrServerClosed) {
 		serveErr = nil
 	}
