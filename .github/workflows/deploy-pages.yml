@@ -77,11 +77,4 @@ jobs:
         uses: ./.github/actions/report-deploy
         with:
           status: ${{ job.status }}
-          health-url: >-
-            ${{
-              needs.validate.outputs.directory == 'front/trieoh' && 'https://trieoh.com' ||
-              needs.validate.outputs.directory == 'front/trieoh-components' && 'https://components.trieoh.com' ||
-              needs.validate.outputs.directory == 'front/trieoh-style-guide' && 'https://styles.trieoh.com' ||
-              ''
-            }}
           secret: ${{ secrets.DEPLOY_HOOK_SECRET }}
