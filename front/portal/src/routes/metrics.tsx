@@ -4,9 +4,10 @@ import { For, Match, Show, Switch, createSignal } from "solid-js";
 import { findService } from "@/features/catalog/services";
 import { loadMetrics } from "@/features/metrics/api";
 import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
-import type { MetricsPayload, WorkerStats } from "@/features/metrics/model";
+import { DEGRADED_P95_MS, type MetricsPayload, type WorkerStats } from "@/features/metrics/model";
 import { summarize } from "@/features/metrics/cold-starts";
 import { Sparkline } from "@/features/metrics/ui/Sparkline";
+import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
 import { UsageBar } from "@/features/metrics/ui/UsageBar";
 import { timeAgo } from "@/features/delivery/stats";
 import { formatDay } from "@/features/issues/stats";
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/metrics")({
 
 const TABS = [
   { id: "services", label: "Services" },
+  { id: "latency", label: "Latency & errors" },
   { id: "usage", label: "Plan usage" },
   { id: "database", label: "Database" },
   { id: "fronts", label: "Frontends" },
@@ -42,8 +44,8 @@ function MetricsPage() {
         title="Metrics"
         description={
           <>
-            From Cloudflare's analytics and Neon's API, pulled every 30 minutes; nothing here reaches a service. Full
-            dashboards and traces live in Grafana.
+            From Cloudflare's analytics, Neon's API and Grafana Cloud, pulled every 30 minutes; nothing here reaches a
+            service. Full dashboards and traces live in Grafana.
           </>
         }
       />
@@ -53,6 +55,9 @@ function MetricsPage() {
           <Switch>
             <Match when={tab() === "services"}>
               <Services data={data()} />
+            </Match>
+            <Match when={tab() === "latency"}>
+              <LatencyAndErrors data={data()} />
             </Match>
             <Match when={tab() === "usage"}>
               <PlanUsage data={data()} />
@@ -96,7 +101,7 @@ function Services(props: { data: MetricsPayload }) {
             <div class="mt-3">
               <Sparkline values={service.hourly} label={`Requests per hour, last 24 hours`} />
             </div>
-            <dl class="mt-3 grid grid-cols-3 gap-2 text-[12px]">
+            <dl class="mt-3 grid grid-cols-4 gap-2 text-[12px]">
               <div>
                 <dt class="text-muted-foreground">Requests 24h</dt>
                 <dd class="tabular-nums">{service.requests24h === null ? "—" : formatCount(service.requests24h)}</dd>
@@ -104,6 +109,12 @@ function Services(props: { data: MetricsPayload }) {
               <div>
                 <dt class="text-muted-foreground">5xx 24h</dt>
                 <dd class={cn("tabular-nums", (service.errors24h ?? 0) > 0 && "text-warn")}>{service.errors24h ?? "—"}</dd>
+              </div>
+              <div>
+                <dt class="text-muted-foreground">p95 24h</dt>
+                <dd class={cn("tabular-nums", (service.p95Ms24h ?? 0) > DEGRADED_P95_MS && "text-warn")}>
+                  {formatMs(service.p95Ms24h)}
+                </dd>
               </div>
               <div>
                 <dt class="text-muted-foreground">Success 30d</dt>
@@ -116,6 +127,26 @@ function Services(props: { data: MetricsPayload }) {
           </Link>
         )}
       </For>
+    </div>
+  );
+}
+
+function LatencyAndErrors(props: { data: MetricsPayload }) {
+  return (
+    <div class="space-y-4">
+      <p class="text-[13px] text-muted-foreground">
+        Measured inside each API's container and read from Grafana Cloud, so a cold start's wait is not included (see
+        Cold starts). Last 7 days; an endpoint's p95 is its worst day.
+      </p>
+      <Show
+        when={props.data.endpoints.length > 0 || props.data.problems.length > 0}
+        fallback={<NotConnected source="Grafana Cloud">No latency or error data pulled yet.</NotConnected>}
+      >
+        <h3 class="font-heading text-[15px] font-semibold">Slowest endpoints</h3>
+        <EndpointTable endpoints={props.data.endpoints.slice(0, 15)} showService />
+        <h3 class="mt-10 font-heading text-[15px] font-semibold">Top error types</h3>
+        <ProblemTable problems={props.data.problems.slice(0, 15)} showService />
+      </Show>
     </div>
   );
 }

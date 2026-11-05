@@ -12,12 +12,58 @@ async function readApi(): Promise<MetricsPayload> {
   return response.json();
 }
 
-/** Answers Cloudflare's GraphQL and Neon's API the way they answer; records every call. */
-function stubApis(options: { coldStarts?: "ok" | "missing" } = {}) {
+const PROM = "https://prometheus-prod-40-prod-sa-east-1.grafana.net/api/prom/api/v1/";
+
+/** Answers like Grafana's Prometheus API: one series per container, plus ones that aren't ours. */
+function prometheus(url: string): Response {
+  const query = new URL(url).searchParams.get("query") ?? "";
+  const vector = (result: { metric: Record<string, string>; value: string }[]) =>
+    Response.json({ status: "success", data: { resultType: "vector", result: result.map((r) => ({ metric: r.metric, value: [0, r.value] })) } });
+  if (url.includes("/query_range")) {
+    return Response.json({
+      status: "success",
+      data: {
+        resultType: "matrix",
+        result: [
+          // Evaluated at 18:00, covering 17:00–18:00; an hour without requests is NaN.
+          { metric: { service_name: "identityx-container" }, values: [[Date.parse("2026-11-04T18:00:00Z") / 1000, "0.04"], [Date.parse("2026-11-04T17:00:00Z") / 1000, "NaN"]] },
+          { metric: { service_name: "IdentityX" }, values: [[Date.parse("2026-11-04T18:00:00Z") / 1000, "9"]] },
+        ],
+      },
+    });
+  }
+  if (query.includes("http_server_request_duration_seconds_bucket")) {
+    return vector([{ metric: { service_name: "identityx-container" }, value: "0.05" }]);
+  }
+  if (query.includes("http_requests_total")) {
+    return vector([
+      { metric: { service_name: "identityx-container", method: "GET", route: "/auth/login" }, value: "12.4" },
+      { metric: { service_name: "identityx-container", method: "GET", route: "not_found" }, value: "5" },
+      { metric: { service_name: "someone-else-container", method: "GET", route: "/x" }, value: "5" },
+    ]);
+  }
+  if (query.includes("http_request_duration_seconds_bucket")) {
+    return vector([{ metric: { service_name: "identityx-container", route: "/auth/login" }, value: "0.3" }]);
+  }
+  if (query.includes("http_problems_total")) {
+    return vector([
+      { metric: { service_name: "identityx-container", problem: "invalid-credentials", status: "401" }, value: "3.2" },
+      { metric: { service_name: "identityx-container", problem: "too-rare", status: "500" }, value: "0.2" },
+    ]);
+  }
+  throw new Error(`unexpected prometheus query ${query}`);
+}
+
+/** Answers Cloudflare's GraphQL, Neon's and Grafana's APIs the way they answer; records every call. */
+function stubApis(options: { coldStarts?: "ok" | "missing"; grafana?: "ok" | "down" } = {}) {
   const calls: string[] = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     calls.push(url);
+    if (url.startsWith(PROM)) {
+      if (options.grafana === "down") return new Response("upstream unavailable", { status: 503 });
+      return prometheus(url);
+    }
     if (url.includes("/analytics_engine/sql")) {
       if (options.coldStarts === "missing") return new Response("unknown table container_cold_starts", { status: 422 });
       // The SQL API returns numbers as strings in places; the sync coerces.
@@ -98,7 +144,7 @@ function stubApis(options: { coldStarts?: "ok" | "missing" } = {}) {
 
 beforeEach(async () => {
   await env.DB.batch(
-    ["metric_rollups", "usage_snapshots", "worker_stats", "neon_projects", "cold_starts", "sync_state"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
+    ["metric_rollups", "usage_snapshots", "worker_stats", "neon_projects", "cold_starts", "sync_state", "endpoint_rollups", "problem_rollups"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
   );
   // The container guard's pool for this cycle: 2 GiB-hours so far.
   await env.BUDGET.put("awake:2026-10-24:payssage", String(2 * 3600));
@@ -114,11 +160,15 @@ describe("statusOf", () => {
     expect(statusOf(100, 5)).toBe("degraded");
     // A couple of errors on almost no traffic isn't degraded.
     expect(statusOf(2, 2)).toBe("operational");
+    // Slow is degraded too, once there's enough traffic to say so.
+    expect(statusOf(100, 0, 2000)).toBe("degraded");
+    expect(statusOf(5, 0, 2000)).toBe("operational");
+    expect(statusOf(100, 0, 80)).toBe("operational");
   });
 });
 
 describe("syncMetrics", () => {
-  it("reads only Cloudflare analytics, Neon's API and the budget KV", async () => {
+  it("reads only Cloudflare analytics, Neon's and Grafana's query APIs and the budget KV", async () => {
     const calls = stubApis();
     vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
     await syncMetrics(env, NOW);
@@ -129,7 +179,9 @@ describe("syncMetrics", () => {
         (url) =>
           url.startsWith("https://api.cloudflare.com/client/v4/graphql") ||
           url.startsWith("https://api.cloudflare.com/client/v4/accounts/fdc6590fe9b028c608005c515140ff74/analytics_engine/sql") ||
-          url.startsWith("https://console.neon.tech/api/v2/"),
+          url.startsWith("https://console.neon.tech/api/v2/") ||
+          url.startsWith(`${PROM}query?`) ||
+          url.startsWith(`${PROM}query_range?`),
       ),
     ).toBe(true);
     expect(calls.some((url) => /api\.(identityx|payssage|univents|informd)\.|univents\.com\.br/.test(url) && !url.includes("graphql"))).toBe(false);
@@ -181,6 +233,38 @@ describe("syncMetrics", () => {
       { service: "identityx", day: "2026-11-03", count: 6, failed: 2, p50Ms: 4201, p95Ms: 9800 },
       { service: "identityx", day: "2026-11-04", count: 3, failed: 0, p50Ms: 3900, p95Ms: 6100 },
     ]);
+  });
+
+  it("serves p95, slowest endpoints and error types from Grafana", async () => {
+    stubApis();
+    await syncMetrics(env, NOW);
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+    const payload = await readApi();
+    vi.useRealTimers();
+
+    const identityx = payload.services.find((s) => s.id === "identityx")!;
+    expect(identityx.p95Ms24h).toBe(50);
+    // The hour 17:00–18:00 is the second to last of the window.
+    expect(identityx.p95Hourly.at(-2)).toBe(40);
+    expect(identityx.p95Hourly.filter((v) => v !== null)).toEqual([40]);
+    expect(payload.services.find((s) => s.id === "payssage")!.p95Ms24h).toBeNull();
+
+    // Yesterday and today each answer once: 12 + 12 requests, the worse day's p95.
+    expect(payload.endpoints).toEqual([{ service: "identityx", method: "GET", route: "/auth/login", requests: 24, p95Ms: 300 }]);
+    expect(payload.problems).toEqual([{ service: "identityx", problem: "invalid-credentials", status: 401, count: 6 }]);
+  });
+
+  it("still lands the rest of the pull while Grafana is down", async () => {
+    stubApis({ grafana: "down" });
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await syncMetrics(env, NOW);
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+    const payload = await readApi();
+    vi.useRealTimers();
+
+    expect(payload.endpoints).toEqual([]);
+    expect(payload.services.find((s) => s.id === "payssage")).toMatchObject({ status: "degraded", p95Ms24h: null });
+    expect(payload.syncedAt).toBe(NOW.toISOString());
   });
 
   it("still lands the rest of the pull while the cold-start dataset doesn't exist", async () => {

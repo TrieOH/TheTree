@@ -9,6 +9,7 @@ import { tagUrl } from "@/features/delivery/model";
 import { loadIssues } from "@/features/issues/api";
 import { isOpen } from "@/features/issues/model";
 import { IssueList } from "@/features/issues/ui/IssueList";
+import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
 import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
 import { PageHeader, Section } from "@/widgets/shell/PageHeader";
 import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
@@ -28,6 +29,8 @@ export const Route = createFileRoute("/services/$service/")({
       service,
       metrics: metrics?.services.find((s) => s.id === service.id) ?? null,
       coldStarts: metrics ? summarize(metrics.coldStarts, service.id, 7) : null,
+      endpoints: metrics?.endpoints.filter((e) => e.service === service.id).slice(0, 5) ?? [],
+      problems: metrics?.problems.filter((p) => p.service === service.id).slice(0, 5) ?? [],
       tag: current?.tag ?? null,
       issues: issues.filter((issue) => issue.service === service.id && isOpen(issue)),
     };
@@ -90,7 +93,9 @@ function ServicePage() {
           <Kpi label="Requests 24h">
             {data().metrics?.requests24h == null ? "—" : formatCount(data().metrics!.requests24h!)}
           </Kpi>
-          <Kpi label="Open issues">{data().issues.length}</Kpi>
+          <Kpi label="p95 24h" note="inside the container">
+            {formatMs(data().metrics?.p95Ms24h ?? null)}
+          </Kpi>
         </KpiRow>
         <Show when={data().coldStarts?.count}>
           <p class="mt-3 text-[13px] text-muted-foreground">
@@ -103,7 +108,17 @@ function ServicePage() {
         </Show>
       </Section>
 
-      <Section title="Open issues" aside={<Link to="/issues">All issues</Link>}>
+      <Show when={data().endpoints.length > 0 || data().problems.length > 0}>
+        <Section title="Latency and errors" aside={<Link to="/metrics">Metrics</Link>}>
+          <p class="mb-3 text-[13px] text-muted-foreground">Slowest endpoints and error types, last 7 days.</p>
+          <EndpointTable endpoints={data().endpoints} />
+          <div class="mt-6">
+            <ProblemTable problems={data().problems} />
+          </div>
+        </Section>
+      </Show>
+
+      <Section title={`Open issues (${data().issues.length})`} aside={<Link to="/issues">All issues</Link>}>
         <IssueList issues={data().issues} empty={`No open issues for ${service().name}.`} />
       </Section>
     </>

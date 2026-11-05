@@ -17,6 +17,7 @@ export default defineConfig(async () => ({
           DEPLOY_HOOK_SECRET: "deploy_test",
           CLOUDFLARE_ANALYTICS_TOKEN: "cf_test",
           NEON_API_KEY: "neon_test",
+          GRAFANA_READ_TOKEN: "glc_test",
           // Applied to the local D1 by tests/workers/setup.ts.
           TEST_MIGRATIONS: await readD1Migrations("./migrations"),
         },
