@@ -11,9 +11,9 @@ function median(values: number[]): number | null {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-/** A deploy that went wrong: the workflow failed, or the health check did. */
+/** A deploy that went wrong: its workflow run failed. */
 export function isFailed(deploy: Deploy): boolean {
-  return deploy.status === "failure" || deploy.healthOk === false;
+  return deploy.status === "failure";
 }
 
 const within = (iso: string, days: number, now: Date) => Date.parse(iso) >= now.getTime() - days * DAY;

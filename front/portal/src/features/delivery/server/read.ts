@@ -9,7 +9,6 @@ interface DeployRow {
   sha: string;
   actor: string;
   status: DeployStatus;
-  health_ok: number | null;
   at: string;
   run_id: number | null;
 }
@@ -46,7 +45,7 @@ interface TagRow {
   created_at: string;
 }
 
-const DEPLOY_COLUMNS = "component, tag, sha, actor, status, health_ok, at, run_id";
+const DEPLOY_COLUMNS = "component, tag, sha, actor, status, at, run_id";
 
 function toDeploy(row: DeployRow): Deploy {
   return {
@@ -55,7 +54,6 @@ function toDeploy(row: DeployRow): Deploy {
     sha: row.sha,
     actor: row.actor,
     status: row.status,
-    healthOk: row.health_ok === null ? null : row.health_ok === 1,
     at: row.at,
     runId: row.run_id,
   };

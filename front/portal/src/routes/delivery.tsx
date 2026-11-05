@@ -120,8 +120,7 @@ function Pill(props: { tone: "ok" | "bad" | "warn" | "muted"; children: string }
 function deployPill(deploy: Deploy): { tone: "ok" | "bad" | "warn" | "muted"; label: string } {
   if (deploy.status === "cancelled") return { tone: "muted", label: "Cancelled" };
   if (deploy.status === "failure") return { tone: "bad", label: "Failed" };
-  if (deploy.healthOk === false) return { tone: "bad", label: "Unhealthy" };
-  return { tone: "ok", label: "Live" };
+  return { tone: "ok", label: "Deployed" };
 }
 
 function Production(props: { deploys: readonly Deploy[] }) {
