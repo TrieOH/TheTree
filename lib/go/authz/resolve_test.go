@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"lib/httpcache"
 )
 
 var invocations []string
@@ -367,5 +369,47 @@ func TestResolverScopeWithoutWriterFails(t *testing.T) {
 	}, Options{})
 	if err == nil || !strings.Contains(err.Error(), "needs Options.WriteError") {
 		t.Fatalf("want error for x-scope with no error writer, got %v", err)
+	}
+}
+
+func cacheSpec(method, security, cache string) string {
+	return `
+openapi: 3.1.0
+info: {title: t, version: "1"}
+paths:
+  /cached:
+    ` + method + `:
+      operationId: cached
+      security: ` + security + `
+      x-cache: ` + cache + `
+`
+}
+
+func TestResolverSharedCacheMarksTheResponse(t *testing.T) {
+	r := mustResolver(t, cacheSpec("get", "[]", "shared"), testPrimitives, Options{})
+	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	chain := r.Chains()["Cached"]
+	for i := range slices.Backward(chain) {
+		next = chain[i](next)
+	}
+	rec := httptest.NewRecorder()
+	httpcache.Middleware(next).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/cached", nil))
+	if got := rec.Header().Get("Cache-Control"); got != httpcache.SharedClient {
+		t.Fatalf("Cache-Control = %q, want %q", got, httpcache.SharedClient)
+	}
+}
+
+func TestResolverCacheMisuseFails(t *testing.T) {
+	for name, spec := range map[string]string{
+		"authenticated": cacheSpec("get", "[{bearerAuth: []}]", "shared"),
+		"not a GET":     cacheSpec("post", "[]", "shared"),
+		"unknown value": cacheSpec("get", "[]", "forever"),
+	} {
+		_, err := NewResolver([]byte(spec), testPrimitives, Options{})
+		if err == nil || !strings.Contains(err.Error(), "x-cache") {
+			t.Errorf("%s: want an x-cache error, got %v", name, err)
+		}
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"lib/httpcache"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,7 +62,10 @@ type Options struct {
 // scheme names. Schemes is their flattened sorted union; empty means
 // public. Scope is the operation's x-scope value, empty when it declares
 // none (no scope restriction). Problems is the bundled spec's x-problems,
-// the slugs the operation may answer with (ADR-0019).
+// the slugs the operation may answer with (ADR-0019). Cache is the
+// operation's x-cache value, empty when it declares none (the response is
+// private); "shared" lets the edge keep it until a write purges a tag it
+// carries (ADR-0020).
 type ResolvedOperation struct {
 	Method      string
 	Path        string
@@ -69,6 +74,7 @@ type ResolvedOperation struct {
 	Schemes     []string
 	Scope       string
 	Problems    []string
+	Cache       string
 }
 
 type openAPISpec struct {
@@ -91,6 +97,7 @@ type operation struct {
 	Security    []map[string][]string `yaml:"security"`
 	Scope       *string               `yaml:"x-scope"`
 	Problems    []string              `yaml:"x-problems"`
+	Cache       string                `yaml:"x-cache"`
 }
 
 // SpecOperations parses the spec and returns every operation with its
@@ -143,6 +150,7 @@ func SpecOperations(spec []byte) ([]ResolvedOperation, error) {
 				Schemes:     union,
 				Scope:       scopeOf(m.op.Scope),
 				Problems:    m.op.Problems,
+				Cache:       m.op.Cache,
 			})
 		}
 	}
@@ -188,6 +196,9 @@ func (p Primitives) forCombination(combination string) (func(http.Handler) http.
 	}
 }
 
+// cacheShared is the one x-cache value: the edge may keep the response.
+const cacheShared = "shared"
+
 // scopeOf converts the declared x-scope to its string form: absent (nil)
 // is the empty scope, so operations without x-scope carry no restriction.
 func scopeOf(s *string) string {
@@ -232,7 +243,9 @@ type Resolver struct {
 // when an operation
 // declares an x-scope but no security schemes (a scope reads the identity
 // authn wrote — it implies authentication), when the spec is not valid YAML,
-// or when a named operation in SkipSetupGuard does not exist in the spec —
+// when an operation declares an x-cache other than "shared", or on anything
+// but a public GET (a shared response is the same for every caller), or
+// when a named operation in SkipSetupGuard does not exist in the spec —
 // all fail startup, not production.
 func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, error) {
 	ops, err := SpecOperations(spec)
@@ -246,6 +259,14 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 		for _, block := range op.Blocks {
 			if len(block) > 1 {
 				return nil, fmt.Errorf("authz resolver: %s %s: security block lists multiple schemes %v (AND) — express OR as separate blocks", op.Method, op.OperationID, block)
+			}
+		}
+		if op.Cache != "" {
+			if op.Cache != cacheShared {
+				return nil, fmt.Errorf("authz resolver: %s %s: unknown x-cache %q (want %q)", op.Method, op.OperationID, op.Cache, cacheShared)
+			}
+			if op.Method != http.MethodGet || len(op.Schemes) > 0 {
+				return nil, fmt.Errorf("authz resolver: %s %s: x-cache %q on an operation that is not a public GET", op.Method, op.OperationID, op.Cache)
 			}
 		}
 		if op.Scope != "" {
@@ -283,6 +304,9 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 			// A scope reads the identity authn wrote, so it runs after the
 			// authn primitive; the setup guard stays outermost.
 			chain = append(chain, scopeMiddleware(primitives.Scopes[op.Scope], opts.WriteError))
+		}
+		if op.Cache == cacheShared {
+			chain = append(chain, httpcache.Shared)
 		}
 		if opts.SetupGuard != nil && !skipSetup[op.OperationID] {
 			chain = append([]func(http.Handler) http.Handler{opts.SetupGuard}, chain...)

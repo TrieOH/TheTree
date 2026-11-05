@@ -317,6 +317,11 @@ func (rl *rateLimiter) middleware(next http.Handler) http.Handler {
 	})
 }
 
+// CORSMaxAge is how long a browser may reuse a preflight answer: Chrome's
+// cap. The edge Worker answers preflights with the same values
+// (lib/ts/container-budget), so keep the two in step.
+const CORSMaxAge = 2 * time.Hour
+
 // CORS is the harness's CORS middleware for the given comma-separated
 // origins and headers (empty headers: the standard set). Credentials are
 // allowed.
@@ -330,6 +335,6 @@ func CORS(allowedOrigins, allowedHeaders string) func(http.Handler) http.Handler
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   headers,
 		AllowCredentials: true,
-		MaxAge:           int((10 * time.Minute).Seconds()),
+		MaxAge:           int(CORSMaxAge.Seconds()),
 	}).Handler
 }

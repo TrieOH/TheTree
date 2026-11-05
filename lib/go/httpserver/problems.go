@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"lib/database"
+	"lib/httpcache"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -62,6 +63,7 @@ func serveProblemDocs(docs []ProblemDoc) http.HandlerFunc {
 			"instance": "/path/of/the/request",
 		})
 		w.Header().Set("Content-Type", "application/json")
+		httpcache.Deploy(w)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(problemDocBody{
 			Type:        typ,
