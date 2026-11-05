@@ -236,6 +236,7 @@ paths:
     get:
       tags: [events]
       operationId: listPublicEvents
+      x-cache: shared
       summary: List public events
       description: |
         Lists publicly visible events (active events with published
@@ -289,6 +290,7 @@ paths:
     get:
       tags: [events]
       operationId: getEventBySlug
+      x-cache: shared
       summary: Get an event by slug
       description: |
         AIP custom method (`:verb` suffix per AIP-136). Fetches a single
@@ -626,6 +628,7 @@ paths:
     get:
       tags: [editions]
       operationId: listPublicEditions
+      x-cache: shared
       summary: List an event's public editions
       description: |
         Lists the published (non-draft) editions of an event. Public.
@@ -945,6 +948,7 @@ paths:
     get:
       tags: [ticket_types]
       operationId: listTicketTypes
+      x-cache: shared
       summary: List an edition's ticket types
       description: |
         Lists the ticket types available for the edition. Public.
@@ -1055,6 +1059,7 @@ paths:
     get:
       tags: [products]
       operationId: listEditionProducts
+      x-cache: shared
       summary: List an edition's products
       description: |
         Lists the products (merchandise, add-ons) available for the
@@ -1356,6 +1361,7 @@ paths:
     get:
       tags: [programs]
       operationId: listEditionPrograms
+      x-cache: shared
       summary: List an edition's programs
       description: |
         Lists the programs (schedule items: activities and checkpoints)
@@ -1586,6 +1592,7 @@ paths:
     get:
       tags: [programs]
       operationId: listEditionOccurrences
+      x-cache: shared
       summary: List an edition's occurrences
       description: |
         Lists all occurrences across the edition's programs. Public.

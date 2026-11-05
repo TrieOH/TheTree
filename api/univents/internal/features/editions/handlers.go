@@ -3,6 +3,8 @@ package editions
 import (
 	"context"
 
+	"lib/httpcache"
+	"univents/internal/cachetags"
 	"univents/internal/features/editions/service"
 	"univents/internal/openapi"
 	"univents/models"
@@ -65,6 +67,7 @@ func (h *Handlers) ListPublicEditions(ctx context.Context, req openapi.ListPubli
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.EventEditions(req.EventId))
 	return openapi.ListPublicEditions200JSONResponse{Items: editions}, nil
 }
 
@@ -95,6 +98,7 @@ func (h *Handlers) PatchEdition(ctx context.Context, req openapi.PatchEditionReq
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EventEditions(edition.EventID))
 	return openapi.PatchEdition200JSONResponse(*edition), nil
 }
 
@@ -103,5 +107,6 @@ func (h *Handlers) PublishEdition(ctx context.Context, req openapi.PublishEditio
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EventEditions(req.EventId))
 	return openapi.PublishEdition204Response{}, nil
 }

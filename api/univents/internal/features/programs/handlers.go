@@ -3,7 +3,9 @@ package programs
 import (
 	"context"
 
+	"lib/httpcache"
 	idx "sdk/identityx"
+	"univents/internal/cachetags"
 	"univents/internal/features/programs/service"
 	"univents/internal/openapi"
 	"univents/models"
@@ -44,6 +46,7 @@ func (h *Handlers) CreateProgram(ctx context.Context, req openapi.CreateProgramR
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionPrograms(program.EditionID))
 	return openapi.CreateProgram201JSONResponse(*program), nil
 }
 
@@ -57,6 +60,7 @@ func (h *Handlers) CreateProgramOccurrence(ctx context.Context, req openapi.Crea
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionOccurrences(occurrence.EditionID))
 	return openapi.CreateProgramOccurrence201JSONResponse(*occurrence), nil
 }
 
@@ -65,6 +69,7 @@ func (h *Handlers) DeleteOccurrence(ctx context.Context, req openapi.DeleteOccur
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionOccurrences(occurrence.EditionID))
 	return openapi.DeleteOccurrence200JSONResponse(*occurrence), nil
 }
 
@@ -73,6 +78,8 @@ func (h *Handlers) DeleteProgram(ctx context.Context, req openapi.DeleteProgramR
 	if err != nil {
 		return nil, err
 	}
+	// Deleting a program may take its occurrences with it.
+	httpcache.Purge(ctx, cachetags.EditionPrograms(program.EditionID), cachetags.EditionOccurrences(program.EditionID))
 	return openapi.DeleteProgram200JSONResponse(*program), nil
 }
 
@@ -109,6 +116,7 @@ func (h *Handlers) ListEditionOccurrences(ctx context.Context, req openapi.ListE
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.EditionOccurrences(req.EditionId))
 	return openapi.ListEditionOccurrences200JSONResponse{Items: occurrences}, nil
 }
 
@@ -117,6 +125,7 @@ func (h *Handlers) ListEditionPrograms(ctx context.Context, req openapi.ListEdit
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.EditionPrograms(req.EditionId))
 	return openapi.ListEditionPrograms200JSONResponse{Items: programs}, nil
 }
 
@@ -174,6 +183,7 @@ func (h *Handlers) PatchOccurrence(ctx context.Context, req openapi.PatchOccurre
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionOccurrences(occurrence.EditionID))
 	return openapi.PatchOccurrence200JSONResponse(*occurrence), nil
 }
 
@@ -195,6 +205,7 @@ func (h *Handlers) PatchProgram(ctx context.Context, req openapi.PatchProgramReq
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionPrograms(program.EditionID))
 	return openapi.PatchProgram200JSONResponse(*program), nil
 }
 

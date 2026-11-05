@@ -3,6 +3,8 @@ package events
 import (
 	"context"
 
+	"lib/httpcache"
+	"univents/internal/cachetags"
 	"univents/internal/features/events/service"
 	"univents/internal/openapi"
 	"univents/models"
@@ -44,6 +46,7 @@ func (h *Handlers) DiscontinueEvent(ctx context.Context, req openapi.Discontinue
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Event(req.EventId), cachetags.Events)
 	return openapi.DiscontinueEvent204Response{}, nil
 }
 
@@ -52,6 +55,7 @@ func (h *Handlers) GetEventBySlug(ctx context.Context, req openapi.GetEventBySlu
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.Event(event.ID))
 	return openapi.GetEventBySlug200JSONResponse(*event), nil
 }
 
@@ -84,6 +88,7 @@ func (h *Handlers) ListPublicEvents(ctx context.Context, _ openapi.ListPublicEve
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.Events)
 	return openapi.ListPublicEvents200JSONResponse{Items: events}, nil
 }
 
@@ -101,6 +106,7 @@ func (h *Handlers) PatchEvent(ctx context.Context, req openapi.PatchEventRequest
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Event(event.ID), cachetags.Events)
 	return openapi.PatchEvent200JSONResponse(*event), nil
 }
 
@@ -109,6 +115,7 @@ func (h *Handlers) PublishEvent(ctx context.Context, req openapi.PublishEventReq
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Event(req.EventId), cachetags.Events)
 	return openapi.PublishEvent204Response{}, nil
 }
 

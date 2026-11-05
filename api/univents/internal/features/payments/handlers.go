@@ -3,6 +3,8 @@ package payments
 import (
 	"context"
 
+	"lib/httpcache"
+	"univents/internal/cachetags"
 	"univents/internal/features/payments/service"
 	"univents/internal/openapi"
 )
@@ -18,6 +20,7 @@ func (h *Handlers) CompleteEventPayments(ctx context.Context, req openapi.Comple
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Event(req.EventId), cachetags.Events)
 	return openapi.CompleteEventPayments200JSONResponse(*event), nil
 }
 
@@ -37,5 +40,6 @@ func (h *Handlers) DisconnectEventPayments(ctx context.Context, req openapi.Disc
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Event(req.EventId), cachetags.Events)
 	return openapi.DisconnectEventPayments204Response{}, nil
 }

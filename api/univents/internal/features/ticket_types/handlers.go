@@ -3,6 +3,8 @@ package ticket_types
 import (
 	"context"
 
+	"lib/httpcache"
+	"univents/internal/cachetags"
 	"univents/internal/features/ticket_types/service"
 	"univents/internal/openapi"
 	"univents/models"
@@ -26,6 +28,7 @@ func (h *Handlers) CreateTicketType(ctx context.Context, req openapi.CreateTicke
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionTicketTypes(ticketType.EditionID))
 	return openapi.CreateTicketType201JSONResponse(*ticketType), nil
 }
 
@@ -42,6 +45,7 @@ func (h *Handlers) ListTicketTypes(ctx context.Context, req openapi.ListTicketTy
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.EditionTicketTypes(req.EditionId))
 	return openapi.ListTicketTypes200JSONResponse{Items: ticketTypes}, nil
 }
 
@@ -57,5 +61,6 @@ func (h *Handlers) PatchTicketType(ctx context.Context, req openapi.PatchTicketT
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionTicketTypes(ticketType.EditionID))
 	return openapi.PatchTicketType200JSONResponse(*ticketType), nil
 }
