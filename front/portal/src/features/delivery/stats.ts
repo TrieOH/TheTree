@@ -75,6 +75,29 @@ export function formatDuration(ms: number | null): string {
   return hours < 48 ? `${hours.toFixed(1)} h` : `${(hours / 24).toFixed(1)} d`;
 }
 
+/** A CI step's time: tenths under 10 s, whole seconds under 2 min, else minutes. */
+export function formatStepTime(ms: number): string {
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)} s`;
+  if (ms < 120_000) return `${Math.round(ms / 1000)} s`;
+  return `${(ms / 60_000).toFixed(1)} min`;
+}
+
+/** A recorded metric: *_bytes in KB/MB/GB, *_seconds in s, counts as is. */
+export function formatMetric(name: string, value: number): string {
+  if (name.endsWith("_bytes")) {
+    const units = ["B", "KB", "MB", "GB"];
+    let n = value;
+    let unit = 0;
+    while (n >= 1024 && unit < units.length - 1) {
+      n /= 1024;
+      unit++;
+    }
+    return `${n < 10 && unit > 0 ? n.toFixed(1) : Math.round(n)} ${units[unit]}`;
+  }
+  if (name.endsWith("_seconds")) return `${value < 10 ? value.toFixed(2) : Math.round(value)} s`;
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
 export function timeAgo(iso: string, now = new Date()): string {
   const minutes = Math.round((now.getTime() - Date.parse(iso)) / 60_000);
   if (minutes < 1) return "just now";

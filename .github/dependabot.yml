@@ -1,0 +1,16 @@
+# External actions are pinned to commit SHAs with the version in a comment
+# (`uses: x/y@<sha> # v1.2.3`); Dependabot bumps both. Only GitHub Actions:
+# the toolchain pins live in tools.versions and the pnpm catalog.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/**
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: build(root)

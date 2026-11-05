@@ -1,0 +1,30 @@
+name: Flush metrics
+description: >
+  Uploads what .github/scripts/metric recorded in this job as the
+  metrics-<job> artifact, for release/report to ship. Run it last, with
+  `if: always()`, so a failed job still reports. Never fails the job.
+runs:
+  using: composite
+  steps:
+    - name: Collect
+      id: collect
+      shell: bash
+      run: |
+        SRC="$RUNNER_TEMP/ci-metrics.jsonl"
+        DIR="$RUNNER_TEMP/ci-metrics"
+        mkdir -p "$DIR"
+        if [ -s "$SRC" ]; then
+          cp "$SRC" "$DIR/$GITHUB_JOB.jsonl"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "[metrics] $(wc -l < "$SRC") metrics from $GITHUB_JOB"
+        fi
+        echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+    - name: Upload
+      if: steps.collect.outputs.found == 'true'
+      continue-on-error: true
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: metrics-${{ github.job }}
+        path: ${{ steps.collect.outputs.dir }}
+        retention-days: 90

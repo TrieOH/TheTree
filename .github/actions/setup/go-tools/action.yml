@@ -1,0 +1,65 @@
+name: Setup Go tools
+description: >
+  sqlc, oapi-codegen, golangci-lint and gotestsum at the versions in
+  tools.versions (the same ones `just setup` installs on dev machines), one
+  dir each under ~/.local/thetree-tools on a Blacksmith sticky disk. A tool
+  is installed only when its dir doesn't hold the pinned version yet, so a
+  bump reinstalls just that tool. Requires setup/go (`go install`).
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup/versions
+
+    - name: Mount tools
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-go-tools
+        path: ~/.local/thetree-tools
+
+    - name: Install missing tools
+      shell: bash
+      run: |
+        set -euo pipefail
+        ROOT="$HOME/.local/thetree-tools"
+        installed=0
+        # want <tool> <version>: true when the dir lacks that version
+        want() {
+          [ "$(cat "$ROOT/$1/.version" 2>/dev/null)" != "$2" ] || return 1
+          rm -rf "${ROOT:?}/$1"; mkdir -p "$ROOT/$1"; installed=$((installed + 1))
+        }
+        done_() { echo "$2" > "$ROOT/$1/.version"; }
+
+        # sqlc: tarball name uses underscores
+        if want sqlc "$SQLC_VERSION"; then
+          curl -fsSL "https://downloads.sqlc.dev/sqlc_${SQLC_VERSION}_linux_amd64.tar.gz" | tar -xz -C "$ROOT/sqlc" sqlc
+          done_ sqlc "$SQLC_VERSION"
+        fi
+
+        # golangci-lint: release tag gets the v-prefix, dirname doesn't
+        if want golangci-lint "$GOLANGCI_LINT_VERSION"; then
+          GCL="$GOLANGCI_LINT_VERSION"
+          curl -fsSL "https://github.com/golangci/golangci-lint/releases/download/v${GCL}/golangci-lint-${GCL}-linux-amd64.tar.gz" \
+            | tar -xz --strip-components=1 -C "$ROOT/golangci-lint" "golangci-lint-${GCL}-linux-amd64/golangci-lint"
+          done_ golangci-lint "$GCL"
+        fi
+
+        if want oapi-codegen "$OAPI_CODEGEN_VERSION"; then
+          GOBIN="$ROOT/oapi-codegen" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION"
+          done_ oapi-codegen "$OAPI_CODEGEN_VERSION"
+        fi
+
+        if want gotestsum "$GOTESTSUM_VERSION"; then
+          GOBIN="$ROOT/gotestsum" go install "gotest.tools/gotestsum@v$GOTESTSUM_VERSION"
+          done_ gotestsum "$GOTESTSUM_VERSION"
+        fi
+
+        for t in sqlc golangci-lint oapi-codegen gotestsum; do echo "$ROOT/$t" >> "$GITHUB_PATH"; done
+        "$GITHUB_WORKSPACE/.github/scripts/metric" setup/go-tools tools_installed "$installed"
+
+    - name: Report
+      shell: bash
+      run: |
+        sqlc version
+        oapi-codegen --version
+        golangci-lint version
+        gotestsum --version

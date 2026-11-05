@@ -1,0 +1,14 @@
+name: Load tool versions
+description: >
+  tools.versions → GITHUB_ENV, so later steps read the pins (GO_VERSION,
+  NODE_VERSION, SQLC_VERSION, ...). Every setup/* action calls it; loading
+  twice in one job is a no-op.
+runs:
+  using: composite
+  steps:
+    - name: Load tool versions
+      shell: bash
+      run: |
+        [ -n "${TOOLS_VERSIONS_LOADED:-}" ] && exit 0
+        grep -E '^[A-Z0-9_]+=' tools.versions >> "$GITHUB_ENV"
+        echo "TOOLS_VERSIONS_LOADED=1" >> "$GITHUB_ENV"

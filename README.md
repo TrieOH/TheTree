@@ -200,10 +200,17 @@ paths: full/express × service/front).
   image pushed to Cloudflare's registry → Worker + Container rollout from
   `api/<svc>/cloudflare` (config is its `wrangler.jsonc` vars; credentials
   are Worker secrets, set with `wrangler secret put`).
-- **Frontends:** tag `<app>-ui/v<semver>` → Worker version uploaded, then the
-  SAME version promoted to production (build once, never rebuild).
-- **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → npm publish (version guard:
-  tag == package.json version).
+- **Frontends:** tag `<app>-ui/v<semver>` → checks, then one build, uploaded as a
+  Worker version and that SAME version promoted to production (build once, never
+  rebuild). Production config is the front's `wrangler.jsonc` vars, like the
+  backends; `vite build` inlines the `VITE_*` ones.
+- **Pages sites:** tag `pages/<dir>/v<semver>` → checks, build, Cloudflare Pages.
+- **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → the gate only (version guard:
+  tag == package.json version, build, trivy). Publishing to npm is by hand: npm
+  requires staged publishing for these packages.
+- **Every release** reports to the dev portal: the outcome and where it stopped
+  (`/webhooks/deploy`), and each step's time plus the metrics the actions record
+  with `.github/scripts/metric` (`/webhooks/ci`, shown under Delivery, CI).
 - **Rollback:** `wrangler versions deploy --version-id <previous>` — from
   `api/<svc>/cloudflare` for backends, from `front/<app>` for fronts.
 - **Discipline:** hotfix tags skip most checks — a hotfix must get its next

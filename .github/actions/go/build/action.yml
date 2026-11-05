@@ -1,0 +1,13 @@
+name: Go build
+description: Compiles every package of one module. Requires setup/go and go/generate.
+inputs:
+  dir:
+    description: the module, e.g. api/identityx
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      run: go build ./...

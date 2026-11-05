@@ -1,0 +1,21 @@
+name: Go lint
+description: golangci-lint over one module, from the repo root config. Requires setup/go-tools.
+inputs:
+  dir:
+    description: the module, e.g. api/identityx
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Lint
+      shell: bash
+      env:
+        DIR: ${{ inputs.dir }}
+      run: |
+        set -uo pipefail
+        REPORT="$RUNNER_TEMP/golangci.json"
+        golangci-lint run --output.text.path stdout --output.json.path "$REPORT" "./$DIR/..."
+        rc=$?
+        ISSUES=$(jq '.Issues | length' "$REPORT" 2>/dev/null || echo 0)
+        "$GITHUB_WORKSPACE/.github/scripts/metric" go/lint issues "$ISSUES"
+        exit $rc

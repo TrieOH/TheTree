@@ -1,0 +1,43 @@
+name: Front build
+description: >
+  Builds a front once and uploads it as the run's `dist` artifact, so the
+  publish job deploys exactly what the checks built. The upload keeps
+  .wrangler/deploy/config.json too: the Cloudflare Vite plugin writes it to
+  point wrangler at the built dist/<worker>/wrangler.json. Production config
+  comes from the front's wrangler.jsonc vars (see
+  @trieoh/front-core/vite/wrangler-vars). Requires setup/node with the
+  workspace installed.
+inputs:
+  package:
+    description: pnpm package name
+    required: true
+  dir:
+    description: the package dir, e.g. front/univents-solid
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build
+      shell: bash
+      env:
+        PACKAGE: ${{ inputs.package }}
+        DIR: ${{ inputs.dir }}
+      run: |
+        set -euo pipefail
+        pnpm -F "$PACKAGE" build
+        "$GITHUB_WORKSPACE/.github/scripts/metric" front/build dist_bytes "$(du -sb "$DIR/dist" | cut -f1)"
+        # what was built; also keeps the artifact rooted at $DIR when
+        # .wrangler/deploy doesn't exist (Pages builds)
+        printf '{"package":"%s","sha":"%s","run_id":%s}\n' "$PACKAGE" "$GITHUB_SHA" "$GITHUB_RUN_ID" > "$DIR/.ci-build.json"
+
+    - name: Upload dist
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: dist
+        path: |
+          ${{ inputs.dir }}/.ci-build.json
+          ${{ inputs.dir }}/dist
+          ${{ inputs.dir }}/.wrangler/deploy
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 7

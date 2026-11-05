@@ -1,0 +1,14 @@
+name: Front typecheck
+description: The package's `tsc` script. Requires setup/node with the workspace installed.
+inputs:
+  package:
+    description: pnpm package name
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Typecheck
+      shell: bash
+      run: pnpm -F "$PACKAGE" tsc
+      env:
+        PACKAGE: ${{ inputs.package }}

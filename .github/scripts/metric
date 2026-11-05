@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# metric SOURCE NAME VALUE [label=value ...]
+#
+# Records one number about the current step, e.g.
+#   metric setup/node pnpm_downloaded 1129
+#   metric go/test tests_failed 0 mode=short
+# Lines go to $RUNNER_TEMP/ci-metrics.jsonl; the job's metrics/flush step
+# uploads them and release/report ships them to the portal (D1 ci_metrics),
+# next to the step timings. Never fails the step that calls it.
+
+set -u
+source=${1:-} name=${2:-} value=${3:-}
+shift 3 2>/dev/null || exit 0
+
+case "$value" in
+  '' | *[!0-9.-]*) echo "::warning::metric $source/$name: '$value' is not a number"; exit 0 ;;
+esac
+
+labels=""
+for pair in "$@"; do
+  key=${pair%%=*} val=${pair#*=}
+  # labels are ids and versions; anything JSON would need escaped is dropped
+  val=${val//[\"\\]/}
+  labels+="${labels:+,}\"$key\":\"$val\""
+done
+
+printf '{"job":"%s","source":"%s","name":"%s","value":%s,"labels":{%s}}\n' \
+  "${GITHUB_JOB:-}" "$source" "$name" "$value" "$labels" >> "${RUNNER_TEMP:-/tmp}/ci-metrics.jsonl" || true

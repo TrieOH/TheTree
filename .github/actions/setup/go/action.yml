@@ -1,0 +1,48 @@
+name: Setup Go
+description: >
+  Go toolchain (GO_VERSION from tools.versions) with the module and build
+  caches on Blacksmith sticky disks. A sticky disk is found by its key alone,
+  so a release tag reuses what the last release saved; the Actions cache
+  that setup-go would use is visible only to the tag that saved it, so it is
+  off. Run before setup/go-tools (which needs `go install`).
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup/versions
+
+    - name: Check go.work directive
+      shell: bash
+      run: |
+        if ! grep -qx "go $GO_VERSION" go.work; then
+          echo "::error file=go.work::go directive does not match GO_VERSION=$GO_VERSION in tools.versions"
+          exit 1
+        fi
+        echo "GOMODCACHE=$HOME/go/pkg/mod" >> "$GITHUB_ENV"
+        echo "GOCACHE=$HOME/.cache/go-build" >> "$GITHUB_ENV"
+
+    - name: Mount module cache
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-go-mod
+        path: ~/go/pkg/mod
+
+    # build outputs are only valid for one compiler
+    - name: Mount build cache
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-go-build-${{ env.GO_VERSION }}
+        path: ~/.cache/go-build
+
+    - name: Toolchain
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: false
+
+    - name: Report
+      shell: bash
+      run: |
+        go version
+        M="$GITHUB_WORKSPACE/.github/scripts/metric"
+        "$M" setup/go mod_cache_bytes "$(du -sb "$GOMODCACHE" 2>/dev/null | cut -f1 || echo 0)"
+        "$M" setup/go build_cache_bytes "$(du -sb "$GOCACHE" 2>/dev/null | cut -f1 || echo 0)"

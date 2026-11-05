@@ -1,0 +1,4 @@
+# `go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12` from the repo root.
+self-hosted-runner:
+  labels:
+    - blacksmith-4vcpu-ubuntu-2404

@@ -49,6 +49,56 @@ export interface Tag {
   createdAt: string;
 }
 
+/** A release run, as deploy.yml's report job sent it to /webhooks/ci. */
+export interface CiRun {
+  runId: number;
+  attempt: number;
+  component: string;
+  tag: string;
+  /** service, front, sdk or pages */
+  type: string;
+  lane: string;
+  status: DeployStatus;
+  /** Where it stopped: parse, checks or publish. */
+  stage: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+/** How long one step of one pipeline takes, over its recent runs. */
+export interface CiStepStat {
+  type: string;
+  /** checks or publish */
+  job: string;
+  /** The step's name; "Waiting for a runner" is the job's queue time. */
+  step: string;
+  runs: number;
+  medianMs: number;
+  p90Ms: number;
+  lastMs: number;
+  /** Up to the last 14 runs, oldest first. */
+  recentMs: number[];
+}
+
+/** A number the actions recorded (.github/scripts/metric), over recent runs. */
+export interface CiMetricStat {
+  type: string;
+  source: string;
+  name: string;
+  labels: Record<string, string>;
+  runs: number;
+  last: number;
+  median: number;
+}
+
+export interface CiPayload {
+  /** The 40 newest release runs, newest first. */
+  runs: CiRun[];
+  /** Per pipeline type, in step order. */
+  steps: CiStepStat[];
+  metrics: CiMetricStat[];
+}
+
 export interface DeliveryPayload {
   /** The latest deploy of each component. */
   production: Deploy[];
@@ -60,6 +110,8 @@ export interface DeliveryPayload {
   runs: WorkflowRun[];
   /** The 30 newest tags. */
   tags: Tag[];
+  /** Release runs step by step, from /webhooks/ci. */
+  ci: CiPayload;
 }
 
 const RELEASE_TAG = /^(.+)\/(v\d+\.\d+\.\d+.*)$/;

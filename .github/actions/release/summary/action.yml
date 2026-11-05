@@ -1,0 +1,20 @@
+name: Release summary
+description: >
+  Prints release.json (what shipped and the immutable id that pins it:
+  image digest, Worker Version ID, Pages URL) to the log and the run summary.
+inputs:
+  release:
+    description: release.json, as a JSON object
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: release.json
+      shell: bash
+      env:
+        RELEASE: ${{ inputs.release }}
+      run: |
+        set -euo pipefail
+        JSON=$(jq . <<< "$RELEASE")
+        printf '┌─ release.json ────────────────────────────────────────\n%s\n└───────────────────────────────────────────────────────\n' "$JSON"
+        printf '### release.json\n\n```json\n%s\n```\n' "$JSON" >> "$GITHUB_STEP_SUMMARY"

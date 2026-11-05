@@ -1,0 +1,14 @@
+name: Front test
+description: The package's `test` script, when it has one. Requires setup/node with the workspace installed.
+inputs:
+  package:
+    description: pnpm package name
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Test
+      shell: bash
+      run: pnpm -F "$PACKAGE" run --if-present test
+      env:
+        PACKAGE: ${{ inputs.package }}

@@ -1,0 +1,164 @@
+name: Service release
+# Called by deploy.yml for <service>/v* tags. checks: the ordered R-chain
+# (generate → compile → unit → lint → trivy → integration; express lane stops
+# after unit). publish: build the image once, push it to GHCR by digest, ship
+# that same image to Cloudflare.
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: the service, e.g. identityx
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      lane:
+        description: full or express
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      DIR: api/${{ inputs.service }}
+    steps:
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      - name: Setup Go
+        uses: ./.github/actions/setup/go
+
+      - name: Setup Go tools
+        uses: ./.github/actions/setup/go-tools
+
+      - name: Generate
+        uses: ./.github/actions/go/generate
+        with:
+          dir: ${{ env.DIR }}
+
+      - name: Compile
+        uses: ./.github/actions/go/build
+        with:
+          dir: ${{ env.DIR }}
+
+      - name: Unit tests
+        uses: ./.github/actions/go/test
+        with:
+          dir: ${{ env.DIR }}
+          mode: short
+
+      - name: Lint
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/go/lint
+        with:
+          dir: ${{ env.DIR }}
+
+      - name: Trivy
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/scan/trivy
+        with:
+          paths: ${{ env.DIR }} lib/go tools/go
+
+      # slowest, so last; the runner's own Docker runs testcontainers
+      - name: Integration tests
+        if: inputs.lane == 'full'
+        uses: ./.github/actions/go/test
+        with:
+          dir: ${{ env.DIR }}
+          mode: integration
+
+      - name: Flush metrics
+        if: always()
+        uses: ./.github/actions/metrics/flush
+
+  publish:
+    needs: checks
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/trieoh/${{ inputs.service }}:${{ inputs.version }}
+    steps:
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      - name: Load tool versions
+        uses: ./.github/actions/setup/versions
+
+      # Registry: GHCR, auth via the job's own GITHUB_TOKEN. The build runs
+      # through Blacksmith's cached builder (docs.blacksmith.sh/blacksmith-caching/docker-builds).
+      - name: Setup Docker builder
+        uses: useblacksmith/setup-docker-builder@06dd9c83a5d541274d2e3ac67625560979275267 # v2.3.0
+        with:
+          cache-key: api/${{ inputs.service }}/Dockerfile
+
+      - name: Login to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        id: img
+        uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
+        env:
+          # skip the build-record export (pulls dockereng/export-build each run)
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: .
+          file: api/${{ inputs.service }}/Dockerfile
+          build-args: GO_VERSION=${{ env.GO_VERSION }}
+          tags: ${{ env.IMAGE }}
+          push: true
+
+      # the digest output can be a full ref (registry/repo@sha256:…); keep
+      # the bare digest, the Cloudflare step pulls the image by it
+      - name: Image digest
+        id: digest
+        env:
+          DIGEST: ${{ steps.img.outputs.digest }}
+        run: |
+          set -euo pipefail
+          DIGEST="${DIGEST##*@}"
+          [ -n "$DIGEST" ] || { echo "::error::build-push-action returned no digest"; exit 1; }
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "[release] pushed $IMAGE → $DIGEST"
+
+      # wrangler only: the service's Worker package, not the whole workspace
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup/node
+        with:
+          install: 'true'
+          filter: ./api/${{ inputs.service }}/cloudflare
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        uses: ./.github/actions/deploy/container
+        with:
+          service: ${{ inputs.service }}
+          version: ${{ inputs.version }}
+          digest: ${{ steps.digest.outputs.digest }}
+          api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: release.json
+        uses: ./.github/actions/release/summary
+        with:
+          release: >-
+            {"tag": "${{ inputs.version }}", "artifact": "${{ inputs.service }}", "type": "service",
+             "image": "${{ env.IMAGE }}", "digest": "${{ steps.digest.outputs.digest }}",
+             "worker_version_id": "${{ steps.deploy.outputs.version-id }}"}
+
+      - name: Flush metrics
+        if: always()
+        uses: ./.github/actions/metrics/flush
