@@ -1,5 +1,6 @@
 {
-  "name": "trieoh",
+  // the Pages project (trieoh.com); the release tag stays pages/trieoh/v*
+  "name": "trieoh-platform",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-10-27",
 }
