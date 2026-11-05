@@ -10,6 +10,10 @@ export function isNoise(pathname: string): boolean {
 	if (pathname === "/" || pathname === "") return true;
 	// Dotfiles and dot directories: /.env, /.git/config, /api/.aws/...
 	if (pathname.includes("/.")) return true;
+	// Extensionless scanner targets: Spring actuator, CGI scripts, PHP info and
+	// env dumps, GitLab sign-in and version probes.
+	if (/^\/(actuator|cgi-bin)(\/|$)/.test(pathname)) return true;
+	if (/^\/(phpinfo|api\/env|users\/sign_in|api\/v4\/version)$/.test(pathname)) return true;
 	// Profile handles are free text and may contain a dot.
 	if (pathname.startsWith("/profiles/by-handle/")) return false;
 	// A file extension on the last segment: index.php, gcp-key.json, ...
