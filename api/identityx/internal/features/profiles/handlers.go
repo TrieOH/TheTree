@@ -3,9 +3,11 @@ package profiles
 import (
 	"context"
 
+	"IdentityX/internal/cachetags"
 	"IdentityX/internal/features/profiles/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
+	"lib/httpcache"
 )
 
 type Handlers struct {
@@ -19,6 +21,7 @@ func (h *Handlers) GetProfileByHandle(ctx context.Context, req openapi.GetProfil
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.Profile(profile.ActorID), cachetags.ProfilesByHandle)
 	return openapi.GetProfileByHandle200JSONResponse(*profile), nil
 }
 
@@ -35,6 +38,7 @@ func (h *Handlers) GetProjectProfile(ctx context.Context, req openapi.GetProject
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.Profile(req.ActorId), cachetags.Profiles(&req.ProjectId))
 	return openapi.GetProjectProfile200JSONResponse(*profile), nil
 }
 
@@ -68,6 +72,7 @@ func (h *Handlers) UpsertPlatformProfile(ctx context.Context, req openapi.Upsert
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Profile(req.ActorId))
 	return openapi.UpsertPlatformProfile200JSONResponse(*profile), nil
 }
 
@@ -81,5 +86,6 @@ func (h *Handlers) UpsertProjectProfile(ctx context.Context, req openapi.UpsertP
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.Profile(req.ActorId))
 	return openapi.UpsertProjectProfile200JSONResponse(*profile), nil
 }

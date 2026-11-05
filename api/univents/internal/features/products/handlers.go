@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"lib/httpcache"
 	"univents/errs"
+	"univents/internal/cachetags"
 	"univents/internal/features/products/service"
 	"univents/internal/openapi"
 	"univents/models"
@@ -34,6 +36,7 @@ func (h *Handlers) CreateInitialProduct(ctx context.Context, req openapi.CreateI
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionProducts(product.EditionID))
 	return openapi.CreateInitialProduct201JSONResponse(*product), nil
 }
 
@@ -53,10 +56,11 @@ func (h *Handlers) CreateProductVariant(ctx context.Context, req openapi.CreateP
 }
 
 func (h *Handlers) DeleteProduct(ctx context.Context, req openapi.DeleteProductRequestObject) (openapi.DeleteProductResponseObject, error) {
-	err := h.ops.DeleteProduct(ctx, req.ProductId)
+	product, err := h.ops.DeleteProduct(ctx, req.ProductId)
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionProducts(product.EditionID))
 	return openapi.DeleteProduct204Response{}, nil
 }
 
@@ -97,6 +101,7 @@ func (h *Handlers) ListEditionProducts(ctx context.Context, req openapi.ListEdit
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Tag(ctx, cachetags.EditionProducts(req.EditionId))
 	return openapi.ListEditionProducts200JSONResponse{Items: products}, nil
 }
 
@@ -117,6 +122,7 @@ func (h *Handlers) PatchProduct(ctx context.Context, req openapi.PatchProductReq
 	if err != nil {
 		return nil, err
 	}
+	httpcache.Purge(ctx, cachetags.EditionProducts(product.EditionID))
 	return openapi.PatchProduct200JSONResponse(*product), nil
 }
 

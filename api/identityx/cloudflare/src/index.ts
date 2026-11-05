@@ -1,5 +1,13 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
+import {
+	CachedEntrypoint,
+	PURGE_RETRY_SECONDS,
+	cached,
+	gateway,
+	isPurgeJob,
+	type PurgeJob,
+} from "@trieoh/container-budget/edge";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -40,6 +48,13 @@ const PERIODIC: Record<string, string[]> = {
 };
 
 type Envelope = { kind: string; args?: unknown };
+
+// Reads, with Workers Caching in front (ADR-0020).
+export class Cached extends CachedEntrypoint<Env> {
+	protected async origin(request: Request): Promise<Response> {
+		return (await instance(this.env)).fetch(request);
+	}
+}
 
 export class IdentityXContainer extends BudgetedContainer<Env> {
 	protected readonly app = "identityx";
@@ -152,12 +167,16 @@ export default {
 		if (request.method === "POST" && CREATES_PROJECT.test(pathname)) {
 			ctx.waitUntil(forgetJWKS(env));
 		}
-		const container = await instance(env);
-		return container.fetch(request);
+		return gateway(request, env, ctx, async () => (await instance(env)).fetch(request), env.JOBS as Queue<PurgeJob>);
 	},
 
-	async queue(batch, env) {
+	async queue(batch, env, ctx) {
 		for (const message of batch.messages) {
+			if (isPurgeJob(message.body)) {
+				if (await cached(ctx).purge(message.body.args.tags)) message.ack();
+				else message.retry({ delaySeconds: PURGE_RETRY_SECONDS });
+				continue;
+			}
 			try {
 				if (await deliver(env, message.body)) {
 					if (message.body.kind === "keys.rotate") await forgetJWKS(env);

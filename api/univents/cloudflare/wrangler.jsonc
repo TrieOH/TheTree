@@ -3,6 +3,13 @@
 	"name": "univents-api",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-19",
+	// Workers Caching in front of reads only (ADR-0020): the gateway (default
+	// entrypoint) runs on every request, Cached keeps what the backend marks
+	// shareable. Purges run inside Cached, since they only reach the cache of
+	// the entrypoint that calls them.
+	"exports": {
+		"Cached": { "type": "worker", "cache": { "enabled": true } }
+	},
 	"observability": {
 		"enabled": true,
 		// exported to Grafana Cloud only (persist: false); destinations are account-level (Workers Observability)

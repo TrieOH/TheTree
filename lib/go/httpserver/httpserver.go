@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"lib/errx"
+	"lib/httpcache"
 	"lib/telemetry"
 
 	"github.com/go-chi/chi/v5"
@@ -137,6 +138,7 @@ func NewRouter(cfg Config) http.Handler {
 		spec := cfg.OpenAPISpec
 		r.Get("/docs/openapi.yml", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/yaml")
+			httpcache.Deploy(w)
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(spec)
 		})
@@ -228,6 +230,7 @@ func stack(cfg Config) []func(http.Handler) http.Handler {
 		recoverer(telemetry.Log()),
 		timeout(60 * time.Second),
 		maxBodySize(1 << 20),
+		httpcache.Middleware,
 	}
 	if rl := cfg.RateLimit.withDefaults(); !rl.Disabled {
 		mwStack = append(mwStack, newRateLimiter(rl).middleware)

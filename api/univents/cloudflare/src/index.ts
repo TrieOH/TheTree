@@ -1,5 +1,13 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
+import {
+	CachedEntrypoint,
+	PURGE_RETRY_SECONDS,
+	cached,
+	gateway,
+	isPurgeJob,
+	type PurgeJob,
+} from "@trieoh/container-budget/edge";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -31,6 +39,13 @@ function retryDelay(attempts: number): number {
 }
 
 type Envelope = { kind: string; args?: unknown };
+
+// Reads, with Workers Caching in front (ADR-0020).
+export class Cached extends CachedEntrypoint<Env> {
+	protected async origin(request: Request): Promise<Response> {
+		return (await instance(this.env)).fetch(request);
+	}
+}
 
 export class UniventsContainer extends BudgetedContainer<Env> {
 	protected readonly app = "univents";
@@ -87,18 +102,22 @@ async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
 }
 
 export default {
-	async fetch(request, env) {
+	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
 		if (isNoise(pathname)) return notFound();
-		const container = await instance(env);
-		return container.fetch(request);
+		return gateway(request, env, ctx, async () => (await instance(env)).fetch(request), env.JOBS as Queue<PurgeJob>);
 	},
 
-	async queue(batch, env) {
+	async queue(batch, env, ctx) {
 		for (const message of batch.messages) {
+			if (isPurgeJob(message.body)) {
+				if (await cached(ctx).purge(message.body.args.tags)) message.ack();
+				else message.retry({ delaySeconds: PURGE_RETRY_SECONDS });
+				continue;
+			}
 			const retry = { delaySeconds: retryDelay(message.attempts) };
 			try {
 				if (await deliver(env, message.body)) message.ack();

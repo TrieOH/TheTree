@@ -1,5 +1,6 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
+import { CachedEntrypoint, gateway } from "@trieoh/container-budget/edge";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -75,6 +76,13 @@ const READS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 type Envelope = { kind: string; args?: unknown };
 
+// Reads, with Workers Caching in front (ADR-0020).
+export class Cached extends CachedEntrypoint<Env> {
+	protected async origin(request: Request): Promise<Response> {
+		return (await instance(this.env)).fetch(request);
+	}
+}
+
 export class PayssageContainer extends BudgetedContainer<Env> {
 	protected readonly app = "payssage";
 	protected readonly memoryGiB = 0.25; // lite
@@ -148,8 +156,9 @@ export default {
 		}
 		if (isNoise(pathname)) return notFound();
 		if (!READS.has(request.method)) markWrite(env, ctx);
-		const container = await instance(env);
-		return container.fetch(request);
+		// Payssage caches only its spec and problem docs, which change per
+		// deploy, so no write ever purges.
+		return gateway(request, env, ctx, async () => (await instance(env)).fetch(request));
 	},
 
 	async queue(batch, env, ctx) {

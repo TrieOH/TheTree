@@ -76,7 +76,7 @@ func newSSEStream(w http.ResponseWriter) (*sseStream, error) {
 		}
 	}
 	head.WriteString("Content-Type: text/event-stream; charset=utf-8\r\n" +
-		"Cache-Control: no-cache\r\n" +
+		"Cache-Control: no-store\r\n" +
 		"Connection: keep-alive\r\n" +
 		"X-Accel-Buffering: no\r\n" +
 		"\r\n")
