@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	dto "github.com/prometheus/client_model/go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -174,5 +177,43 @@ func TestAuthenticatorsPrimitives(t *testing.T) {
 				t.Fatalf("got (%d, %q), want (%d, %q)", rec.Code, who, tc.status, tc.who)
 			}
 		})
+	}
+}
+
+// TestRealtimeStaysOutOfLatency — an SSE or WebSocket request lasts as long
+// as the client stays, so it's counted but never timed.
+func TestRealtimeStaysOutOfLatency(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	c, err := newCollectors(reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := metrics(c, nil)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	for _, head := range []map[string]string{
+		{"Accept": "text/event-stream"},
+		{"Upgrade": "websocket", "Connection": "Upgrade"},
+		{},
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/stream", nil)
+		for k, v := range head {
+			req.Header.Set(k, v)
+		}
+		h.ServeHTTP(httptest.NewRecorder(), req)
+	}
+
+	if got := testutil.CollectAndCount(c.requests); got != 1 {
+		t.Fatalf("request series = %d, want 1", got)
+	}
+	if got := testutil.ToFloat64(c.requests); got != 3 {
+		t.Fatalf("requests = %v, want 3", got)
+	}
+	var m dto.Metric
+	err = c.duration.WithLabelValues("not_found").(prometheus.Histogram).Write(&m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := m.GetHistogram().GetSampleCount(); got != 1 {
+		t.Fatalf("timed requests = %d, want 1 (only the plain one)", got)
 	}
 }

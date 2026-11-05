@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric/noop"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -144,7 +145,7 @@ func NewRouter(cfg Config) http.Handler {
 		})
 	}
 
-	return otelhttp.NewHandler(r, "http.server",
+	opts := []otelhttp.Option{
 		// Name spans from the start (method + path) so even 404s/unmatched
 		// routes are distinguishable; spanRouteNameMiddleware upgrades the
 		// name to the route template once chi has matched it.
@@ -162,7 +163,27 @@ func NewRouter(cfg Config) http.Handler {
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.Method != http.MethodOptions
 		}),
-	)
+	}
+	measured := otelhttp.NewHandler(r, "http.server", opts...)
+	// Realtime requests are still traced, but kept out of the duration
+	// histogram: their "duration" is how long the client stayed connected.
+	unmeasured := otelhttp.NewHandler(r, "http.server",
+		append(opts[:len(opts):len(opts)], otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if realtime(req) {
+			unmeasured.ServeHTTP(w, req)
+			return
+		}
+		measured.ServeHTTP(w, req)
+	})
+}
+
+// realtime reports whether r opens a long-lived stream (SSE or a WebSocket).
+// Its handler returns when the client leaves, so its time says nothing about
+// latency and would swamp every percentile it lands in.
+func realtime(r *http.Request) bool {
+	return strings.EqualFold(r.Header.Get("Upgrade"), "websocket") ||
+		strings.Contains(r.Header.Get("Accept"), "text/event-stream")
 }
 
 // Start serves handler on cfg.Port, blocking until the process exits. It also
