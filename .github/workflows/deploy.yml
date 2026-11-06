@@ -1,12 +1,18 @@
 name: Deploy
 # The release router (ADR-0007: the deploy gate is the only CI). A release tag
-# is parsed once, then one reusable workflow per artifact type runs its gate
-# (checks) and its publish:
+# goes straight to one reusable workflow per artifact type, by its pattern;
+# each pipeline's checks job parses the tag first (release/parse-tag), then
+# runs its gate, and its publish job ships:
 #   <service>/v1.2.3        → _service.yml   Go backend → GHCR → Cloudflare Container
 #   <front>-ui/v1.2.3       → _front.yml     Worker front
 #   <sdk>-sdk-ts/v1.2.3     → _sdk.yml       gate only; npm publishing is by hand
 #   pages/<dir>/v1.2.3      → _pages.yml     static site on Cloudflare Pages
 #   <artifact>/v1.2.3-hotfix.1               express lane: compile + unit only (§3.5)
+# Anything else falls through to _service.yml, whose parse step rejects it.
+#
+# Releases of one artifact never overlap in publish (a per-artifact lock in
+# each pipeline), and an older tag that reaches publish after a newer one is
+# skipped (release/guard), so an older version can't replace a newer one.
 #
 # Contract (§3.8): build once → publish immutable artifact → capture digest /
 # Worker Version ID. NO :latest is ever pushed. release.json is printed to the
@@ -22,94 +28,40 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
-  parse:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    outputs:
-      artifact: ${{ steps.tag.outputs.artifact }}
-      type: ${{ steps.tag.outputs.type }}
-      lane: ${{ steps.tag.outputs.lane }}
-      version: ${{ steps.tag.outputs.version }}
-      package: ${{ steps.tag.outputs.package }}
-      dir: ${{ steps.tag.outputs.dir }}
-    steps:
-      # parse-tag reads the tree to find the artifact
-      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
-
-      - name: Parse tag
-        id: tag
-        uses: ./.github/actions/release/parse-tag
-
-  # Release lock per artifact: tags for different artifacts deploy in
-  # parallel; tags for the same artifact queue and never cancel a running
-  # release (§3.8), so an older version can't finish after a newer one.
   service:
-    needs: parse
-    if: needs.parse.outputs.type == 'service'
-    concurrency:
-      group: release-${{ needs.parse.outputs.artifact }}
-      cancel-in-progress: false
+    if: >-
+      !startsWith(github.ref_name, 'pages/') &&
+      !contains(github.ref_name, '-ui/') &&
+      !contains(github.ref_name, '-sdk-ts/')
     permissions:
       contents: read
       packages: write
     uses: ./.github/workflows/_service.yml
-    with:
-      service: ${{ needs.parse.outputs.artifact }}
-      version: ${{ needs.parse.outputs.version }}
-      lane: ${{ needs.parse.outputs.lane }}
     secrets: inherit
 
   front:
-    needs: parse
-    if: needs.parse.outputs.type == 'front'
-    concurrency:
-      group: release-${{ needs.parse.outputs.artifact }}
-      cancel-in-progress: false
+    if: contains(github.ref_name, '-ui/')
     uses: ./.github/workflows/_front.yml
-    with:
-      artifact: ${{ needs.parse.outputs.artifact }}
-      package: ${{ needs.parse.outputs.package }}
-      dir: ${{ needs.parse.outputs.dir }}
-      version: ${{ needs.parse.outputs.version }}
-      lane: ${{ needs.parse.outputs.lane }}
     secrets: inherit
 
   sdk:
-    needs: parse
-    if: needs.parse.outputs.type == 'sdk'
+    if: contains(github.ref_name, '-sdk-ts/')
     uses: ./.github/workflows/_sdk.yml
-    with:
-      package: ${{ needs.parse.outputs.package }}
-      dir: ${{ needs.parse.outputs.dir }}
-      version: ${{ needs.parse.outputs.version }}
-      lane: ${{ needs.parse.outputs.lane }}
 
   pages:
-    needs: parse
-    if: needs.parse.outputs.type == 'pages'
-    concurrency:
-      group: release-${{ needs.parse.outputs.artifact }}
-      cancel-in-progress: false
+    if: startsWith(github.ref_name, 'pages/')
     uses: ./.github/workflows/_pages.yml
-    with:
-      package: ${{ needs.parse.outputs.package }}
-      dir: ${{ needs.parse.outputs.dir }}
-      version: ${{ needs.parse.outputs.version }}
-      lane: ${{ needs.parse.outputs.lane }}
     secrets: inherit
 
   # Every release, whatever stage it stopped at, reports to the dev portal.
   report:
-    needs: [parse, service, front, sdk, pages]
+    needs: [service, front, sdk, pages]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
-      actions: read # this run's jobs and steps
+      actions: read # this run's jobs, steps and logs
     steps:
       - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
 
@@ -118,6 +70,4 @@ jobs:
         with:
           secret: ${{ secrets.DEPLOY_HOOK_SECRET }}
           token: ${{ github.token }}
-          artifact: ${{ needs.parse.outputs.artifact }}
-          type: ${{ needs.parse.outputs.type }}
-          lane: ${{ needs.parse.outputs.lane }}
+          needs: ${{ toJSON(needs) }}

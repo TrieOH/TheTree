@@ -1,18 +1,30 @@
 name: Go lint
-description: golangci-lint over one module, from the repo root config. Requires setup/go-tools.
+description: >
+  golangci-lint over one module, from the repo root config, with its analysis
+  cache on a sticky disk per module. Requires setup/go-tools.
 inputs:
   dir:
     description: the module, e.g. api/identityx
     required: true
+  cache-scope:
+    description: which cache disk to use, e.g. the service name
+    required: true
 runs:
   using: composite
   steps:
+    - name: Mount cache
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-golangci-${{ inputs.cache-scope }}
+        path: ~/.cache/golangci-lint
+
     - name: Lint
       shell: bash
       env:
         DIR: ${{ inputs.dir }}
       run: |
         set -uo pipefail
+        export GOLANGCI_LINT_CACHE="$HOME/.cache/golangci-lint"
         REPORT="$RUNNER_TEMP/golangci.json"
         golangci-lint run --output.text.path stdout --output.json.path "$REPORT" "./$DIR/..."
         rc=$?

@@ -1,23 +1,23 @@
 name: Service release
-# Called by deploy.yml for <service>/v* tags. checks: the ordered R-chain
-# (generate → compile → unit → lint → trivy → integration; express lane stops
-# after unit). publish: build the image once, push it to GHCR by digest, ship
-# that same image to Cloudflare.
+# Called by deploy.yml for <service>/v* tags. checks: parse the tag, then the
+# ordered R-chain (generate → compile → unit → lint → trivy → integration;
+# express lane stops after unit); trivy scans in the background from right
+# after generate. publish: build the image once, push it to GHCR by digest,
+# ship that same image to Cloudflare.
 
 on:
   workflow_call:
-    inputs:
-      service:
-        description: the service, e.g. identityx
-        type: string
-        required: true
-      version:
-        type: string
-        required: true
+    outputs:
+      artifact:
+        value: ${{ jobs.checks.outputs.artifact }}
       lane:
-        description: full or express
-        type: string
-        required: true
+        value: ${{ jobs.checks.outputs.lane }}
+      superseded:
+        value: ${{ jobs.publish.outputs.superseded }}
+      checks-metrics:
+        value: ${{ jobs.checks.outputs.metrics }}
+      publish-metrics:
+        value: ${{ jobs.publish.outputs.metrics }}
 
 permissions:
   contents: read
@@ -29,15 +29,25 @@ defaults:
 jobs:
   checks:
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    env:
-      DIR: api/${{ inputs.service }}
+    outputs:
+      artifact: ${{ steps.tag.outputs.artifact }}
+      version: ${{ steps.tag.outputs.version }}
+      lane: ${{ steps.tag.outputs.lane }}
+      dir: ${{ steps.tag.outputs.dir }}
+      metrics: ${{ steps.metrics.outputs.metrics }}
     steps:
       - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+
+      - name: Parse tag
+        id: tag
+        uses: ./.github/actions/release/parse-tag
+        with:
+          expect: service
 
       - name: Setup Go
         uses: ./.github/actions/setup/go
         with:
-          cache-scope: ${{ inputs.service }}
+          cache-scope: ${{ steps.tag.outputs.artifact }}
 
       - name: Setup Go tools
         uses: ./.github/actions/setup/go-tools
@@ -45,65 +55,94 @@ jobs:
       - name: Generate
         uses: ./.github/actions/go/generate
         with:
-          dir: ${{ env.DIR }}
+          dir: ${{ steps.tag.outputs.dir }}
+
+      - name: Start Trivy
+        if: steps.tag.outputs.lane == 'full'
+        uses: ./.github/actions/scan/trivy
+        with:
+          mode: start
+          paths: ${{ steps.tag.outputs.dir }} lib/go tools/go
 
       - name: Compile
         uses: ./.github/actions/go/build
         with:
-          dir: ${{ env.DIR }}
+          dir: ${{ steps.tag.outputs.dir }}
 
       - name: Unit tests
         uses: ./.github/actions/go/test
         with:
-          dir: ${{ env.DIR }}
+          dir: ${{ steps.tag.outputs.dir }}
           mode: short
 
       - name: Lint
-        if: inputs.lane == 'full'
+        if: steps.tag.outputs.lane == 'full'
         uses: ./.github/actions/go/lint
         with:
-          dir: ${{ env.DIR }}
+          dir: ${{ steps.tag.outputs.dir }}
+          cache-scope: ${{ steps.tag.outputs.artifact }}
 
       - name: Trivy
-        if: inputs.lane == 'full'
+        if: steps.tag.outputs.lane == 'full'
         uses: ./.github/actions/scan/trivy
         with:
-          paths: ${{ env.DIR }} lib/go tools/go
+          mode: finish
 
       # slowest, so last; the runner's own Docker runs testcontainers
       - name: Integration tests
-        if: inputs.lane == 'full'
+        if: steps.tag.outputs.lane == 'full'
         uses: ./.github/actions/go/test
         with:
-          dir: ${{ env.DIR }}
+          dir: ${{ steps.tag.outputs.dir }}
           mode: integration
 
       - name: Flush metrics
+        id: metrics
         if: always()
         uses: ./.github/actions/metrics/flush
 
   publish:
     needs: checks
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    # one release of an artifact ships at a time, in order; release/guard
+    # skips a tag a newer one already superseded
+    concurrency:
+      group: release-${{ needs.checks.outputs.artifact }}
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: write
+    outputs:
+      superseded: ${{ steps.guard.outputs.superseded }}
+      metrics: ${{ steps.metrics.outputs.metrics }}
     env:
-      IMAGE: ghcr.io/trieoh/${{ inputs.service }}:${{ inputs.version }}
+      SERVICE: ${{ needs.checks.outputs.artifact }}
+      VERSION: ${{ needs.checks.outputs.version }}
+      IMAGE: ghcr.io/trieoh/${{ needs.checks.outputs.artifact }}:${{ needs.checks.outputs.version }}
     steps:
       - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
 
+      - name: Supersede guard
+        id: guard
+        uses: ./.github/actions/release/guard
+        with:
+          artifact: ${{ env.SERVICE }}
+          version: ${{ env.VERSION }}
+
       - name: Load tool versions
+        if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/setup/versions
 
       # Registry: GHCR, auth via the job's own GITHUB_TOKEN. The build runs
       # through Blacksmith's cached builder (docs.blacksmith.sh/blacksmith-caching/docker-builds).
       - name: Setup Docker builder
+        if: steps.guard.outputs.superseded != 'true'
         uses: useblacksmith/setup-docker-builder@06dd9c83a5d541274d2e3ac67625560979275267 # v2.3.0
         with:
-          cache-key: api/${{ inputs.service }}/Dockerfile
+          cache-key: api/${{ env.SERVICE }}/Dockerfile
 
       - name: Login to GHCR
+        if: steps.guard.outputs.superseded != 'true'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
@@ -112,12 +151,13 @@ jobs:
 
       - name: Build & push image
         id: img
-        uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
+        if: steps.guard.outputs.superseded != 'true'
         # The ~3 s dockereng/export-build pull after each build is Blacksmith's
         # own build reporting; it runs whatever DOCKER_BUILD_SUMMARY says.
+        uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
         with:
           context: .
-          file: api/${{ inputs.service }}/Dockerfile
+          file: api/${{ env.SERVICE }}/Dockerfile
           build-args: GO_VERSION=${{ env.GO_VERSION }}
           tags: ${{ env.IMAGE }}
           push: true
@@ -126,6 +166,7 @@ jobs:
       # the bare digest, the Cloudflare step pulls the image by it
       - name: Image digest
         id: digest
+        if: steps.guard.outputs.superseded != 'true'
         env:
           DIGEST: ${{ steps.img.outputs.digest }}
         run: |
@@ -137,29 +178,33 @@ jobs:
 
       # wrangler only: the service's Worker package, not the whole workspace
       - name: Setup Node + pnpm
+        if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/setup/node
         with:
           install: 'true'
-          filter: ./api/${{ inputs.service }}/cloudflare
+          filter: ./api/${{ env.SERVICE }}/cloudflare
 
       - name: Deploy to Cloudflare
         id: deploy
+        if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/deploy/container
         with:
-          service: ${{ inputs.service }}
-          version: ${{ inputs.version }}
+          service: ${{ env.SERVICE }}
+          version: ${{ env.VERSION }}
           digest: ${{ steps.digest.outputs.digest }}
           api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: release.json
+        if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/release/summary
         with:
           release: >-
-            {"tag": "${{ inputs.version }}", "artifact": "${{ inputs.service }}", "type": "service",
+            {"tag": "${{ env.VERSION }}", "artifact": "${{ env.SERVICE }}", "type": "service",
              "image": "${{ env.IMAGE }}", "digest": "${{ steps.digest.outputs.digest }}",
              "worker_version_id": "${{ steps.deploy.outputs.version-id }}"}
 
       - name: Flush metrics
+        id: metrics
         if: always()
         uses: ./.github/actions/metrics/flush

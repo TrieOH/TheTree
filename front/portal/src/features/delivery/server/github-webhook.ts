@@ -35,6 +35,8 @@ interface ReviewEvent {
 }
 
 interface WorkflowRunEvent {
+  /** The workflow itself; its name is stable, unlike a run's (see below). */
+  workflow?: { name: string };
   workflow_run: {
     id: number;
     name: string;
@@ -99,8 +101,12 @@ export function statementsFor(db: D1Database, event: string, body: unknown, now 
   }
 
   if (event === "workflow_run") {
-    const run = (body as WorkflowRunEvent).workflow_run;
+    const { workflow, workflow_run: run } = body as WorkflowRunEvent;
     const completed = run.status === "completed";
+    // Group by the workflow, not the run: GitHub's own runs (Dependabot
+    // Updates) title every run differently, e.g. "github_actions in / -
+    // Update #1684151908".
+    const name = workflow?.name ?? run.name;
     return [
       db
         .prepare(
@@ -113,7 +119,7 @@ export function statementsFor(db: D1Database, event: string, body: unknown, now 
         )
         .bind(
           run.id,
-          run.name,
+          name,
           run.head_branch ?? "",
           run.head_sha,
           completed ? run.conclusion : null,

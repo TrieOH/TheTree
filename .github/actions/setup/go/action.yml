@@ -17,6 +17,8 @@ runs:
   steps:
     - uses: ./.github/actions/setup/versions
 
+    - uses: ./.github/actions/setup/toolcache
+
     - name: Check go.work directive
       shell: bash
       run: |
@@ -51,5 +53,7 @@ runs:
       run: |
         go version
         M="$GITHUB_WORKSPACE/.github/scripts/metric"
-        "$M" setup/go mod_cache_bytes "$(du -sb "$GOMODCACHE" 2>/dev/null | cut -f1 || echo 0)"
-        "$M" setup/go build_cache_bytes "$(du -sb "$GOCACHE" 2>/dev/null | cut -f1 || echo 0)"
+        # each cache is its own sticky-disk filesystem: what it uses is its size
+        used() { df -B1 --output=used "$1" 2>/dev/null | tail -1 | tr -d ' ' || echo 0; }
+        "$M" setup/go mod_cache_bytes "$(used "$GOMODCACHE")"
+        "$M" setup/go build_cache_bytes "$(used "$GOCACHE")"

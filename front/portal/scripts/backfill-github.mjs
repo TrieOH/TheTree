@@ -80,11 +80,15 @@ for (const pr of ghPages(`repos/${REPO}/pulls?state=all&sort=updated&direction=d
 
 // Workflow runs in the window, and the deploys they made.
 const runs = ghPages(`repos/${REPO}/actions/runs?created=>=${since.toISOString().slice(0, 10)}`, "workflow_runs");
+// a run's name can be per run (Dependabot Updates); the workflow's is stable
+const workflowNames = Object.fromEntries(
+  ghPages(`repos/${REPO}/actions/workflows`, "workflows").map((w) => [w.id, w.name]),
+);
 for (const run of runs) {
   const completed = run.status === "completed";
   insert("workflow_runs", {
     id: run.id,
-    workflow: run.name,
+    workflow: workflowNames[run.workflow_id] ?? run.name,
     branch: run.head_branch ?? "",
     sha: run.head_sha,
     conclusion: completed ? run.conclusion : null,

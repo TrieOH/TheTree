@@ -2,51 +2,31 @@ name: Report release to the portal
 description: >
   Tells the dev portal (portal.trieoh.com) what a release run did, from the
   run itself: the status and the stage it stopped at (parse, checks or
-  publish) to /webhooks/deploy, and every job's and step's timing plus the
-  metrics the jobs recorded to /webhooks/ci (D1). Neither the pipeline nor
-  the portal calls the services, so a release never wakes a container. Run
-  it in the run's last job, after every other job; never fails.
+  publish) to /webhooks/deploy, and every job's, step's and substep's timing
+  plus the metrics the jobs recorded to /webhooks/ci (D1). Neither the
+  pipeline nor the portal calls the services, so a release never wakes a
+  container. Run it in the run's last job, after every other job; never fails.
 inputs:
   secret:
     description: DEPLOY_HOOK_SECRET
     required: true
   token:
-    description: "a token that can read this run's jobs (actions: read)"
+    description: "a token that can read this run's jobs and logs (actions: read)"
     required: true
-  artifact:
-    description: parse-tag's artifact (empty when parsing failed)
-    required: false
-    default: ""
-  type:
-    description: parse-tag's type
-    required: false
-    default: ""
-  lane:
-    description: parse-tag's lane
-    required: false
-    default: ""
+  needs:
+    description: "toJSON(needs): which pipeline ran, its outputs (artifact, lane, superseded) and metrics"
+    required: true
 runs:
   using: composite
   steps:
-    - name: Download metrics
-      continue-on-error: true
-      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-      with:
-        pattern: metrics-*
-        path: ${{ runner.temp }}/ci-metrics
-        merge-multiple: true
-
     - name: Report
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
         SECRET: ${{ inputs.secret }}
-        ARTIFACT: ${{ inputs.artifact }}
-        TYPE: ${{ inputs.type }}
-        LANE: ${{ inputs.lane }}
+        NEEDS_JSON: ${{ inputs.needs }}
         TAG: ${{ github.ref_name }}
         SHA: ${{ github.sha }}
         ACTOR: ${{ github.actor }}
         REPORT_JOB: ${{ github.job }}
-        METRICS_DIR: ${{ runner.temp }}/ci-metrics
-      run: python3 "$GITHUB_WORKSPACE/.github/scripts/ci-report.py"
+      run: python3 -I "$GITHUB_WORKSPACE/.github/scripts/ci-report.py"

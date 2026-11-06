@@ -1,0 +1,40 @@
+name: Supersede guard
+description: >
+  Run first in a publish job. Checks run in parallel and only publish holds
+  the per-artifact lock, so an older tag can reach publish after a newer one
+  shipped. This answers superseded=true when the artifact already has a
+  newer version tag (by version order, a -hotfix.N after its base), and the
+  publish steps skip; release/report then records the run as cancelled. A
+  newer tag counts even if its own run fails: the newest tag is the one meant
+  to ship.
+inputs:
+  artifact:
+    description: e.g. identityx, univents-ui, pages/trieoh
+    required: true
+  version:
+    description: the tag's version, e.g. v0.48.4
+    required: true
+outputs:
+  superseded:
+    description: "'true' when a newer tag exists"
+    value: ${{ steps.check.outputs.superseded }}
+runs:
+  using: composite
+  steps:
+    - name: Check
+      id: check
+      shell: bash
+      env:
+        ARTIFACT: ${{ inputs.artifact }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        NEWEST=$(git ls-remote --tags --refs origin "refs/tags/$ARTIFACT/v*" \
+          | sed -E "s|.*refs/tags/$ARTIFACT/||" | sort -V | tail -1)
+        if [ -n "$NEWEST" ] && [ "$NEWEST" != "$VERSION" ] \
+           && [ "$(printf '%s\n%s\n' "$VERSION" "$NEWEST" | sort -V | tail -1)" = "$NEWEST" ]; then
+          echo "::notice::$ARTIFACT $VERSION is superseded by $NEWEST, not deploying it"
+          echo "superseded=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "superseded=false" >> "$GITHUB_OUTPUT"
+        fi

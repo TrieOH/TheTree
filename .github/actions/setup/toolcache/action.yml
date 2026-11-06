@@ -1,0 +1,21 @@
+name: Mount tool cache
+description: >
+  Puts the runner's tool cache (where setup-go and setup-node keep the Go and
+  Node they download, and setup/node keeps pnpm) on a Blacksmith sticky disk,
+  so a pinned version is downloaded once instead of in every job. It hides
+  the runner image's preinstalled versions, which the pipeline doesn't use.
+  setup/go and setup/node call it; the second call in a job is a no-op.
+runs:
+  using: composite
+  steps:
+    - name: Mount
+      if: env.TOOLCACHE_MOUNTED != 'true'
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-toolcache-${{ runner.os }}
+        path: ${{ runner.tool_cache }}
+
+    - name: Mark mounted
+      if: env.TOOLCACHE_MOUNTED != 'true'
+      shell: bash
+      run: echo "TOOLCACHE_MOUNTED=true" >> "$GITHUB_ENV"

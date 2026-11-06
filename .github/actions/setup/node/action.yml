@@ -1,9 +1,15 @@
 name: Setup Node + pnpm
 description: >
   Node (NODE_VERSION from tools.versions) and pnpm (the version package.json's
-  packageManager pins), with the pnpm store on a Blacksmith sticky disk so a
-  release tag reuses what the last one downloaded. Optionally runs
-  `pnpm install --frozen-lockfile`, for the whole workspace or one filter.
+  packageManager pins), both kept in the tool cache on a sticky disk
+  (setup/toolcache), and the pnpm store on its own sticky disk so a release
+  tag reuses what the last one downloaded. The store is on another
+  filesystem, so pnpm copies packages into node_modules instead of
+  hard-linking them; its global virtual store would avoid that (7.8 s instead
+  of 21.8 s for the whole workspace) but drops the hoisted dependencies some
+  packages' types rely on (csstype, jest-dom's vitest matchers), tried
+  2026-11-05. Optionally runs `pnpm install --frozen-lockfile`, for the whole
+  workspace or one filter.
 inputs:
   install:
     description: "run `pnpm install --frozen-lockfile` (true/false)"
@@ -18,14 +24,27 @@ runs:
   steps:
     - uses: ./.github/actions/setup/versions
 
-    # no version input: action-setup reads package.json's packageManager
-    - name: pnpm
-      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+    - uses: ./.github/actions/setup/toolcache
 
     - name: Toolchain
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ env.NODE_VERSION }}
+
+    # pnpm/action-setup reinstalls pnpm from npm on every run; this installs
+    # the pinned version into the tool cache once
+    - name: pnpm
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION=$(jq -r '.packageManager | sub("^pnpm@"; "") | sub("\\+.*$"; "")' package.json)
+        DIR="$RUNNER_TOOL_CACHE/pnpm/$VERSION"
+        if [ ! -x "$DIR/bin/pnpm" ]; then
+          rm -rf "$DIR"
+          npm install --global --prefix "$DIR" --no-audit --no-fund "pnpm@$VERSION"
+          "$GITHUB_WORKSPACE/.github/scripts/metric" setup/node pnpm_installed 1
+        fi
+        echo "$DIR/bin" >> "$GITHUB_PATH"
 
     - name: Locate store
       id: store
