@@ -246,6 +246,9 @@ const ciReport = (overrides: Record<string, unknown> = {}) => ({
       substeps: [
         { step: 2, action_id: "__self.__actions_setup-go", name: "Toolchain", depth: 1, completed_at: at(9), duration_ms: 3652 },
         { step: 2, action_id: "__self.__useblacksmith_stickydisk", name: "Mount module cache", depth: 1, completed_at: at(6), duration_ms: 449 },
+        // post steps can reuse an id
+        { step: 3, action_id: "__post.__useblacksmith_stickydisk", name: "Commit", depth: 1, completed_at: at(11), duration_ms: 155 },
+        { step: 3, action_id: "__post.__useblacksmith_stickydisk", name: "Commit", depth: 1, completed_at: at(11), duration_ms: 118 },
       ],
     },
   ],

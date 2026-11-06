@@ -152,7 +152,17 @@ function inserts(db: D1Database, table: string, columns: string[], rows: unknown
   return statements;
 }
 
-const sortedLabels = (labels: Record<string, string>) =>
+/** The runner can reuse an action id (post steps); suffix repeats so each row keeps its own key. */
+function uniqueIds(substeps: SubstepReport[]): SubstepReport[] {
+  const seen = new Map<string, number>();
+  return substeps.map((sub) => {
+    const n = (seen.get(sub.action_id) ?? 0) + 1;
+    seen.set(sub.action_id, n);
+    return n === 1 ? sub : { ...sub, action_id: `${sub.action_id}#${n}` };
+  });
+}
+
+const sortedLabels =(labels: Record<string, string>) =>
   JSON.stringify(Object.fromEntries(Object.entries(labels).sort(([a], [b]) => a.localeCompare(b))));
 
 function bounds(jobs: JobReport[]): [string | null, string | null] {
@@ -219,7 +229,7 @@ export async function handleCiHook(request: Request, env: Env): Promise<Response
       "ci_substeps",
       ["run_id", "attempt", "job", "step", "action_id", "name", "depth", "completed_at", "duration_ms"],
       report.jobs.flatMap((job) =>
-        (job.substeps ?? []).map((sub) => [
+        uniqueIds(job.substeps ?? []).map((sub) => [
           ...key,
           job.name,
           sub.step,

@@ -102,8 +102,12 @@ def substeps(job):
         for step in job.get("steps", [])
         if step.get("started_at") and step.get("completed_at")
     ]
-    out = []
+    out, seen = [], {}
     for action_id, end, ms in found[:MAX_SUBSTEPS]:
+        # post steps can repeat an id (two sticky disks' cleanup); keep both
+        seen[action_id] = seen.get(action_id, 0) + 1
+        if seen[action_id] > 1:
+            action_id = f"{action_id}#{seen[action_id]}"
         # step times are whole seconds; give the window a second of slack
         step = next((n for n, a, b in windows if a <= end <= b + timedelta(seconds=1)), None)
         out.append({
