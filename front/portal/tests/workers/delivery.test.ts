@@ -138,6 +138,17 @@ describe("POST /webhooks/github", () => {
     ]);
   });
 
+  it("groups runs by their workflow, not by GitHub's per-run titles", async () => {
+    const dependabot = (id: number) => ({
+      ...run({ id, name: `github_actions in /., /.github/actions/** - Update #${id}` }),
+      workflow: { name: "Dependabot Updates" },
+    });
+    await github("workflow_run", dependabot(1684151908));
+    await github("workflow_run", dependabot(1684151989));
+
+    expect((await readApi()).runs.map((r) => r.workflow)).toEqual(["Dependabot Updates", "Dependabot Updates"]);
+  });
+
   it("records release tags from pushes and forgets deleted ones", async () => {
     const push = (ref: string, deleted = false) => ({
       ref,
