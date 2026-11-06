@@ -63,8 +63,9 @@ const run = (overrides: Record<string, unknown> = {}) => ({
     status: "completed",
     conclusion: "success",
     run_attempt: 1,
-    created_at: "2026-11-04T15:44:00Z",
-    run_started_at: "2026-11-04T15:44:10Z",
+    // recent: the CI tab only lists workflows that ran in the last 30 days
+    created_at: new Date(Date.now() - 3_600_000).toISOString(),
+    run_started_at: new Date(Date.now() - 3_590_000).toISOString(),
     updated_at: "2026-11-04T15:49:10Z",
     ...overrides,
   },
