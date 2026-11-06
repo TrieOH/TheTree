@@ -3,10 +3,13 @@ description: >
   Node (NODE_VERSION from tools.versions) and pnpm (the version package.json's
   packageManager pins), both kept in the tool cache on a sticky disk
   (setup/toolcache), and the pnpm store on its own sticky disk so a release
-  tag reuses what the last one downloaded. pnpm runs with its global virtual
-  store: node_modules link into the store instead of getting copies of it
-  (the store is on another filesystem, so pnpm can't hard-link). Optionally
-  runs `pnpm install --frozen-lockfile`, for the whole workspace or one filter.
+  tag reuses what the last one downloaded. The store is on another
+  filesystem, so pnpm copies packages into node_modules instead of
+  hard-linking them; its global virtual store would avoid that (7.8 s instead
+  of 21.8 s for the whole workspace) but drops the hoisted dependencies some
+  packages' types rely on (csstype, jest-dom's vitest matchers), tried
+  2026-11-05. Optionally runs `pnpm install --frozen-lockfile`, for the whole
+  workspace or one filter.
 inputs:
   install:
     description: "run `pnpm install --frozen-lockfile` (true/false)"
@@ -42,7 +45,6 @@ runs:
           "$GITHUB_WORKSPACE/.github/scripts/metric" setup/node pnpm_installed 1
         fi
         echo "$DIR/bin" >> "$GITHUB_PATH"
-        echo "pnpm_config_enable_global_virtual_store=true" >> "$GITHUB_ENV"
 
     - name: Locate store
       id: store
