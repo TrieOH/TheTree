@@ -196,4 +196,4 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 	}
 }
 
-export { isNoise, notFound } from "./noise";
+export { isNoise, isRoute, notFound } from "./noise";
