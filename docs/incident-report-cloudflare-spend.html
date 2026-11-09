@@ -357,8 +357,41 @@ includes the Nov 4 deploys (~21:11 UTC). <b>#70 works:</b> the quiet night (Nov 
   </ul>
 </div>
 
+<h2>Day-7 follow-up (2026-11-09)</h2>
+<p class="big">
+24 hours from Nov 6 15:00 → Nov 7 15:00 UTC, the idle window clear of deploys (none since Nov 5 21:23 UTC). The four
+containers were awake <b>~20 DO-minutes</b> in all (~0.33 DO-hours, 3.4 on day 3), about <b>0.08 GiB-h</b>. Every wake
+now ends in ~2 minutes. From Nov 6 to Nov 9 about <b>three quarters of the awake time was scanners</b>: probes on
+paths <code>isNoise()</code> does not catch.
+</p>
+<div class="tablewrap">
+<table>
+  <tr><th>App</th><th>DO awake</th><th>Wakes</th><th>Why</th></tr>
+  <tr><td>identityx</td><td class="num hl">8.8 min</td><td class="num">3</td><td>03:00 cron, real use 20 UTC, Censys probing <code>/mcp</code> and <code>/jsonrpc</code> at 16 UTC</td></tr>
+  <tr><td>univents</td><td class="num">4.5 min</td><td class="num">2</td><td>Real use 20 UTC; 02 UTC was a scanner (<code>/_environment</code>, <code>/_profiler/phpinfo</code>, <code>/info</code>)</td></tr>
+  <tr><td>payssage</td><td class="num">4.2 min</td><td class="num">2</td><td>Both a Metabase CVE scanner on <code>/api/session/properties</code>; redrive still skipped</td></tr>
+  <tr><td>informd</td><td class="num">2.2 min</td><td class="num">1</td><td>Scanner (<code>/_environment</code>, <code>/_profiler/phpinfo</code>)</td></tr>
+</table>
+</div>
+<ul>
+  <li><b>Univents night wakes:</b> scanners, not a cron or job. They no longer drag IdentityX awake: since the JWKS copy, no IdentityX wake lines up with them.</li>
+  <li><b>What still wakes containers:</b> extensionless or encoded probes (<code>/user</code>, <code>/api</code>, <code>/sign-in</code>, <code>/graphql</code>, <code>/Dockerfile</code>, <code>/%252eenv</code>, <code>/%62ackend</code>). The WAF answers <code>.env</code>, <code>.git</code> and PHP paths with 403 at the edge, but these pass it and reach the container for a 404.</li>
+  <li><b>Cold starts:</b> 24 of 86 failed before the Nov 5 fixes (28%), 3 of 69 after (4%), and 2 of those 3 were in the deploy hour. Time to first answer dropped from ~4.9 s to ~3.0 s. The process's own <code>boot</code> span is 0.7–1.0 s on most starts, so most of the rest is Cloudflare starting the container.</li>
+  <li><b>Spend guard vs. Cloudflare:</b> since Nov 2 12:12 UTC the guard counted 13.3k GiB-s against Cloudflare's 12.4k GiB-s of allocated memory. It reads ~7% high, the safe direction: IdentityX matches within 1%, and the others run 11–22% high from stops the library reports late.</li>
+  <li><b>Headroom:</b> the guard stands at ~3.7 of the 22.5 GiB-h cutoff. At ~0.1 GiB-h an idle day, the cycle ends near 5–7 GiB-h on Nov 24, with deploy days the main cost.</li>
+</ul>
+
+<div class="action">
+  <p><span class="badge b-ok">Done</span><span class="title">Day-3 checks closed</span></p>
+  <p>Idle cost is down ~10× from day 3, failed cold starts ~7×, and the guard errs on the safe side. The incident is contained.</p>
+</div>
+<div class="action">
+  <p><span class="badge b-future">Next</span><span class="title">Forward only real routes</span></p>
+  <p>Replace the <code>isNoise()</code> denylist with an allowlist: each API Worker forwards a path only when its first segment is a top-level path in that API's <code>api-spec.yml</code> (for example <code>/projects</code>, <code>/auth</code> or <code>/.well-known</code> for IdentityX), and answers 404 otherwise. Every scanner wake above fails that check and all real traffic passes, which would leave the idle cost at the 03:00 cron plus real use.</p>
+</div>
+
 <div class="foot">
-  Produced 2026-11-02, follow-ups 2026-11-03 and 2026-11-05 ·Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, <code>@cloudflare/containers</code> source, git history (PRs #68, #69, #70) ·
+  Produced 2026-11-02, follow-ups 2026-11-03, 2026-11-05 and 2026-11-09 ·Evidence: Cloudflare billable usage, GraphQL Analytics, Containers API, Analytics Engine (<code>container_cold_starts</code>), Grafana Tempo (<code>boot</code> spans), <code>@cloudflare/containers</code> source, git history (PRs #68, #69, #70) ·
   <span style="color:var(--orange)">TrieOH platform</span>
 </div>
 
