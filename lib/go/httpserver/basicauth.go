@@ -17,7 +17,7 @@ const (
 // public, so a forgotten deployment cannot silently widen the attack
 // surface. Credentials are compared in constant time.
 //
-// Backends that mount an operational dashboard (e.g. riverui) apply this
+// Backends that mount an operational dashboard apply this
 // middleware inside the mount's chi group: the spec-derived auth chains
 // cover only generated operations, so non-spec routes would otherwise be
 // served without authentication.
