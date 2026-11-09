@@ -1,6 +1,7 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
+import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
 import { CachedEntrypoint, gateway } from "@trieoh/container-budget/edge";
+import { ROUTES } from "./routes";
 
 // How many container instances share the traffic. Informd keeps no state
 // between requests that matters across instances (the in-memory rate limit
@@ -42,7 +43,7 @@ function stringBindings(env: Env): Record<string, string> {
 
 export default {
 	async fetch(request, env, ctx) {
-		if (isNoise(new URL(request.url).pathname)) return notFound();
+		if (!isRoute(new URL(request.url).pathname, ROUTES)) return notFound();
 		// Informd caches only its spec and problem docs, which change per
 		// deploy, so no write ever purges.
 		return gateway(request, env, ctx, async () => (await getRandom(env.INFORMD, INSTANCES)).fetch(request));
