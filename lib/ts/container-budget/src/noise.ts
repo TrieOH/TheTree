@@ -21,6 +21,17 @@ export function isNoise(pathname: string): boolean {
 	return /\.[a-z0-9]{1,8}$/i.test(last);
 }
 
+// True when pathname can reach one of the API's handlers: it is not noise,
+// and its first segment is one the API serves (`routes`, generated from its
+// spec into cloudflare/src/routes.ts). Scanners probing paths no API has,
+// like /user, /graphql or /%2eenv, get 404 without waking the container.
+export function isRoute(pathname: string, routes: ReadonlySet<string>): boolean {
+	if (ALLOWED.has(pathname)) return true;
+	if (isNoise(pathname)) return false;
+	const end = pathname.indexOf("/", 1);
+	return routes.has(pathname.slice(1, end === -1 ? undefined : end));
+}
+
 export function notFound(): Response {
 	return new Response("Not Found", { status: 404 });
 }

@@ -1,6 +1,7 @@
 import { getRandom } from "@cloudflare/containers";
-import { BudgetedContainer, isNoise, notFound } from "@trieoh/container-budget";
+import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
 import { CachedEntrypoint, gateway } from "@trieoh/container-budget/edge";
+import { ROUTES } from "./routes";
 
 // Required by outboundByHost: the container's outbound requests are routed
 // through this entrypoint.
@@ -154,7 +155,7 @@ export default {
 		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
-		if (isNoise(pathname)) return notFound();
+		if (!isRoute(pathname, ROUTES)) return notFound();
 		if (!READS.has(request.method)) markWrite(env, ctx);
 		// Payssage caches only its spec and problem docs, which change per
 		// deploy, so no write ever purges.

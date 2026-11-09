@@ -47,7 +47,7 @@ type Config struct {
 	// GET /problems/{slug} (ADR-0019).
 	Problems []ProblemDoc
 	// Routes receives the chi router and registers the backend's feature
-	// routes, auth middlewares, and any extra mounts (riverui, websockets).
+	// routes, auth middlewares, and any extra mounts (websockets).
 	Routes func(r *chi.Mux)
 }
 
@@ -155,10 +155,6 @@ func NewRouter(cfg Config) http.Handler {
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/health" && r.URL.Path != "/docs/openapi.yml"
-		}),
-		// The river queue UI is a dev-only surface: don't trace it.
-		otelhttp.WithFilter(func(r *http.Request) bool {
-			return !strings.HasPrefix(r.URL.Path, "/riverui")
 		}),
 		// CORS preflights are noise: don't trace OPTIONS at all.
 		otelhttp.WithFilter(func(r *http.Request) bool {
