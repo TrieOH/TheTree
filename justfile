@@ -114,6 +114,7 @@ gen +SERVICES=services:
           --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
         go run tools/strictmount internal/openapi/mount.gen.go
         go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
+        UPDATE_ROUTES=1 go test -run TestEdgeRoutesMatchSpec . >/dev/null
       )
     done
     just gen-ts
@@ -131,6 +132,19 @@ gen-ts:
       (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
     done
     pnpm orval
+
+# Committed, unlike the rest: each API's deploy job checks out the repo
+# without Go, so the Worker's route list must already be in the tree. Each
+# service's unit tests fail when its list no longer matches api-spec.yml.
+#
+# Regenerate the API Workers' route lists (api/<svc>/cloudflare/src/routes.ts).
+gen-routes:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for svc in {{services}}; do
+      (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go \
+        && UPDATE_ROUTES=1 go test -run TestEdgeRoutesMatchSpec . >/dev/null)
+    done
 
 # Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and
 # the pinned wrangler, never from a local .env, so every machine gets the same
