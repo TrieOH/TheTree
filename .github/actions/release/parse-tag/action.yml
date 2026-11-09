@@ -7,6 +7,13 @@ description: >
     <sdk>-sdk-ts/v1.2.3        sdk      sdk/ts/<sdk>
     pages/<dir>/v1.2.3         pages    front/<dir> with a wrangler.jsonc
   A -hotfix.N version takes the express lane (compile + unit only, §3.5).
+  Runs as the first step of a pipeline's checks job; deploy.yml routes by
+  tag pattern, and `expect` fails a tag that reached the wrong pipeline
+  (e.g. an unknown artifact, which falls through to the service one).
+inputs:
+  expect:
+    description: the type this pipeline handles (service, front, sdk or pages)
+    required: true
 outputs:
   artifact:
     description: the tag minus its version (identityx, univents-ui, pages/trieoh)
@@ -34,6 +41,7 @@ runs:
       shell: bash
       env:
         TAG: ${{ github.ref_name }}
+        EXPECT: ${{ inputs.expect }}
       run: |
         set -euo pipefail
         fail() { echo "::error::$*"; exit 1; }
@@ -72,6 +80,7 @@ runs:
             [ -f "$DIR/cloudflare/wrangler.jsonc" ] || fail "no service at $DIR (needs cloudflare/wrangler.jsonc)"
             ;;
         esac
+        [ "$TYPE" = "$EXPECT" ] || fail "'$TAG' is a $TYPE tag, routed to the $EXPECT pipeline"
         [ "$TYPE" = service ] || PACKAGE=$(jq -r .name "$DIR/package.json")
 
         {

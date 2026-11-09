@@ -1,45 +1,92 @@
 name: Trivy scan
 description: >
-  Installs the pinned trivy (TRIVY_VERSION from tools.versions) and scans
-  each path for vulnerabilities, secrets and misconfigurations; any finding
-  fails the step. Each path is scanned once to JSON, printed as a table and
-  counted per severity. Trivy downloads its own DB once per job.
+  Scans paths for vulnerabilities, secrets and misconfigurations with the
+  pinned trivy (TRIVY_VERSION from tools.versions); any finding fails the
+  finish step. mode=start launches the scan in the background, so it runs
+  while the job compiles and tests; mode=finish waits for it, prints each
+  path's table, records the findings per severity and sets the result. The
+  trivy binary and its vulnerability DB live on a sticky disk: the binary is
+  installed once per version and trivy refreshes the DB itself when it is a
+  day old.
 inputs:
-  paths:
-    description: space-separated paths to scan
+  mode:
+    description: start or finish
     required: true
+  paths:
+    description: "space-separated paths to scan (mode=start)"
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
     - uses: ./.github/actions/setup/versions
+      if: inputs.mode == 'start'
 
-    - name: Install
-      shell: bash
-      run: |
-        set -euo pipefail
-        curl -fsSL "https://raw.githubusercontent.com/aquasecurity/trivy/v${TRIVY_VERSION}/contrib/install.sh" \
-          | sh -s -- -b "$HOME/.local/bin" "v${TRIVY_VERSION}"
-        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+    - name: Mount cache
+      if: inputs.mode == 'start'
+      uses: useblacksmith/stickydisk@3f6be1451e3cad893b778bc93495c80452a5da26 # v1.7.2
+      with:
+        key: ${{ github.repository }}-trivy
+        path: ~/.cache/trivy
 
-    - name: Scan
+    - name: Start
+      if: inputs.mode == 'start'
       shell: bash
       env:
         SCAN_PATHS: ${{ inputs.paths }}
       run: |
+        set -euo pipefail
+        BIN="$HOME/.cache/trivy/bin/$TRIVY_VERSION"
+        if [ ! -x "$BIN/trivy" ]; then
+          rm -rf "$HOME/.cache/trivy/bin"
+          curl -fsSL "https://raw.githubusercontent.com/aquasecurity/trivy/v${TRIVY_VERSION}/contrib/install.sh" \
+            | sh -s -- -b "$BIN" "v${TRIVY_VERSION}"
+        fi
+        export OUT="$RUNNER_TEMP/trivy" BIN
+        mkdir -p "$OUT"
+        # one scan per path, in order; each writes <n>.json and <n>.rc
+        nohup bash -c '
+          n=0
+          for p in $SCAN_PATHS; do
+            n=$((n + 1))
+            echo "$p" > "$OUT/$n.path"
+            "$BIN/trivy" fs --skip-version-check --quiet \
+              --severity LOW,MEDIUM,HIGH,CRITICAL \
+              --scanners vuln,secret,misconfig \
+              --format json --output "$OUT/$n.json" "$p" > "$OUT/$n.log" 2>&1
+            echo $? > "$OUT/$n.rc"
+          done
+          touch "$OUT/done"
+        ' > "$OUT/runner.log" 2>&1 &
+        echo "TRIVY_BIN=$BIN" >> "$GITHUB_ENV"
+        echo "[trivy] scanning in the background: $SCAN_PATHS"
+
+    - name: Finish
+      if: inputs.mode == 'finish'
+      shell: bash
+      run: |
         set -uo pipefail
+        OUT="$RUNNER_TEMP/trivy"
+        [ -d "$OUT" ] || { echo "::error::trivy was never started (scan/trivy mode=start)"; exit 1; }
+        SECONDS=0
+        until [ -f "$OUT/done" ]; do sleep 1; done
+        echo "[trivy] waited ${SECONDS}s for the background scan"
         M="$GITHUB_WORKSPACE/.github/scripts/metric"
+        "$M" scan/trivy waited_seconds "$SECONDS"
         rc=0
-        for p in $SCAN_PATHS; do
-          echo "[trivy] scanning $p"
-          OUT="$RUNNER_TEMP/trivy-$(tr '/' '_' <<< "$p").json"
-          trivy fs --skip-version-check --quiet \
-            --severity LOW,MEDIUM,HIGH,CRITICAL \
-            --scanners vuln,secret,misconfig \
-            --format json --output "$OUT" "$p" || { rc=1; continue; }
-          trivy convert --format table --exit-code 1 "$OUT" || rc=1
+        for pathfile in $(ls "$OUT"/*.path | sort -V); do
+          n=$(basename "$pathfile" .path)
+          p=$(cat "$pathfile")
+          echo "[trivy] $p"
+          if [ "$(cat "$OUT/$n.rc")" != 0 ]; then
+            cat "$OUT/$n.log"
+            rc=1
+            continue
+          fi
+          "$TRIVY_BIN/trivy" convert --format table --exit-code 1 "$OUT/$n.json" || rc=1
           for sev in CRITICAL HIGH MEDIUM LOW; do
-            n=$(jq --arg s "$sev" '[.Results[]? | (.Vulnerabilities // []) + (.Secrets // []) + ((.Misconfigurations // []) | map(select(.Status == "FAIL"))) | .[] | select(.Severity == $s)] | length' "$OUT")
-            "$M" scan/trivy findings "$n" "path=$p" "severity=$sev"
+            count=$(jq --arg s "$sev" '[.Results[]? | (.Vulnerabilities // []) + (.Secrets // []) + ((.Misconfigurations // []) | map(select(.Status == "FAIL"))) | .[] | select(.Severity == $s)] | length' "$OUT/$n.json")
+            "$M" scan/trivy findings "$count" "path=$p" "severity=$sev"
           done
         done
         exit $rc

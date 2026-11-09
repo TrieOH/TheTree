@@ -83,10 +83,12 @@ export async function readDelivery(db: D1Database, now = new Date()): Promise<De
        ORDER BY state = 'open' DESC, COALESCE(merged_at, opened_at) DESC`,
     ).bind(days(30)),
     db.prepare(
+      // workflows with no run in 30 days (removed or renamed) drop off
       `SELECT id, workflow, branch, sha, conclusion, attempt, queued_at, started_at, completed_at FROM (
          SELECT *, ROW_NUMBER() OVER (PARTITION BY workflow ORDER BY queued_at DESC) AS n FROM workflow_runs
+         WHERE workflow IN (SELECT workflow FROM workflow_runs WHERE queued_at >= ?)
        ) WHERE n <= 14 ORDER BY workflow, queued_at`,
-    ),
+    ).bind(days(30)),
     db.prepare(
       "SELECT name, component, version, sha, message, created_at FROM tags ORDER BY created_at DESC LIMIT 30",
     ),
