@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) ListMembers(ctx context.Context, namespaceID uuid.UUID) (members []models.NamespaceMember, err error) {

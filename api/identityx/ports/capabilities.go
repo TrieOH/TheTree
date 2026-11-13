@@ -3,8 +3,7 @@ package ports
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type CapabilityRepo interface {

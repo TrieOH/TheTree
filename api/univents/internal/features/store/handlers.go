@@ -3,12 +3,12 @@ package store
 import (
 	"context"
 	"net/http"
+	"uuid"
 
 	"univents/internal/features/store/service"
 	"univents/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type Handlers struct {

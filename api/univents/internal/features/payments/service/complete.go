@@ -4,8 +4,7 @@ import (
 	"context"
 	"univents/errs"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Complete persists the seller + provider public key on the event, after the

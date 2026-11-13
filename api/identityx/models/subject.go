@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
-
-	"github.com/google/uuid"
 )
 
 // Subject represents the full 'sub' claim object

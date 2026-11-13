@@ -4,13 +4,12 @@ import (
 	"IdentityX/errs"
 	"context"
 	"time"
+	"uuid"
 
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 type Repo struct {

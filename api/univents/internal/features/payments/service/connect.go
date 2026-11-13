@@ -7,8 +7,7 @@ import (
 	payssage "sdk/payssage"
 	"strings"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Connect starts the provider OAuth flow for a seller on the platform

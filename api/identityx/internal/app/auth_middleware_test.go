@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
 

@@ -3,13 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"Informd/errs"
 	"Informd/models"
 	"lib/database"
 	"lib/xslices"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) Submit(ctx context.Context, payload models.SubmitInput) error {

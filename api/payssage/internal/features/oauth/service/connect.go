@@ -7,8 +7,7 @@ import (
 	"payssage/models"
 	idx "sdk/identityx"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {

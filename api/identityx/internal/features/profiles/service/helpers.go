@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 	"lib/jsonschema"
-
-	"github.com/google/uuid"
 )
 
 // errNoActiveSchema marks a scope without a schema (none configured or

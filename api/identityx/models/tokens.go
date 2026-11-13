@@ -3,9 +3,9 @@ package models
 import (
 	"encoding/json"
 	"time"
+	"uuid"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type AccessSub struct {

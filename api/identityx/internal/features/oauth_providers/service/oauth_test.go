@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/internal/authz"
@@ -23,7 +24,6 @@ import (
 	"lib/oauth"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 	"golang.org/x/oauth2"
 	"resty.dev/v3"

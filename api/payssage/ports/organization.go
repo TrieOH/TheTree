@@ -3,8 +3,7 @@ package ports
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type OrganizationRepo interface {

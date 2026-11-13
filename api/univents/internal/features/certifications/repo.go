@@ -7,8 +7,7 @@ import (
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {
@@ -102,11 +101,11 @@ func mapEligibleParticipant(src sqlc.ListDistinctParticipantsByProgramRow) model
 }
 
 // userIDOrNil dereferences the nullable attendee user id, falling back to
-// uuid.Nil for accountless (email-only) attendees — the sentinel the cert
+// uuid.Nil() for accountless (email-only) attendees — the sentinel the cert
 // grant job skips (a cert must be owned by an account).
 func userIDOrNil(id *uuid.UUID) uuid.UUID {
 	if id == nil {
-		return uuid.Nil
+		return uuid.Nil()
 	}
 	return *id
 }

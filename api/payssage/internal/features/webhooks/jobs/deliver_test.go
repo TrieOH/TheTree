@@ -6,10 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"testing"
+	"uuid"
 
 	"payssage/models"
-
-	"github.com/google/uuid"
 )
 
 func TestBuildEnvelope(t *testing.T) {

@@ -3,8 +3,7 @@ package payssage
 import (
 	"context"
 	"fmt"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // CreateIntentRequest is the checkout payload: create a payment intent

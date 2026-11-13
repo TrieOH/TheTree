@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
@@ -14,7 +15,6 @@ import (
 	"univents/models"
 	"univents/ports"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

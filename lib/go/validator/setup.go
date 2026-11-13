@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
+	"uuid"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 )
 
 // globalValidator is the shared instance used by Validate; registered once
@@ -28,7 +28,8 @@ func SetupValidator() *validator.Validate {
 			return false
 		}
 
-		return u.Version() == 7
+		// stdlib uuid has no Version(): the version is the high nibble of byte 6 (RFC 9562 §4.2).
+		return u[6]>>4 == 7
 	})
 	if err != nil {
 		errx.Exit(err, "failed to register uuid7 validator")

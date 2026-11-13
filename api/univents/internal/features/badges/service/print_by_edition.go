@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // PrintByEdition returns the print payload for the edition's active emissions,

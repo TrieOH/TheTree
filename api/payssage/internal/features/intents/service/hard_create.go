@@ -3,15 +3,11 @@ package service
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) HardCreate(ctx context.Context, req models.HardCreateIntentInput) (*models.Intent, error) {
-	id, err := uuid.NewV7()
-	if err != nil {
-		return nil, err
-	}
+	id := uuid.NewV7()
 
 	intent := &models.Intent{
 		ID:            id,

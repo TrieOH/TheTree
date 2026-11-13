@@ -11,10 +11,9 @@ import (
 	"context"
 	"univents/internal/authz"
 	"univents/ports"
+	"uuid"
 
 	"sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // PayssageClient is the service-to-service seam into Payssage. It is

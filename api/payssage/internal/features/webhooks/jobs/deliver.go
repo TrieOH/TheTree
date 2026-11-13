@@ -11,11 +11,11 @@ import (
 	"lib/database"
 	"payssage/ports"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 	"payssage/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"resty.dev/v3"
 )

@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) GetFull(ctx context.Context, formID uuid.UUID) (*models.FullForm, error) {

@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"uuid"
 
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 
 	"lib/jobs"
-
-	"github.com/google/uuid"
 )
 
 // Enqueuer is the background-work seam the Sender depends on: the

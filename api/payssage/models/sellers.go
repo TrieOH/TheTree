@@ -3,8 +3,7 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Seller struct {

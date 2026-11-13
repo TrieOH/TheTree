@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"uuid"
 
 	"lib/database"
 	"lib/fielderr"
@@ -21,7 +22,6 @@ import (
 
 	payssage "sdk/payssage"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

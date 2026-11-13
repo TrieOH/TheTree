@@ -3,11 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"IdentityX/errs"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 // Connect starts an OAuth login: it resolves the scope's provider

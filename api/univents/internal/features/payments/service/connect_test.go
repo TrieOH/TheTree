@@ -3,8 +3,8 @@ package service_test
 import (
 	"context"
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	idx "sdk/identityx"

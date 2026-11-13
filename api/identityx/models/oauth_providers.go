@@ -2,8 +2,7 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // CreateOAuthProviderInput is the payload for configuring a provider for a

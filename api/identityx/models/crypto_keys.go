@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"lib/crypto"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type CryptoKeyType string

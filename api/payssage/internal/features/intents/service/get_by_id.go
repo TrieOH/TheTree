@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, error) {

@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/oauth"
 	"lib/telemetry"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )

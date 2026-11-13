@@ -3,8 +3,7 @@ package ports
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type EventRepo interface {

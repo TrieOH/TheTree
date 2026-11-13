@@ -4,8 +4,7 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/oauth"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // providerOrder keeps discovery output deterministic. The registry is a map;

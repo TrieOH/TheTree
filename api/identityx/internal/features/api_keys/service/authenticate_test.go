@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/internal/authz"
@@ -14,7 +15,6 @@ import (
 	"lib/api_keys"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
 

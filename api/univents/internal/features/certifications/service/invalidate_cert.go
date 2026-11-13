@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) InvalidateCert(ctx context.Context, id uuid.UUID, reason *string) error {

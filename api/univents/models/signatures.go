@@ -2,9 +2,9 @@ package models
 
 import (
 	"time"
+	"uuid"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type SignatureRequestStatus string

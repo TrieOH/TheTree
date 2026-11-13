@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	ws "univents/internal/features/ws/service"
 	"univents/internal/notify"
 	"univents/models"
 
 	"github.com/coder/websocket"
-	"github.com/google/uuid"
 )
 
 // ── token issuance ───────────────────────────────────────────────────────

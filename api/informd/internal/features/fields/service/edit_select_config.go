@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) EditSelectConfig(ctx context.Context, formID uuid.UUID, payload models.FieldSelectConfig) (*models.FieldSelectConfig, error) {

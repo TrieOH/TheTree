@@ -6,13 +6,12 @@ package service
 import (
 	"context"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
-
-	"github.com/google/uuid"
 )
 
 // noticePeriod is how long existing users are given between a ToS

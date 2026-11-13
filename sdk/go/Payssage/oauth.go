@@ -3,8 +3,7 @@ package payssage
 import (
 	"context"
 	"fmt"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type OAuthFlow string

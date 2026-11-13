@@ -2,10 +2,9 @@ package ports
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 type FieldsRepo interface {

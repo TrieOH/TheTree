@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Seller, error) {

@@ -1,9 +1,9 @@
 package models
 
 import (
-	"Informd/internal/sqlc"
+	"uuid"
 
-	"github.com/google/uuid"
+	"Informd/internal/sqlc"
 )
 
 type Step struct {

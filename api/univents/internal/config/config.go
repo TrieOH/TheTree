@@ -1,13 +1,14 @@
 package config
 
 import (
+	"uuid"
+
 	libconfig "lib/config"
 	"lib/database"
 	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/google/uuid"
 )
 
 type Config struct {
