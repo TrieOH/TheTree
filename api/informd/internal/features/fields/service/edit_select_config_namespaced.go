@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.

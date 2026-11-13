@@ -5,13 +5,12 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 const (

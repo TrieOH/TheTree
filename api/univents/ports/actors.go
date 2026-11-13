@@ -3,10 +3,9 @@ package ports
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
 )
 
 // ActorResolver is the IdentityX actor lookup seam: resolve an attendee

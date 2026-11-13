@@ -7,8 +7,7 @@ import (
 	"IdentityX/ports"
 	"context"
 	"lib/database"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 
 	"univents/models"
 
 	"github.com/coder/websocket"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

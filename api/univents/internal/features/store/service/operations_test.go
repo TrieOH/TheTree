@@ -12,14 +12,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"lib/database"
 	"lib/httpserver"
 	store "univents/internal/features/store/service"
 	"univents/internal/notify"
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 // ── fakes ────────────────────────────────────────────────────────────────
@@ -458,7 +457,7 @@ func TestSSEUnknownEdition404(t *testing.T) {
 	}))
 	t.Cleanup(ts.Close)
 
-	resp, err := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/editions/"+uuid.NewString()+"/store/stream", nil)
+	resp, err := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/editions/"+uuid.New().String()+"/store/stream", nil)
 	if err != nil {
 		t.Fatalf("req: %v", err)
 	}

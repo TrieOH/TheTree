@@ -7,8 +7,7 @@ import (
 	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

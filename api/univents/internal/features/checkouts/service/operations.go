@@ -8,6 +8,7 @@ package service
 import (
 	"context"
 	"time"
+	"uuid"
 
 	"lib/database"
 	libjobs "lib/jobs"
@@ -17,8 +18,6 @@ import (
 	"univents/ports"
 
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // defaultIntentAttempts / defaultIntentRetryDelay are the resume's intent

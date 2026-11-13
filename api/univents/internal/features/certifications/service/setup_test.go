@@ -2,8 +2,7 @@ package service_test
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	libjobs "lib/jobs"
 	idx "sdk/identityx"

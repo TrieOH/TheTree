@@ -3,8 +3,8 @@ package service_test
 import (
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	"univents/models"

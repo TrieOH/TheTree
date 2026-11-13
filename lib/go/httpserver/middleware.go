@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
@@ -72,7 +72,7 @@ func requestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(requestIDHeader)
 		if !validRequestID(id) {
-			id = uuid.Must(uuid.NewV7()).String()
+			id = uuid.NewV7().String()
 		}
 		w.Header().Set(requestIDHeader, id)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDKey{}, id)))

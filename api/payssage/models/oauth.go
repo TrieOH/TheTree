@@ -1,9 +1,8 @@
 package models
 
 import (
-	"github.com/google/uuid"
-
 	"time"
+	"uuid"
 )
 
 type OAuthFlow string

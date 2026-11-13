@@ -8,8 +8,7 @@ import (
 	"context"
 	"lib/database"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

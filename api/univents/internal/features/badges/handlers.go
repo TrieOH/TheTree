@@ -3,13 +3,12 @@ package badges
 import (
 	"context"
 	"encoding/json"
+	"uuid"
 
 	"univents/errs"
 	"univents/internal/features/badges/service"
 	"univents/internal/openapi"
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 type Handlers struct {

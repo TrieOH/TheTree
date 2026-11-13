@@ -11,8 +11,8 @@ import (
 	"univents/assets"
 	"univents/models"
 	"univents/ports"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -104,7 +104,7 @@ func (w *grantCertsDeps) grantEditionAttendanceCerts(ctx context.Context, editio
 
 	attendees, err := w.certs.ListDistinctRegistrationsByEdition(ctx, editionID)
 	if err != nil {
-		return []grantCertsError{{UserID: uuid.Nil, Error: fmt.Sprintf("failed to list attendees: %v", err)}}
+		return []grantCertsError{{UserID: uuid.Nil(), Error: fmt.Sprintf("failed to list attendees: %v", err)}}
 	}
 
 	var templateID *uuid.UUID
@@ -114,7 +114,7 @@ func (w *grantCertsDeps) grantEditionAttendanceCerts(ctx context.Context, editio
 
 	eligible := make([]models.CertEligibleAttendee, 0, len(attendees))
 	for _, a := range attendees {
-		if a.UserID == uuid.Nil {
+		if a.UserID == uuid.Nil() {
 			// Accountless gifted ticket (email-only recipient): no profile
 			// to own the cert yet — skipped until the claim flow ties an
 			// actor id and the grant job re-runs.
@@ -140,12 +140,12 @@ func (w *grantCertsDeps) grantProgramCerts(ctx context.Context, editionID, progr
 
 	participants, err := w.certs.ListDistinctParticipantsByProgram(ctx, programID)
 	if err != nil {
-		return []grantCertsError{{UserID: uuid.Nil, Error: fmt.Sprintf("failed to list participants: %v", err)}}
+		return []grantCertsError{{UserID: uuid.Nil(), Error: fmt.Sprintf("failed to list participants: %v", err)}}
 	}
 
 	eligible := make([]models.CertEligibleAttendee, 0, len(participants))
 	for _, p := range participants {
-		if p.UserID == uuid.Nil {
+		if p.UserID == uuid.Nil() {
 			// Accountless gifted ticket (email-only recipient): no profile
 			// to own the cert yet — skipped until the claim flow ties an
 			// actor id and the grant job re-runs.

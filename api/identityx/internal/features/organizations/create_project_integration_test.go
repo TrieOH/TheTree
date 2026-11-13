@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/features/organizations"
@@ -15,8 +16,6 @@ import (
 	"lib/crypto"
 	"lib/database"
 	"lib/testdb"
-
-	"github.com/google/uuid"
 )
 
 // TestCreateProjectProvisionsKeysRealDB pins the org-project gap fix

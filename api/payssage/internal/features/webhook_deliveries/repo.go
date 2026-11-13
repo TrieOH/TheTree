@@ -8,8 +8,7 @@ import (
 	"payssage/models"
 	"payssage/ports"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

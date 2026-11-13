@@ -3,8 +3,7 @@ package errs
 import (
 	"errors"
 	"fmt"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Incoming provider webhooks.

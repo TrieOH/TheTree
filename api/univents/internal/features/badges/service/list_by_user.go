@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 	"univents/models"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

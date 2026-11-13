@@ -10,9 +10,9 @@ import (
 	"time"
 	"univents/assets"
 	"univents/models"
+	"uuid"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

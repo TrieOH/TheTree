@@ -1,6 +1,6 @@
 package service
 
-import "github.com/google/uuid"
+import "uuid"
 
 // Test-only accessors (export_test pattern): expose hub internals to the
 // external test package without widening the real API.

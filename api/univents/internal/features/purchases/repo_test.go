@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 	"time"
+	"uuid"
 
 	"lib/database"
 	"lib/testdb"
 	"univents/internal/sqlc"
 	"univents/internal/testrepos"
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 // fixture is the minimum store graph: event → edition → ticket_type +
@@ -30,7 +29,7 @@ func seedFixture(t *testing.T, q *sqlc.Queries) fixture {
 	event, err := q.CreateEvent(ctx, sqlc.CreateEventParams{
 		OwnerID:  uuid.New(),
 		FullName: "Seed Event",
-		Slug:     "seed-" + uuid.NewString()[:8],
+		Slug:     "seed-" + uuid.New().String()[:8],
 		Status:   string(models.EventStatusActive),
 	})
 	if err != nil {
@@ -40,7 +39,7 @@ func seedFixture(t *testing.T, q *sqlc.Queries) fixture {
 	edition, err := q.CreateEdition(ctx, sqlc.CreateEditionParams{
 		EventID:     event.ID,
 		EditionName: "Seed Edition",
-		Slug:        "seed-ed-" + uuid.NewString()[:8],
+		Slug:        "seed-ed-" + uuid.New().String()[:8],
 		StartsAt:    time.Now().Add(-time.Hour),
 		EndsAt:      time.Now().Add(24 * time.Hour),
 		CreatedBy:   event.OwnerID,
@@ -62,7 +61,7 @@ func seedFixture(t *testing.T, q *sqlc.Queries) fixture {
 
 	product, err := q.CreateProduct(ctx, sqlc.CreateProductParams{
 		EditionID:  edition.ID,
-		VendorCode: "P-" + uuid.NewString()[:8],
+		VendorCode: "P-" + uuid.New().String()[:8],
 	})
 	if err != nil {
 		t.Fatalf("seed product: %v", err)
@@ -70,7 +69,7 @@ func seedFixture(t *testing.T, q *sqlc.Queries) fixture {
 	variant, err := q.CreateProductVariant(ctx, sqlc.CreateProductVariantParams{
 		EditionID:  edition.ID,
 		ProductID:  product.ID,
-		VendorCode: "V-" + uuid.NewString()[:8],
+		VendorCode: "V-" + uuid.New().String()[:8],
 		Name:       "T-Shirt",
 		Price:      5000,
 		Stock:      new(int(5)),

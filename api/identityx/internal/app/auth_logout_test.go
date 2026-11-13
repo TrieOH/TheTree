@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
@@ -17,7 +18,6 @@ import (
 	"lib/database"
 	"lib/validator"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/matchers"
 	"github.com/ovechkin-dm/mockio/mock"
 )

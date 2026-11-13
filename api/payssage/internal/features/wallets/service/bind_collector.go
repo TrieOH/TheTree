@@ -5,8 +5,7 @@ import (
 	"payssage/errs"
 	"payssage/models"
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) BindCollector(ctx context.Context, walletID, collectorID uuid.UUID) error {

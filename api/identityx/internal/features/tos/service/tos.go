@@ -9,12 +9,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 // Get returns the project's current terms. Public: frontends render the

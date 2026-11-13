@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
@@ -12,7 +13,6 @@ import (
 	"payssage/internal/providers"
 	"payssage/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -47,7 +47,7 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 		return err
 	}
 	event := models.WebhookEvent{
-		ID:           uuid.Must(uuid.NewV7()),
+		ID:           uuid.NewV7(),
 		WalletID:     result.WalletID,
 		IntentID:     result.IntentID,
 		Provider:     payload.Provider,

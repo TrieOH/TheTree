@@ -6,14 +6,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"lib/database"
 	ws "univents/internal/features/ws/service"
 	"univents/models"
 
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // ── fakes ────────────────────────────────────────────────────────────────

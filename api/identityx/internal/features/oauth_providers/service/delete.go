@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) Delete(ctx context.Context, id uuid.UUID) error {

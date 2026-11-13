@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
@@ -14,7 +15,6 @@ import (
 	"lib/telemetry"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 // ActionTokenConfig carries the per-purpose lifetimes of single-use action
@@ -115,26 +115,26 @@ func (m *ActionTokenManager) Redeem(ctx context.Context, purpose models.ActionTo
 	claims := &models.ActionTokenClaims{}
 	_, err := crypto.ParseHMACJWT(tokenStr, claims, m.hmacSecret)
 	if err != nil {
-		return uuid.Nil, errs.ErrActionTokenInvalid
+		return uuid.Nil(), errs.ErrActionTokenInvalid
 	}
 	if claims.Purpose != string(purpose) {
-		return uuid.Nil, errs.ErrActionTokenInvalid
+		return uuid.Nil(), errs.ErrActionTokenInvalid
 	}
 	actorID, err := uuid.Parse(claims.Subject)
 	if err != nil {
-		return uuid.Nil, errs.ErrActionTokenInvalid
+		return uuid.Nil(), errs.ErrActionTokenInvalid
 	}
 	jti, err := uuid.Parse(claims.ID)
 	if err != nil {
-		return uuid.Nil, errs.ErrActionTokenInvalid
+		return uuid.Nil(), errs.ErrActionTokenInvalid
 	}
 
 	record, err := m.actionTokens.GetByJTI(ctx, jti)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return uuid.Nil, errs.ErrActionTokenInvalid
+			return uuid.Nil(), errs.ErrActionTokenInvalid
 		}
-		return uuid.Nil, err
+		return uuid.Nil(), err
 	}
 	if record.UsedAt != nil {
 		return actorID, errs.ErrActionTokenUsed
@@ -148,7 +148,7 @@ func (m *ActionTokenManager) Redeem(ctx context.Context, purpose models.ActionTo
 			// consumed concurrently; the token is dead either way.
 			return actorID, errs.ErrActionTokenUsed
 		}
-		return uuid.Nil, err
+		return uuid.Nil(), err
 	}
 	return actorID, nil
 }

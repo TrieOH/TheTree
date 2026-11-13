@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/errs"
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) Close(ctx context.Context, formID uuid.UUID) (*models.Form, error) {

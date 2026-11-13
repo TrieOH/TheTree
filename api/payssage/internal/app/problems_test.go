@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	kit "lib/backend/identityx"
 	"lib/database"
@@ -15,8 +16,6 @@ import (
 	"payssage/internal/problems"
 
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
 )
 
 // TestConstraintErrorsAreMapped — every constraint's named error answers

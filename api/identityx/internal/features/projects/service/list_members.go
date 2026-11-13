@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) ListMembers(ctx context.Context, projectID uuid.UUID) (members []models.ProjectMember, err error) {

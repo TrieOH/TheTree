@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"univents/models"
 )

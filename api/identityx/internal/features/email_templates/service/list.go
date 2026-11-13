@@ -4,8 +4,7 @@ import (
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // List returns the effective templates for both kinds — the project's

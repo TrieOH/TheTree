@@ -2069,7 +2069,7 @@ components:
       format: uuid
       x-go-type: uuid.UUID
       x-go-type-import:
-        path: github.com/google/uuid
+        path: uuid
 
     NullableUUID:
       type: [ string, "null" ]
@@ -2077,7 +2077,7 @@ components:
       x-go-type: '*uuid.UUID'
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
-        path: github.com/google/uuid
+        path: uuid
 
     SupportedOAuthProviders:
       x-go-type: models.OAuthProvider
@@ -2330,13 +2330,13 @@ components:
         id:
           x-go-type: uuid.UUID
           x-go-type-import:
-            path: github.com/google/uuid
+            path: uuid
           type: string
           format: uuid
         project_id:
           x-go-type: uuid.UUID
           x-go-type-import:
-            path: github.com/google/uuid
+            path: uuid
           type: string
           format: uuid
         version:
@@ -2365,19 +2365,19 @@ components:
         id:
           x-go-type: uuid.UUID
           x-go-type-import:
-            path: github.com/google/uuid
+            path: uuid
           type: string
           format: uuid
         actor_id:
           x-go-type: uuid.UUID
           x-go-type-import:
-            path: github.com/google/uuid
+            path: uuid
           type: string
           format: uuid
         project_id:
           x-go-type: uuid.UUID
           x-go-type-import:
-            path: github.com/google/uuid
+            path: uuid
           type: string
           format: uuid
         tos_version:

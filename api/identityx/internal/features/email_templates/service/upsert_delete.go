@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 // Upsert saves a project's override for a kind, enforcing the template

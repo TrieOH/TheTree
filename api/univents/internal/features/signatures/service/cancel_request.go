@@ -4,8 +4,7 @@ import (
 	"context"
 	"univents/errs"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, reason *string) error {

@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // TestVerifyPayssageWallet_Resolves pins the happy path of the D6 boot

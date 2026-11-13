@@ -4,13 +4,12 @@ import (
 	"context"
 	"testing"
 	"time"
+	"uuid"
 
 	"lib/testdb"
 	"univents/internal/sqlc"
 	"univents/internal/testrepos"
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 // seedPurchase inserts the minimum purchase graph (edition → purchase) so a
@@ -22,7 +21,7 @@ func seedPurchase(t *testing.T, q *sqlc.Queries) (purchaseID, userID uuid.UUID) 
 	event, err := q.CreateEvent(ctx, sqlc.CreateEventParams{
 		OwnerID:  uuid.New(),
 		FullName: "Token Event",
-		Slug:     "token-" + uuid.NewString()[:8],
+		Slug:     "token-" + uuid.New().String()[:8],
 		Status:   string(models.EventStatusActive),
 	})
 	if err != nil {
@@ -31,7 +30,7 @@ func seedPurchase(t *testing.T, q *sqlc.Queries) (purchaseID, userID uuid.UUID) 
 	edition, err := q.CreateEdition(ctx, sqlc.CreateEditionParams{
 		EventID:     event.ID,
 		EditionName: "Token Edition",
-		Slug:        "token-ed-" + uuid.NewString()[:8],
+		Slug:        "token-ed-" + uuid.New().String()[:8],
 		StartsAt:    time.Now().Add(-time.Hour),
 		EndsAt:      time.Now().Add(24 * time.Hour),
 		CreatedBy:   event.OwnerID,
@@ -60,7 +59,7 @@ func TestConsumeOneTime(t *testing.T) {
 	ctx := context.Background()
 	purchaseID, userID := seedPurchase(t, sqlc.New(pool))
 
-	hash := "hash-" + uuid.NewString()
+	hash := "hash-" + uuid.New().String()
 	created, err := r.WsTokens.Create(ctx, &models.WsToken{
 		PurchaseID: purchaseID,
 		UserID:     userID,
@@ -112,7 +111,7 @@ func TestConsumeMissingOrExpired(t *testing.T) {
 	}
 
 	// Expired token → nil.
-	hash := "expired-hash-" + uuid.NewString()
+	hash := "expired-hash-" + uuid.New().String()
 	_, err = r.WsTokens.Create(ctx, &models.WsToken{
 		PurchaseID: purchaseID,
 		UserID:     userID,

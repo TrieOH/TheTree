@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type BadgeTemplateRepo interface {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lib/database"
@@ -57,7 +57,7 @@ func seedActivity(t *testing.T, r *testrepos.Repos) fixture {
 
 	event, err := r.Events.Create(ctx, &models.Event{
 		OwnerID: fx.ownerID, FullName: "Activity Test Event",
-		Slug: "activity-test-" + uuid.NewString()[:8], Status: models.EventStatusActive,
+		Slug: "activity-test-" + uuid.New().String()[:8], Status: models.EventStatusActive,
 	})
 	if err != nil {
 		t.Fatalf("seed event: %v", err)
@@ -66,7 +66,7 @@ func seedActivity(t *testing.T, r *testrepos.Repos) fixture {
 
 	edition, err := r.Editions.Create(ctx, &models.Edition{
 		EventID: event.ID, Name: "Activity Test Edition",
-		Slug:     "activity-test-ed-" + uuid.NewString()[:8],
+		Slug:     "activity-test-ed-" + uuid.New().String()[:8],
 		StartsAt: time.Now().Add(-time.Hour), EndsAt: time.Now().Add(24 * time.Hour),
 		CreatedBy: fx.ownerID,
 	})
@@ -219,7 +219,7 @@ func seedCheckpoint(t *testing.T, r *testrepos.Repos) fixture {
 
 	event, err := r.Events.Create(ctx, &models.Event{
 		OwnerID: fx.ownerID, FullName: "Checkpoint Test Event",
-		Slug: "checkpoint-test-" + uuid.NewString()[:8], Status: models.EventStatusActive,
+		Slug: "checkpoint-test-" + uuid.New().String()[:8], Status: models.EventStatusActive,
 	})
 	if err != nil {
 		t.Fatalf("seed event: %v", err)
@@ -228,7 +228,7 @@ func seedCheckpoint(t *testing.T, r *testrepos.Repos) fixture {
 
 	edition, err := r.Editions.Create(ctx, &models.Edition{
 		EventID: event.ID, Name: "Checkpoint Test Edition",
-		Slug:     "checkpoint-test-ed-" + uuid.NewString()[:8],
+		Slug:     "checkpoint-test-ed-" + uuid.New().String()[:8],
 		StartsAt: time.Now().Add(-time.Hour), EndsAt: time.Now().Add(24 * time.Hour),
 		CreatedBy: fx.ownerID,
 	})

@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) CreateForm(ctx context.Context, title string, namespaceID uuid.UUID) (*models.Form, error) {

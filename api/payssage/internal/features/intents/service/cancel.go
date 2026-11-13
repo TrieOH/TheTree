@@ -6,8 +6,8 @@ import (
 	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

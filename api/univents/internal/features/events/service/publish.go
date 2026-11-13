@@ -4,8 +4,7 @@ import (
 	"context"
 	"univents/errs"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) Publish(ctx context.Context, eventID uuid.UUID) error {

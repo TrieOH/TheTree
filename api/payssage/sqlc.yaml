@@ -38,13 +38,13 @@ sql:
           - db_type: "uuid"
             nullable: true
             go_type:
-              import: "github.com/google/uuid"
+              import: "uuid"
               type: "UUID"
               pointer: true
           - db_type: "uuid"
             nullable: false
             go_type:
-              import: "github.com/google/uuid"
+              import: "uuid"
               type: "UUID"
               pointer: false
           - db_type: "pg_catalog.int4"

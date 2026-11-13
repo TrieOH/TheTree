@@ -3,8 +3,7 @@ package ports
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ProfileRepo handles actor profile CRUD. The profile is a JSONB document

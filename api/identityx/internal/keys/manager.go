@@ -17,14 +17,13 @@ import (
 	"context"
 	"errors"
 	"time"
+	"uuid"
 
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
 	"lib/database"
 	"lib/telemetry"
-
-	"github.com/google/uuid"
 )
 
 // Config carries the key-policy knobs, resolved once at construction:
@@ -198,10 +197,10 @@ func (m *Manager) ensureType(ctx context.Context, scope *uuid.UUID, t models.Cry
 	return true, m.create(ctx, scope, t, now)
 }
 
-// scopeOf keys a scope in a map: uuid.Nil stands for the platform.
+// scopeOf keys a scope in a map: uuid.Nil() stands for the platform.
 func scopeOf(scope *uuid.UUID) uuid.UUID {
 	if scope == nil {
-		return uuid.Nil
+		return uuid.Nil()
 	}
 	return *scope
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/models"
@@ -11,7 +12,6 @@ import (
 	libauthz "lib/authz"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
 
