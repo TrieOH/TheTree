@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
@@ -12,8 +13,6 @@ import (
 	"lib/crypto"
 
 	"lib/jobs"
-
-	"github.com/google/uuid"
 
 	"github.com/ovechkin-dm/mockio/mock"
 )

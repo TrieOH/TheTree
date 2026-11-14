@@ -3,13 +3,13 @@ package jobs
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
 	"payssage/models"
 	"payssage/ports"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

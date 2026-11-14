@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) ListMembers(ctx context.Context, eventID uuid.UUID) ([]models.EventMember, error) {

@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // RevokeForRegistration revokes a participant badge when its registration is

@@ -8,8 +8,7 @@ import (
 	"context"
 	"lib/database"
 	"lib/xslices"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

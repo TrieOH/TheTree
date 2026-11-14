@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"lib/testdb"
 
@@ -23,7 +22,7 @@ func seedEdition(t *testing.T, q *sqlc.Queries) uuid.UUID {
 	event, err := q.CreateEvent(ctx, sqlc.CreateEventParams{
 		OwnerID:  uuid.New(),
 		FullName: "List Test Event",
-		Slug:     "list-" + uuid.NewString()[:8],
+		Slug:     "list-" + uuid.New().String()[:8],
 		Status:   string(models.EventStatusActive),
 	})
 	if err != nil {
@@ -32,7 +31,7 @@ func seedEdition(t *testing.T, q *sqlc.Queries) uuid.UUID {
 	edition, err := q.CreateEdition(ctx, sqlc.CreateEditionParams{
 		EventID:     event.ID,
 		EditionName: "List Test Edition",
-		Slug:        "list-ed-" + uuid.NewString()[:8],
+		Slug:        "list-ed-" + uuid.New().String()[:8],
 		StartsAt:    time.Now().Add(-time.Hour),
 		EndsAt:      time.Now().Add(24 * time.Hour),
 		CreatedBy:   event.OwnerID,

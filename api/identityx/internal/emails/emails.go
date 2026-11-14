@@ -10,13 +10,12 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"uuid"
 
 	"IdentityX/assets"
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 // Data are the variables available to every email template.

@@ -5,8 +5,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"lib/database"
 	"lib/testdb"
@@ -45,7 +44,7 @@ func seedExpiring(t *testing.T, r *testrepos.Repos, status models.PurchaseStatus
 	event, err := r.Events.Create(ctx, &models.Event{
 		OwnerID:  uuid.New(),
 		FullName: "Expiry Test Event",
-		Slug:     "expiry-test-" + uuid.NewString()[:8],
+		Slug:     "expiry-test-" + uuid.New().String()[:8],
 		Status:   models.EventStatusActive,
 	})
 	if err != nil {
@@ -54,7 +53,7 @@ func seedExpiring(t *testing.T, r *testrepos.Repos, status models.PurchaseStatus
 	edition, err := r.Editions.Create(ctx, &models.Edition{
 		EventID:   event.ID,
 		Name:      "Expiry Test Edition",
-		Slug:      "expiry-test-ed-" + uuid.NewString()[:8],
+		Slug:      "expiry-test-ed-" + uuid.New().String()[:8],
 		StartsAt:  time.Now().Add(-time.Hour),
 		EndsAt:    time.Now().Add(24 * time.Hour),
 		CreatedBy: event.OwnerID,
@@ -75,7 +74,7 @@ func seedExpiring(t *testing.T, r *testrepos.Repos, status models.PurchaseStatus
 	}
 	product, err := r.Products.CreateProduct(ctx, &models.Product{
 		EditionID:  edition.ID,
-		VendorCode: "P-" + uuid.NewString()[:8],
+		VendorCode: "P-" + uuid.New().String()[:8],
 	})
 	if err != nil {
 		t.Fatalf("seed product: %v", err)
@@ -83,7 +82,7 @@ func seedExpiring(t *testing.T, r *testrepos.Repos, status models.PurchaseStatus
 	variant, err := r.Products.CreateVariant(ctx, &models.ProductVariant{
 		EditionID:  edition.ID,
 		ProductID:  product.ID,
-		VendorCode: "V-" + uuid.NewString()[:8],
+		VendorCode: "V-" + uuid.New().String()[:8],
 		Name:       "T-Shirt",
 		Price:      5000,
 		Stock:      new(int(5)),

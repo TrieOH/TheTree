@@ -6,8 +6,7 @@ import (
 	"context"
 	"errors"
 	"lib/database"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Get returns the effective template for a kind: the project's override

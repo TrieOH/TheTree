@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"uuid"
 
 	"lib/database"
 	"lib/email"
@@ -15,7 +16,6 @@ import (
 	"univents/models"
 	"univents/ports"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

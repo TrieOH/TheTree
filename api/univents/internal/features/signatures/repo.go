@@ -7,8 +7,7 @@ import (
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

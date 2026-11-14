@@ -3,8 +3,7 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // BadgeTemplateOrigin scopes a badge template. nil means the default scope

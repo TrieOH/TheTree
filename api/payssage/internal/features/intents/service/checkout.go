@@ -6,8 +6,7 @@ import (
 	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
@@ -50,10 +49,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 		return nil, errs.ErrProviderNotImplemented
 	}
 
-	id, err := uuid.NewV7()
-	if err != nil {
-		return nil, err
-	}
+	id := uuid.NewV7()
 	intent := &models.Intent{
 		ID:            id,
 		WalletID:      wallet.ID,

@@ -3,8 +3,7 @@ package payssage
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Wallet mirrors `models.Wallet` — the Payssage ownership unit for sellers,

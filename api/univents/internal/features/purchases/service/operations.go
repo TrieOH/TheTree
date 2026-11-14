@@ -8,8 +8,7 @@ import (
 	"context"
 	"univents/models"
 	"univents/ports"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Deps struct {

@@ -7,14 +7,13 @@ package service
 import (
 	"context"
 	"time"
+	"uuid"
 
 	"lib/database"
 	libjobs "lib/jobs"
 	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
-
-	"github.com/google/uuid"
 )
 
 // Badges is the badge-emission surface the receiver calls on approval and

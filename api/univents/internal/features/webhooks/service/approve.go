@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 	"univents/internal/features/checkouts/jobs"
 	"univents/internal/notify"
 	"univents/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

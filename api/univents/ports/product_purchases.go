@@ -3,8 +3,7 @@ package ports
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ProductPurchaseRepo is the product_purchases write side: created pending

@@ -3,6 +3,7 @@ package authz
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
@@ -10,8 +11,6 @@ import (
 	"lib/database"
 
 	libauthz "lib/authz"
-
-	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -31,7 +30,7 @@ func New(orgs ports.OrganizationRepo, projects ports.ProjectRepo, platformRoles 
 func callerID(ctx context.Context) (uuid.UUID, error) {
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil(), err
 	}
 	return ident.Sub.ID, nil
 }

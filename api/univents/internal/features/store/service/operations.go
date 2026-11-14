@@ -11,12 +11,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"uuid"
 
 	"lib/telemetry"
 
 	"univents/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) GetTemplateByID(ctx context.Context, id uuid.UUID) (*models.CertificationTemplate, error) {

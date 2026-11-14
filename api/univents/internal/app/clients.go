@@ -3,13 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
+	"uuid"
 
 	"lib/objectstorage"
 	"univents/internal/config"
 
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // SetupPayssage builds the service-to-service Payssage client. Calls are

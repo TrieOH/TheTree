@@ -4,8 +4,7 @@ import (
 	"context"
 	"lib/telemetry"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"go.uber.org/zap"
 )

@@ -2,12 +2,11 @@ package api_keys
 
 import (
 	"context"
+	"uuid"
 
 	"IdentityX/internal/features/api_keys/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
-
-	"github.com/google/uuid"
 )
 
 type Handlers struct {

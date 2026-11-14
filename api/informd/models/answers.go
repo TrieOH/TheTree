@@ -4,8 +4,7 @@ import (
 	"Informd/internal/sqlc"
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Answer struct {

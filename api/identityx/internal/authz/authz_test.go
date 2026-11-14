@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	libauthz "lib/authz"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 // ── In-memory fakes (the seam's second adapter) ──────────────────────────

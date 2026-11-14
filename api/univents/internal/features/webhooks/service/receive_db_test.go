@@ -6,8 +6,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"lib/database"
 	libjobs "lib/jobs"
@@ -90,7 +89,7 @@ func seedDBFixture(t *testing.T, q *sqlc.Queries) dbFixture {
 	event, err := q.CreateEvent(ctx, sqlc.CreateEventParams{
 		OwnerID:  uuid.New(),
 		FullName: "DB Seed Event",
-		Slug:     "db-seed-" + uuid.NewString()[:8],
+		Slug:     "db-seed-" + uuid.New().String()[:8],
 		Status:   string(models.EventStatusActive),
 	})
 	if err != nil {
@@ -99,7 +98,7 @@ func seedDBFixture(t *testing.T, q *sqlc.Queries) dbFixture {
 	edition, err := q.CreateEdition(ctx, sqlc.CreateEditionParams{
 		EventID:     event.ID,
 		EditionName: "DB Seed Edition",
-		Slug:        "db-seed-ed-" + uuid.NewString()[:8],
+		Slug:        "db-seed-ed-" + uuid.New().String()[:8],
 		StartsAt:    time.Now().Add(-time.Hour),
 		EndsAt:      time.Now().Add(24 * time.Hour),
 		CreatedBy:   event.OwnerID,
@@ -119,7 +118,7 @@ func seedDBFixture(t *testing.T, q *sqlc.Queries) dbFixture {
 	}
 	product, err := q.CreateProduct(ctx, sqlc.CreateProductParams{
 		EditionID:  edition.ID,
-		VendorCode: "P-" + uuid.NewString()[:8],
+		VendorCode: "P-" + uuid.New().String()[:8],
 	})
 	if err != nil {
 		t.Fatalf("seed product: %v", err)
@@ -127,7 +126,7 @@ func seedDBFixture(t *testing.T, q *sqlc.Queries) dbFixture {
 	variant, err := q.CreateProductVariant(ctx, sqlc.CreateProductVariantParams{
 		EditionID:  edition.ID,
 		ProductID:  product.ID,
-		VendorCode: "V-" + uuid.NewString()[:8],
+		VendorCode: "V-" + uuid.New().String()[:8],
 		Name:       "T-Shirt",
 		Price:      5000,
 		Stock:      new(int(5)),

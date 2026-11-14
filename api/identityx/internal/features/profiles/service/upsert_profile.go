@@ -2,11 +2,10 @@ package service
 
 import (
 	"errors"
+	"uuid"
 
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) UpsertProfile(ctx context.Context, payload models.UpsertProfileInput, projectID uuid.UUID) (*models.ActorProfile, error) {

@@ -3,13 +3,12 @@ package authz
 import (
 	"context"
 	"errors"
+	"uuid"
 
 	"Informd/ports"
 	libauthz "lib/authz"
 	"lib/database"
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
 )
 
 type Service struct {

@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wallet, error) {

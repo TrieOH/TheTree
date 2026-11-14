@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 	"univents/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

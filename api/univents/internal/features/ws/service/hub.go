@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"sync"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 
@@ -13,7 +14,6 @@ import (
 	"univents/ports"
 
 	"github.com/coder/websocket"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

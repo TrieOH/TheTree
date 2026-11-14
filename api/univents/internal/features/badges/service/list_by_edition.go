@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ListByEdition returns all emissions of an edition for the owner/admin to

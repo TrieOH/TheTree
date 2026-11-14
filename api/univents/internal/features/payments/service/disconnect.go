@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Disconnect unlinks the seller from the event (unlink only): the seller and

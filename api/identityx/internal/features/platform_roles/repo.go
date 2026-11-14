@@ -8,8 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"lib/database"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Repo struct {

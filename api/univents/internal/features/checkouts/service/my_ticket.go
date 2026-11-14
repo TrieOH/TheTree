@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"uuid"
 
 	"lib/database"
 	"univents/models"
 	"univents/ports"
-
-	"github.com/google/uuid"
 )
 
 // MyTicket returns the caller's active ticket for the edition — their own

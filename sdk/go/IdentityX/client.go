@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"resty.dev/v3"
 )
@@ -30,7 +30,7 @@ type Client struct {
 }
 
 func NewClient(cfg Config) (*Client, error) {
-	if cfg.ProjectID == uuid.Nil || cfg.APIKey == "" {
+	if cfg.ProjectID == uuid.Nil() || cfg.APIKey == "" {
 		return nil, &ConfigError{Field: "ProjectID", Message: "required"}
 	}
 

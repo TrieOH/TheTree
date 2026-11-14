@@ -4,8 +4,7 @@ import (
 	"IdentityX/models"
 	"context"
 	"encoding/json"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type PlatformRolesRepo interface {

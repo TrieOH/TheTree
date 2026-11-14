@@ -6,8 +6,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"lib/database"
 	"lib/testdb"
@@ -57,7 +56,7 @@ func seedStoreOpts(t *testing.T, r *testrepos.Repos, o storeOpts) fixture {
 	event, err := r.Events.Create(ctx, &models.Event{
 		OwnerID:  uuid.New(),
 		FullName: "Checkout Test Event",
-		Slug:     "checkout-test-" + uuid.NewString()[:8],
+		Slug:     "checkout-test-" + uuid.New().String()[:8],
 		Status:   models.EventStatusActive,
 	})
 	if err != nil {
@@ -75,7 +74,7 @@ func seedStoreOpts(t *testing.T, r *testrepos.Repos, o storeOpts) fixture {
 	edition, err := r.Editions.Create(ctx, &models.Edition{
 		EventID:   event.ID,
 		Name:      "Checkout Test Edition",
-		Slug:      "checkout-test-ed-" + uuid.NewString()[:8],
+		Slug:      "checkout-test-ed-" + uuid.New().String()[:8],
 		StartsAt:  time.Now().Add(-time.Hour),
 		EndsAt:    time.Now().Add(24 * time.Hour),
 		CreatedBy: event.OwnerID,
@@ -105,7 +104,7 @@ func seedStoreOpts(t *testing.T, r *testrepos.Repos, o storeOpts) fixture {
 
 	product, err := r.Products.CreateProduct(ctx, &models.Product{
 		EditionID:  edition.ID,
-		VendorCode: "P-" + uuid.NewString()[:8],
+		VendorCode: "P-" + uuid.New().String()[:8],
 	})
 	if err != nil {
 		t.Fatalf("seed product: %v", err)
@@ -113,7 +112,7 @@ func seedStoreOpts(t *testing.T, r *testrepos.Repos, o storeOpts) fixture {
 	variant, err := r.Products.CreateVariant(ctx, &models.ProductVariant{
 		EditionID:  edition.ID,
 		ProductID:  product.ID,
-		VendorCode: "V-" + uuid.NewString()[:8],
+		VendorCode: "V-" + uuid.New().String()[:8],
 		Name:       "T-Shirt",
 		Price:      5000,
 		Stock:      new(int(5)),

@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) SetEnabled(ctx context.Context, id uuid.UUID, enabled bool) (*models.ProjectOAuthProviders, error) {

@@ -4,7 +4,7 @@
 // actor's own writes purging that actor's profile.
 package cachetags
 
-import "github.com/google/uuid"
+import "uuid"
 
 // ProfilesByHandle is every profile read by handle. A by-handle read does
 // not know the actor's scope up front, so any schema change purges them

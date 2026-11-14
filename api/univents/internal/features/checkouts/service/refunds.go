@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"univents/errs"
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 // PurchaseAttendee is one person a ticket line was assigned to — surfaced on

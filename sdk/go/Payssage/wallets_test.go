@@ -7,8 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // newTestClient spins an httptest server that records the last request and

@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // AttendeeCount returns the number of confirmed attendees of an edition —

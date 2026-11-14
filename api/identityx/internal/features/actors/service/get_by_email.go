@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) GetByEmail(ctx context.Context, email string, projectID uuid.UUID) (*models.Actor, error) {

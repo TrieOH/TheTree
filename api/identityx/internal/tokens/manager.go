@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
@@ -20,7 +21,6 @@ import (
 	"lib/telemetry"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

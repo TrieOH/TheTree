@@ -9,8 +9,8 @@ import (
 	"payssage/errs"
 	"payssage/models"
 	"strconv"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -50,10 +50,7 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	// per attempt is enough for v1 — presence is what MP validates, and the
 	// service-layer succeeded-only guard plus webhook confirmation make a
 	// duplicate refund a no-op rather than a double charge.
-	idempotencyKey, err := uuid.NewV7()
-	if err != nil {
-		return fmt.Errorf("generate idempotency key: %w", err)
-	}
+	idempotencyKey := uuid.NewV7()
 
 	var mpResp struct {
 		ID           int64   `json:"id"`

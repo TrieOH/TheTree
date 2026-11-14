@@ -5,11 +5,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"uuid"
 
 	libauthz "lib/authz"
 	"lib/validator"
-
-	"github.com/google/uuid"
 )
 
 // schemaTestRouter mounts the real strict middleware stack over an empty
@@ -32,7 +31,7 @@ func schemaTestRouter(t *testing.T) http.Handler {
 func putProjectSchema(t *testing.T, r http.Handler, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPut,
-		"/projects/"+uuid.NewString()+"/profile-schema",
+		"/projects/"+uuid.New().String()+"/profile-schema",
 		strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()

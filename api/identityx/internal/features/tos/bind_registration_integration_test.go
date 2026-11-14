@@ -5,11 +5,10 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"uuid"
 
 	"IdentityX/models"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 var errAbortRegistration = errors.New("abort registration")

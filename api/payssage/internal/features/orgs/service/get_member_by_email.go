@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"payssage/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) GetMemberByEmail(ctx context.Context, email string, orgID uuid.UUID) (*models.OrganizationMember, error) {

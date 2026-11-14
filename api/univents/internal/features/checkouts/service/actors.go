@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	idx "sdk/identityx"
 	"univents/ports"
-
-	"github.com/google/uuid"
 )
 
 // sdkActors adapts the IdentityX SDK ActorService to the ActorResolver

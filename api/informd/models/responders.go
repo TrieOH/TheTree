@@ -1,6 +1,6 @@
 package models
 
-import "github.com/google/uuid"
+import "uuid"
 
 type Responder struct {
 	ID     uuid.UUID  `json:"id"`

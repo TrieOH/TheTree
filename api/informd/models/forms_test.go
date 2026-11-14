@@ -2,8 +2,8 @@ package models
 
 import (
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +56,7 @@ func TestNewForm_ValidationErrors(t *testing.T) {
 	}{
 		{
 			name:        "no ownerID",
-			ownerID:     uuid.Nil,
+			ownerID:     uuid.Nil(),
 			namespaceID: validNamespace,
 			formName:    "form",
 			wantErr:     true,
@@ -70,7 +70,7 @@ func TestNewForm_ValidationErrors(t *testing.T) {
 		},
 		{
 			name:        "owner and name empty",
-			ownerID:     uuid.Nil,
+			ownerID:     uuid.Nil(),
 			namespaceID: validNamespace,
 			formName:    "",
 			wantErr:     true,
@@ -78,7 +78,7 @@ func TestNewForm_ValidationErrors(t *testing.T) {
 		{
 			name:        "zero value namespaceID",
 			ownerID:     validOwner,
-			namespaceID: new(uuid.Nil),
+			namespaceID: new(uuid.Nil()),
 			formName:    "form",
 			wantErr:     false,
 		},

@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/models"
 	"lib/crypto"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 func testEnv(t *testing.T) {

@@ -4,8 +4,7 @@ import (
 	"context"
 	"univents/internal/features/certifications/jobs"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // EmitCertsForProgram enqueues the cert grant job for a program's

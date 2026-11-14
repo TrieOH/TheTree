@@ -3,8 +3,7 @@ package models
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ProjectProfileSchema holds the JSON Schema used to validate actor profiles.

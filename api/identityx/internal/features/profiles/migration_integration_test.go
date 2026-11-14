@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/features/profiles"
@@ -15,8 +16,6 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/testdb"
-
-	"github.com/google/uuid"
 )
 
 // TestGetPlatformProfileAfterSchemaShrinksV1ToV2RealDB pins the on-demand

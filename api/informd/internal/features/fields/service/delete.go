@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) Delete(ctx context.Context, formID, fieldID uuid.UUID) error {

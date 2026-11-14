@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
@@ -9,7 +10,6 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
 

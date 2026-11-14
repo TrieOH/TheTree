@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+	"uuid"
 
 	"lib/database"
 	"payssage/errs"
@@ -17,7 +18,6 @@ import (
 	"payssage/models"
 	"payssage/ports"
 
-	"github.com/google/uuid"
 	"resty.dev/v3"
 )
 

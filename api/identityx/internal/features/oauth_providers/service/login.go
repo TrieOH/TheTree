@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/crypto"
 	"lib/oauth"
-
-	"github.com/google/uuid"
 )
 
 // LoginProvider is the resolved credential scope for one OAuth provider:

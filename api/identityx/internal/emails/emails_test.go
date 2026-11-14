@@ -3,10 +3,9 @@ package emails
 import (
 	"strings"
 	"testing"
+	"uuid"
 
 	"IdentityX/models"
-
-	"github.com/google/uuid"
 )
 
 func TestDefaultTemplatesRender(t *testing.T) {

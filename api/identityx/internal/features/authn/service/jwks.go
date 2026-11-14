@@ -2,8 +2,7 @@ package service
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // JWKS publishes the project's public signing keys as a JWKS document. The

@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // GetSchema returns the active profile schema for the scope. Public read:

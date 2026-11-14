@@ -2,12 +2,11 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
-
-	"github.com/google/uuid"
 )
 
 type Deps struct {

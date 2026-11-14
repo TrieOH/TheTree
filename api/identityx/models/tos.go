@@ -2,8 +2,7 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // TermsOfService is a project's current terms document. It is versioned in

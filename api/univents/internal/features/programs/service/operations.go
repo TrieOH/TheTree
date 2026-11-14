@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
@@ -10,7 +11,6 @@ import (
 	"univents/internal/notify"
 	"univents/ports"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

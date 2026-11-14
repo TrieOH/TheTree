@@ -4,8 +4,7 @@ import (
 	"context"
 	"payssage/models"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type WebhookDeliveryRepo interface {

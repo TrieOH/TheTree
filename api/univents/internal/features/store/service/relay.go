@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"slices"
 	"sync"
+	"uuid"
 
 	"lib/telemetry"
 
 	"univents/internal/notify"
 	"univents/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

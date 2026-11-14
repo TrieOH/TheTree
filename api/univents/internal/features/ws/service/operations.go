@@ -19,14 +19,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"time"
+	"uuid"
 
 	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
 
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // tokenTTL is how long a handshake token lives. Short-lived because it rides

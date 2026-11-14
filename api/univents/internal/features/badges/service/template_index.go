@@ -5,8 +5,7 @@ import (
 	"sort"
 	"time"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // editionTemplates indexes one edition's templates for derivation:

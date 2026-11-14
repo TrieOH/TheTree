@@ -3,10 +3,9 @@ package service
 import (
 	"context"
 	"univents/models"
+	"uuid"
 
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) GetCertByID(ctx context.Context, id uuid.UUID) (*models.Certification, error) {

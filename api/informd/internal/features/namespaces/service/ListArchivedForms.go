@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"uuid"
 
 	"Informd/models"
-
-	"github.com/google/uuid"
 )
 
 func (o *Operations) ListArchivedForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {

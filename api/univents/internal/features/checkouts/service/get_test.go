@@ -6,8 +6,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"lib/database"
 	"lib/testdb"
@@ -52,7 +51,7 @@ func seedEdition(t *testing.T, q *sqlc.Queries) uuid.UUID {
 	event, err := q.CreateEvent(ctx, sqlc.CreateEventParams{
 		OwnerID:  uuid.New(),
 		FullName: "Read Surfaces Test Event",
-		Slug:     "read-surfaces-" + uuid.NewString()[:8],
+		Slug:     "read-surfaces-" + uuid.New().String()[:8],
 		Status:   string(models.EventStatusActive),
 	})
 	if err != nil {
@@ -61,7 +60,7 @@ func seedEdition(t *testing.T, q *sqlc.Queries) uuid.UUID {
 	edition, err := q.CreateEdition(ctx, sqlc.CreateEditionParams{
 		EventID:     event.ID,
 		EditionName: "Read Surfaces Test Edition",
-		Slug:        "read-surfaces-ed-" + uuid.NewString()[:8],
+		Slug:        "read-surfaces-ed-" + uuid.New().String()[:8],
 		StartsAt:    time.Now().Add(-time.Hour),
 		EndsAt:      time.Now().Add(24 * time.Hour),
 		CreatedBy:   event.OwnerID,
@@ -138,7 +137,7 @@ func newResumeOps(t *testing.T, intents checkouts.IntentClient) (*testrepos.Repo
 		Participations:   r.Programs,
 		Tx:               tx,
 		Intents:          intents,
-		WalletID:         uuid.Nil,
+		WalletID:         uuid.Nil(),
 		Authz:            authz.New(r.Events),
 	})
 	ops.SetIntentRetry(3, 0)

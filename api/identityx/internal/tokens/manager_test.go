@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/errs"
 	"IdentityX/models"
@@ -14,7 +15,6 @@ import (
 	"lib/database"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
 

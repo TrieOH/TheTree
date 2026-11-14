@@ -1,13 +1,13 @@
 # Backend Wishlist
 
-Status: **open — some items done (marked ✅)**. Date: 2026-08-24, updated 2026-10-29. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go` · `sdk/go` · CI workflows. Owner: **backend developer** (no infra component; the CI runner already exists).
+Status: **open — some items done (marked ✅)**. Date: 2026-08-24, updated 2026-11-13. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go` · `sdk/go` · CI workflows. Owner: **backend developer** (no infra component; the CI runner already exists).
 
 From the backend dev point of view: language, dependencies, tooling, test hygiene. Go 1.27 shipped 2026-08-19 (five days ago) — two of these items are timed to it.
 
 | # | Item | Effort | Why |
 |---|------|--------|-----|
 | 1 | ~~**Upgrade Go to 1.27** (must)~~ ✅ | M | Newest release; unlocks stdlib uuid (#2) + json/v2; repo is on 1.26.2–1.26.4 |
-| 2 | **Replace google/uuid with stdlib `uuid`** (must) | M | RFC 9562 in stdlib since 1.27; drops a dep; ~600 files but mechanical |
+| 2 | ~~**Replace google/uuid with stdlib `uuid`** (must)~~ ✅ | M | RFC 9562 in stdlib since 1.27; drops a dep; ~600 files but mechanical |
 | 3 | `-race` in CI integration tests | XS | `go test -count=1 ./...` runs today with no race detector |
 | 4 | `go mod tidy` drift check in CI | XS | go.work.sum/go.sum drift goes uncaught between `just goup` runs |
 | 5 | govulncheck in CI | S | Go-precise vuln scanning (call-graph aware) complements trivy's fs scan |
@@ -48,7 +48,9 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 
 **Gotcha.** After bumping the `go` directives, `GOTOOLCHAIN` auto-downloads 1.27 for anyone still on an older toolchain — that's the feature, not a bug: bump directives first, then `go work sync`.
 
-### 2. Replace google/uuid with stdlib `uuid`
+### 2. ~~Replace google/uuid with stdlib `uuid`~~ ✅
+
+**Done 2026-11-13.** All modules import stdlib `uuid`; sqlc overrides and the `x-go-type-import` paths in the specs point at it; the `uuid7` validator reads the version nibble directly (`u[6]>>4`) since stdlib has no `Version()`. `github.com/google/uuid` stays only as an indirect dep pulled by `oapi-codegen/runtime`.
 
 **Why.** Go 1.27 ships a native `uuid` package (RFC 9562, import path `uuid`, crypto-secure random). Dropping `github.com/google/uuid` removes a dep across all five modules. The DB type is unchanged (postgres `uuid` columns) — this is a pure Go type swap.
 

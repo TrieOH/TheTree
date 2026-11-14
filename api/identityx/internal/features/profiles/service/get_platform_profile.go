@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // GetPlatformProfile returns a platform-scoped actor's profile (project_id is NULL).

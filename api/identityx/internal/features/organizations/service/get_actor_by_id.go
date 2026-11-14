@@ -4,8 +4,7 @@ import (
 	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) GetActorByID(ctx context.Context, id, projectID uuid.UUID) (*models.Actor, error) {

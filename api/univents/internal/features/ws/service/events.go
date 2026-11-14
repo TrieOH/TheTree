@@ -3,10 +3,9 @@ package service
 import (
 	"encoding/json"
 	"time"
+	"uuid"
 
 	"univents/models"
-
-	"github.com/google/uuid"
 )
 
 // Frame types (D9): the snapshot restores context on connect, then live

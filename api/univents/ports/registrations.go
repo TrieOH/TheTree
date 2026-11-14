@@ -3,8 +3,7 @@ package ports
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // RegistrationRepo is the registration read surface. The checkout feature owns

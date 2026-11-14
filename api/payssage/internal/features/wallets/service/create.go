@@ -4,8 +4,7 @@ import (
 	"context"
 	"payssage/models"
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateWalletInput) (*models.Wallet, error) {

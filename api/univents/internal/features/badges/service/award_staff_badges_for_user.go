@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // AwardStaffBadgesForUser emits a staff badge for the user on every published

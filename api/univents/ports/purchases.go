@@ -3,8 +3,7 @@ package ports
 import (
 	"context"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // PurchaseRepo is the store's persistence surface: purchases + items are the

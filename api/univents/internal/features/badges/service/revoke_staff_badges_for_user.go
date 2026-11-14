@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // RevokeStaffBadgesForUser revokes the user's staff badges on current and

@@ -7,11 +7,11 @@
 package config
 
 import (
+	"uuid"
+
 	"lib/database"
 
 	idx "sdk/identityx"
-
-	"github.com/google/uuid"
 )
 
 // Server is the process-level block, unprefixed in every backend: PORT,

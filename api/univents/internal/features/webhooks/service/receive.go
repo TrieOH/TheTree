@@ -8,13 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
 	"univents/errs"
 	"univents/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 

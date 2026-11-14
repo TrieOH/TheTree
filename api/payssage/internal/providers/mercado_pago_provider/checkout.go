@@ -10,10 +10,10 @@ import (
 	"payssage/models"
 	"strconv"
 	"time"
+	"uuid"
 
 	"lib/telemetry"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -94,10 +94,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 
 	// TODO remember to use external group feature we made
 	// TODO: fix the idemp key not being actual idemp
-	idempotencyKey, err := uuid.NewV7()
-	if err != nil {
-		return fmt.Errorf("generate idempotency key: %w", err)
-	}
+	idempotencyKey := uuid.NewV7()
 
 	var mpResp mpPaymentResponse
 	var mpErr map[string]any

@@ -6,8 +6,7 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type Deps struct {

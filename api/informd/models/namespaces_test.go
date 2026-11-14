@@ -2,8 +2,8 @@ package models
 
 import (
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestNewNamespace_ValidationErrors(t *testing.T) {
 	}{
 		{
 			name:          "zero value ownerID",
-			ownerID:       uuid.Nil,
+			ownerID:       uuid.Nil(),
 			namespaceName: "namespace",
 			wantErr:       true,
 		},
@@ -43,7 +43,7 @@ func TestNewNamespace_ValidationErrors(t *testing.T) {
 		},
 		{
 			name:          "all required values empty",
-			ownerID:       uuid.Nil,
+			ownerID:       uuid.Nil(),
 			namespaceName: "",
 			wantErr:       true,
 		},

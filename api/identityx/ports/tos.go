@@ -4,8 +4,7 @@ import (
 	"IdentityX/models"
 	"context"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type TosRepo interface {

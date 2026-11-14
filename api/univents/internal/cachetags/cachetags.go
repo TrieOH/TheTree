@@ -5,7 +5,7 @@
 // stock, no counts), so a write never reaches past its own collections.
 package cachetags
 
-import "github.com/google/uuid"
+import "uuid"
 
 // Events is the public event list.
 const Events = "events"

@@ -5,8 +5,7 @@ import (
 	"context"
 	"lib/crypto"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type CryptoKeysRepo interface {

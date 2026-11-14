@@ -2,8 +2,8 @@ package service_test
 
 import (
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	"lib/database"

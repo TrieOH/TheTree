@@ -9,8 +9,8 @@ import (
 	"strings"
 	"univents/assets"
 	"univents/models"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 	"go.uber.org/zap"
 )

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"uuid"
 
 	"payssage/errs"
 	"payssage/internal/config"
 	"payssage/models"
 
-	"github.com/google/uuid"
 	"resty.dev/v3"
 )
 

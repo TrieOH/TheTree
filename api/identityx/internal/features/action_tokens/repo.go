@@ -3,13 +3,12 @@ package action_tokens
 import (
 	"IdentityX/errs"
 	"context"
+	"uuid"
 
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
-
-	"github.com/google/uuid"
 )
 
 type Repo struct {

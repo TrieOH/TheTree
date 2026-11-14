@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	libjobs "lib/jobs"
 
@@ -15,8 +16,6 @@ import (
 
 	idx "sdk/identityx"
 	payssage "sdk/payssage"
-
-	"github.com/google/uuid"
 )
 
 // ── External-seam fakes (the DB-backed ports use the real repos) ──────────

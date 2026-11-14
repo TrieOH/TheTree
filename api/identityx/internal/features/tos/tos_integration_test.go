@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"uuid"
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
@@ -15,7 +16,6 @@ import (
 	"lib/jobs"
 	"lib/testdb"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

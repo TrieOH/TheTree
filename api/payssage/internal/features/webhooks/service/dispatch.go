@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
 	"payssage/internal/features/webhooks/jobs"
 	"payssage/models"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -38,10 +38,7 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 	created := make([]uuid.UUID, 0, len(endpoints))
 	err = o.Tx.WithinTx(ctx, func(ctx context.Context) error {
 		for _, endpoint := range endpoints {
-			v7, err := uuid.NewV7()
-			if err != nil {
-				return fmt.Errorf("new delivery id: %w", err)
-			}
+			v7 := uuid.NewV7()
 
 			delivery, err := o.Deliveries.Create(ctx, models.WebhookDelivery{
 				ID:         v7,

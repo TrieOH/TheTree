@@ -9,8 +9,7 @@ package notify
 
 import (
 	"encoding/json"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Channel is the single NOTIFY channel the store publishes on. The WS hub

@@ -2,8 +2,8 @@ package models
 
 import (
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,7 @@ func TestNewStep_ValidationErrors(t *testing.T) {
 	}{
 		{
 			name:         "zero value formID",
-			formID:       uuid.Nil,
+			formID:       uuid.Nil(),
 			title:        "step one",
 			description:  nil,
 			positionHint: 1,
@@ -77,7 +77,7 @@ func TestNewStep_ValidationErrors(t *testing.T) {
 		},
 		{
 			name:         "all validation errors",
-			formID:       uuid.Nil,
+			formID:       uuid.Nil(),
 			title:        "",
 			description:  nil,
 			positionHint: -1,

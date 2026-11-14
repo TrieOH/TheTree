@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func TestGetWallet(t *testing.T) {

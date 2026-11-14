@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"lib/email"
 	"lib/testdb"
@@ -21,7 +22,6 @@ import (
 	"univents/internal/testrepos"
 	"univents/models"
 
-	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -59,7 +59,7 @@ func seedGiftedReg(t *testing.T, r *testrepos.Repos, attendeeUserID *uuid.UUID) 
 	event, err := r.Events.Create(ctx, &models.Event{
 		OwnerID:  uuid.New(),
 		FullName: "Gift Email Test Event",
-		Slug:     "gift-email-test-" + uuid.NewString()[:8],
+		Slug:     "gift-email-test-" + uuid.New().String()[:8],
 		Status:   models.EventStatusActive,
 	})
 	if err != nil {
@@ -68,7 +68,7 @@ func seedGiftedReg(t *testing.T, r *testrepos.Repos, attendeeUserID *uuid.UUID) 
 	edition, err := r.Editions.Create(ctx, &models.Edition{
 		EventID:   event.ID,
 		Name:      "Gift Email Test Edition",
-		Slug:      "gift-email-test-ed-" + uuid.NewString()[:8],
+		Slug:      "gift-email-test-ed-" + uuid.New().String()[:8],
 		StartsAt:  time.Now().Add(-time.Hour),
 		EndsAt:    time.Now().Add(24 * time.Hour),
 		CreatedBy: event.OwnerID,

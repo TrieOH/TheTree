@@ -3,8 +3,7 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // ListOutdatedProfiles lists profiles flagged as outdated (they failed to

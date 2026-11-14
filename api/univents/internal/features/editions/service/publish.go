@@ -5,8 +5,7 @@ import (
 	"lib/telemetry"
 	"univents/errs"
 	"univents/models"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"go.uber.org/zap"
 )

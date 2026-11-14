@@ -3,8 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"net/http"
 	"univents/models"
