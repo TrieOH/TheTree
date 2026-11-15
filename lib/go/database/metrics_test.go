@@ -3,35 +3,31 @@ package database
 import (
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-func TestPoolCollectorDescribesSevenMetrics(t *testing.T) {
-	c := poolCollector{}
-	ch := make(chan *prometheus.Desc, 16)
-	c.Describe(ch)
-	close(ch)
-
-	n := 0
-	for range ch {
-		n++
-	}
-	if n != 7 {
-		t.Fatalf("pool collector described %d metrics, want 7", n)
-	}
-}
-
-func TestPoolCollectorNilPoolNoPanic(_ *testing.T) {
+// TestPoolInstrumentsNilPool — before a pool is registered the callback
+// observes nothing and doesn't panic.
+func TestPoolInstrumentsNilPool(t *testing.T) {
 	poolMu.Lock()
 	poolRef = nil
 	poolMu.Unlock()
 
-	c := poolCollector{}
-	ch := make(chan prometheus.Metric)
-	go func() {
-		defer close(ch)
-		c.Collect(ch) // must not panic when no pool is registered
-	}()
-	for range ch {
+	reader := sdkmetric.NewManualReader()
+	err := poolInstruments(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)).Meter("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var rm metricdata.ResourceMetrics
+	err = reader.Collect(t.Context(), &rm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sm := range rm.ScopeMetrics {
+		if len(sm.Metrics) != 0 {
+			t.Fatalf("observed %d metrics with no pool, want 0", len(sm.Metrics))
+		}
 	}
 }

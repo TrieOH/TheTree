@@ -11,9 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/testutil"
-	dto "github.com/prometheus/client_model/go"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 type identityKey struct{}
@@ -185,8 +184,8 @@ func TestAuthenticatorsPrimitives(t *testing.T) {
 // TestRealtimeStaysOutOfLatency — an SSE or WebSocket request lasts as long
 // as the client stays, so it's counted but never timed.
 func TestRealtimeStaysOutOfLatency(t *testing.T) {
-	reg := prometheus.NewRegistry()
-	c, err := newCollectors(reg)
+	reader := sdkmetric.NewManualReader()
+	c, err := newCollectors(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)).Meter("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,18 +203,13 @@ func TestRealtimeStaysOutOfLatency(t *testing.T) {
 		h.ServeHTTP(httptest.NewRecorder(), req)
 	}
 
-	if got := testutil.CollectAndCount(c.requests); got != 1 {
-		t.Fatalf("request series = %d, want 1", got)
+	got := collectMetrics(t, reader)
+	requests := got["http_requests_total"].Data.(metricdata.Sum[int64]).DataPoints
+	if len(requests) != 1 || requests[0].Value != 3 {
+		t.Fatalf("request series = %+v, want one series of 3", requests)
 	}
-	if got := testutil.ToFloat64(c.requests); got != 3 {
-		t.Fatalf("requests = %v, want 3", got)
-	}
-	var m dto.Metric
-	err = c.duration.WithLabelValues("not_found").(prometheus.Histogram).Write(&m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := m.GetHistogram().GetSampleCount(); got != 1 {
-		t.Fatalf("timed requests = %d, want 1 (only the plain one)", got)
+	timed := got["http_request_duration_seconds"].Data.(metricdata.Histogram[float64]).DataPoints
+	if len(timed) != 1 || timed[0].Count != 1 {
+		t.Fatalf("timed requests = %+v, want 1 (only the plain one)", timed)
 	}
 }
