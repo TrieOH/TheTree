@@ -95,7 +95,7 @@ Production backends run on **Cloudflare Containers**: `deploy.yml` pushes the GH
 - **validator** — Input validation
 - **utils** — General-purpose utilities
 - **xslices** — Generic slice utilities
-- **jobs** — background-work seam: in-process or Cloudflare Queues (`lib/go/river` is no longer used by any backend)
+- **jobs** — background-work seam: in-process or Cloudflare Queues
 
 ## Key Technology Choices
 
@@ -105,8 +105,7 @@ Production backends run on **Cloudflare Containers**: `deploy.yml` pushes the GH
 - **SpiceDB / Authzed** — fine-grained authorization (Zanzibar-style)
 - **pgx/v5** — PostgreSQL driver
 - **Caddy** — reverse proxy with TLS, Cloudflare origin certs
-- **OpenTelemetry** — distributed tracing across all services
-- **Prometheus** — metrics scraped by VictoriaMetrics
+- **OpenTelemetry** — traces, metrics and logs pushed over OTLP to Grafana Cloud
 - **lib/jobs** — background jobs on Cloudflare Queues when deployed, in-process locally (ADR-0011)
 - **`just`** — command runner
 
