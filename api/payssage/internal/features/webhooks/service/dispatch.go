@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
 	"payssage/internal/features/webhooks/jobs"
 	"payssage/models"
-
-	"go.uber.org/zap"
 )
 
 // dispatchDeliveries creates a pending delivery row for every webhook
@@ -67,8 +66,8 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 		err = o.Jobs.Enqueue(ctx, jobs.DeliverWebhookArgs{DeliveryID: id})
 		if err != nil {
 			telemetry.Log().Error("webhook delivery: enqueue failed, left for redrive",
-				zap.String("delivery_id", id.String()),
-				zap.Error(err),
+				slog.String("delivery_id", id.String()),
+				telemetry.Err(err),
 			)
 		}
 	}

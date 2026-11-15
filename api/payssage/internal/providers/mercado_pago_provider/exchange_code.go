@@ -6,12 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"payssage/models"
 
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // tokenRequestBody is the MP token-exchange body. The redirect URI is
@@ -29,7 +28,7 @@ func (p *Provider) tokenRequestBody(code string) map[string]any {
 func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.ProviderCredentialData, error) {
 	body, err := json.Marshal(p.tokenRequestBody(code))
 	if err != nil {
-		telemetry.Log().Error("error marshaling MP exchange code request body", zap.Error(err))
+		telemetry.Log().Error("error marshaling MP exchange code request body", telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 
@@ -38,14 +37,14 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.Provid
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		telemetry.Log().Error("error creating MP exchange code request", zap.Error(err))
+		telemetry.Log().Error("error creating MP exchange code request", telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		telemetry.Log().Error("error executing MP exchange code request", zap.Error(err))
+		telemetry.Log().Error("error executing MP exchange code request", telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 	defer func() {
@@ -54,13 +53,13 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.Provid
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		telemetry.Log().Error("error reading MP exchange code response body", zap.Error(err))
+		telemetry.Log().Error("error reading MP exchange code response body", telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 
 	telemetry.Log().Info("MP exchange response",
-		zap.Int("status", resp.StatusCode),
-		zap.String("body", string(rawBody)),
+		slog.Int("status", resp.StatusCode),
+		slog.String("body", string(rawBody)),
 	)
 
 	var result struct {
@@ -71,12 +70,12 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.Provid
 	}
 	err = json.Unmarshal(rawBody, &result)
 	if err != nil {
-		telemetry.Log().Error("error unmarshaling MP exchange code response body", zap.Error(err))
+		telemetry.Log().Error("error unmarshaling MP exchange code response body", telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 
 	if result.AccessToken == "" {
-		telemetry.Log().Error("MP exchange code response had empty access token", zap.Any("result struct", result), zap.Any("rawBody", rawBody))
+		telemetry.Log().Error("MP exchange code response had empty access token", slog.Any("result struct", result), slog.Any("rawBody", rawBody))
 		return models.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
 	}
 

@@ -7,13 +7,12 @@ package inprocess
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
 	"lib/jobs"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // Options tunes the runner; zero values take the defaults.
@@ -113,7 +112,7 @@ func (r *Runner) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Dura
 	time.AfterFunc(delay, func() {
 		err := r.Enqueue(r.ctx, job)
 		if err != nil && !errors.Is(err, ErrStopped) {
-			telemetry.Log().Error("delayed job not enqueued", zap.String("kind", job.Kind()), zap.Error(err))
+			telemetry.Log().Error("delayed job not enqueued", slog.String("kind", job.Kind()), telemetry.Err(err))
 		}
 	})
 	return nil
@@ -180,11 +179,11 @@ func (r *Runner) run(env jobs.Envelope) {
 		}
 		if errors.Is(err, jobs.ErrUnknownKind) || attempt >= r.opts.MaxAttempts || r.ctx.Err() != nil {
 			telemetry.Log().Error("job failed",
-				zap.String("kind", env.Kind), zap.Int("attempts", attempt), zap.Error(err))
+				slog.String("kind", env.Kind), slog.Int("attempts", attempt), telemetry.Err(err))
 			return
 		}
 		telemetry.Log().Warn("job failed, retrying",
-			zap.String("kind", env.Kind), zap.Int("attempt", attempt), zap.Duration("backoff", backoff), zap.Error(err))
+			slog.String("kind", env.Kind), slog.Int("attempt", attempt), slog.Duration("backoff", backoff), telemetry.Err(err))
 		select {
 		case <-time.After(backoff):
 			backoff *= 2
@@ -213,6 +212,6 @@ func (r *Runner) tick(p jobs.Periodic) {
 func (r *Runner) enqueuePeriodic(p jobs.Periodic) {
 	err := r.Enqueue(r.ctx, p.Job)
 	if err != nil && !errors.Is(err, ErrStopped) {
-		telemetry.Log().Error("periodic job not enqueued", zap.String("kind", p.Job.Kind()), zap.Error(err))
+		telemetry.Log().Error("periodic job not enqueued", slog.String("kind", p.Job.Kind()), telemetry.Err(err))
 	}
 }

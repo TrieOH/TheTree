@@ -19,14 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	"lib/jobs"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // Path is where Handler is mounted. It must not collide with any API
@@ -123,7 +122,7 @@ func Handler(registry *jobs.Registry) http.Handler {
 		case errors.Is(err, jobs.ErrUnknownKind):
 			http.Error(w, "unknown job kind", http.StatusBadRequest)
 		case err != nil:
-			telemetry.Log().Error("job failed", zap.String("kind", env.Kind), zap.Error(err))
+			telemetry.Log().Error("job failed", slog.String("kind", env.Kind), telemetry.Err(err))
 			http.Error(w, "job failed", http.StatusInternalServerError)
 		default:
 			w.WriteHeader(http.StatusNoContent)

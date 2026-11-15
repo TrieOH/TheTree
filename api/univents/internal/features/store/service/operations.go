@@ -10,14 +10,13 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"uuid"
 
 	"lib/telemetry"
 
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // Notifier is the LISTEN/NOTIFY subscribe surface (split 6 subscribes to
@@ -95,7 +94,7 @@ func (o *Operations) ServeStream(w http.ResponseWriter, r *http.Request, edition
 
 	stream, err := newSSEStream(w)
 	if err != nil {
-		telemetry.Log().Error("store: hijack failed", zap.Error(err))
+		telemetry.Log().Error("store: hijack failed", telemetry.Err(err))
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -124,8 +123,8 @@ func (o *Operations) writeSnapshot(ctx context.Context, stream *sseStream, editi
 	avail, err := o.Avail.Availability(ctx, editionID)
 	if err != nil {
 		telemetry.Log().Error("store: snapshot availability read failed",
-			zap.String("edition_id", editionID.String()),
-			zap.Error(err))
+			slog.String("edition_id", editionID.String()),
+			telemetry.Err(err))
 		return err
 	}
 

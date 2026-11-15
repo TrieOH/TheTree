@@ -1,7 +1,10 @@
 package httpserver
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,8 +14,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 type identityKey struct{}
@@ -82,16 +83,17 @@ func TestRateLimiterSweepsIdleClients(t *testing.T) {
 // TestLogsCarryGeneratedRequestID — a request without X-Request-ID is
 // logged under the ID the harness minted and returned.
 func TestLogsCarryGeneratedRequestID(t *testing.T) {
-	core, logged := observer.New(zap.InfoLevel)
-	h := requestID(logs(zap.New(core), nil)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})))
+	var logged bytes.Buffer
+	h := requestID(logs(slog.New(slog.NewJSONHandler(&logged, nil)), nil)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})))
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/x", nil))
 
 	id := rec.Header().Get(requestIDHeader)
-	entries := logged.All()
-	if id == "" || len(entries) != 1 || entries[0].ContextMap()["request_id"] != id {
-		t.Fatalf("response id %q, log entries %v", id, entries)
+	var entry map[string]any
+	err := json.Unmarshal(logged.Bytes(), &entry)
+	if id == "" || err != nil || entry["request_id"] != id {
+		t.Fatalf("response id %q, log %q", id, logged.String())
 	}
 }
 
@@ -120,7 +122,7 @@ func TestRequestIDRejectsUnsafeValues(t *testing.T) {
 // still flush through http.ResponseController.
 func TestStatusWriterFlushes(t *testing.T) {
 	rec := httptest.NewRecorder()
-	h := logs(zap.NewNop(), nil)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	h := logs(slog.New(slog.DiscardHandler), nil)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		err := http.NewResponseController(w).Flush()
 		if err != nil {
 			t.Fatalf("flush: %v", err)

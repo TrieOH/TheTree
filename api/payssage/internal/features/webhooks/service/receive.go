@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"uuid"
 
@@ -12,8 +13,6 @@ import (
 	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookInput) error {
@@ -39,8 +38,8 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 			// cases, not failures. Acknowledge with 200 so the provider
 			// doesn't retry.
 			telemetry.Log().Info("webhook acknowledged, not processed",
-				zap.String("provider", payload.Provider),
-				zap.Error(err),
+				slog.String("provider", payload.Provider),
+				telemetry.Err(err),
 			)
 			return nil
 		}

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"IdentityX/errs"
 	"IdentityX/models"
@@ -10,8 +11,6 @@ import (
 	"lib/database"
 	"lib/telemetry"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // Callback completes an OAuth login: it validates the one-time state,
@@ -31,7 +30,7 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 	// can never be replayed.
 	err = o.LoginStates.DeleteState(ctx, loginState.ID)
 	if err != nil {
-		telemetry.Log().Warn("failed to delete oauth login state", zap.String("state_id", loginState.ID.String()))
+		telemetry.Log().Warn("failed to delete oauth login state", slog.String("state_id", loginState.ID.String()))
 	}
 	if string(loginState.Provider) != provider {
 		return nil, errs.ErrOAuthStateMismatch

@@ -36,7 +36,6 @@ import (
 	"lib/telemetry"
 
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 	"resty.dev/v3"
 )
 
@@ -155,7 +154,7 @@ func announceJWKSChange(j backend.Jobs) func(context.Context) {
 	return func(ctx context.Context) {
 		err := j.Enqueue(ctx, jobs.JWKSChangedArgs{})
 		if err != nil && !errors.Is(err, carrier.ErrNotServing) {
-			telemetry.Log().Warn("could not announce a JWKS change", zap.Error(err))
+			telemetry.Log().Warn("could not announce a JWKS change", telemetry.Err(err))
 		}
 	}
 }

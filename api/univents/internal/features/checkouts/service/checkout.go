@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -21,8 +22,6 @@ import (
 	"univents/ports"
 
 	payssage "sdk/payssage"
-
-	"go.uber.org/zap"
 )
 
 // reservationDuration is how long an unpaid reservation is held: 10:01 (the
@@ -594,8 +593,8 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 	err := o.Jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
 		telemetry.Log().Error("checkout: failed to enqueue gift email",
-			zap.String("registration_id", reg.ID.String()),
-			zap.Error(err))
+			slog.String("registration_id", reg.ID.String()),
+			telemetry.Err(err))
 	}
 }
 
@@ -646,8 +645,8 @@ func (o *Operations) revert(ctx context.Context, purchase *models.Purchase, item
 	})
 	if err != nil {
 		telemetry.Log().Error("checkout: revert failed after intent creation error",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.Error(err))
+			slog.String("purchase_id", purchase.ID.String()),
+			telemetry.Err(err))
 		return
 	}
 	o.notifyStock(ctx, purchase, items)
@@ -695,8 +694,8 @@ func (o *Operations) cancelIntentBestEffort(ctx context.Context, intentID uuid.U
 	_, err := o.Payssage.CancelIntent(ctx, intentID)
 	if err != nil {
 		telemetry.Log().Warn("checkout: best-effort intent cancel failed",
-			zap.String("intent_id", intentID.String()),
-			zap.Error(err))
+			slog.String("intent_id", intentID.String()),
+			telemetry.Err(err))
 	}
 }
 
@@ -1010,16 +1009,16 @@ func (o *Operations) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		telemetry.Log().Error("checkout: marshal notifier payload",
-			zap.String("channel", channelUniventsChanges),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
 		telemetry.Log().Error("checkout: publish to notifier",
-			zap.String("channel", channelUniventsChanges),
-			zap.String("payload", string(raw)),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			slog.String("payload", string(raw)),
+			telemetry.Err(err))
 	}
 }
 

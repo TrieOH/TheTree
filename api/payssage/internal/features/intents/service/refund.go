@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"log/slog"
 	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 // Refund reverses an approved (succeeded) payment intent — full refund only
@@ -47,9 +46,9 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 	err = provider.Refund(ctx, intent)
 	if err != nil {
 		telemetry.Log().Error("error refunding payment",
-			zap.String("provider", intent.Provider),
-			zap.String("intent_id", intent.ID.String()),
-			zap.Error(err),
+			slog.String("provider", intent.Provider),
+			slog.String("intent_id", intent.ID.String()),
+			telemetry.Err(err),
 		)
 		return nil, err
 	}

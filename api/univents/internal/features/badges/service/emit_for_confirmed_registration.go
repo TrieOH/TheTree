@@ -4,10 +4,9 @@ import (
 	"context"
 	"lib/database"
 	"lib/telemetry"
+	"log/slog"
 	"univents/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 // EmitForConfirmedRegistration emits the participant badge for a confirmed
@@ -30,7 +29,7 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 		// recipient claims an account and the registration gets its actor
 		// id — the claim flow re-emits from here.
 		telemetry.Log().Info("badge emission deferred: attendee has no account yet",
-			zap.String("registration_id", registrationID.String()))
+			slog.String("registration_id", registrationID.String()))
 		//nolint:nilnil // deferred emission is a normal state, not an error
 		return nil, nil
 	}

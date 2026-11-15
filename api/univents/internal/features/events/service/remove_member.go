@@ -3,10 +3,9 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"log/slog"
 	"univents/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, eventID uuid.UUID, payload models.RemoveMemberInput) error {
@@ -33,9 +32,9 @@ func (o *Operations) RemoveMember(ctx context.Context, eventID uuid.UUID, payloa
 	err = o.Badges.RevokeStaffBadgesForUser(ctx, eventID, actor.ID)
 	if err != nil {
 		telemetry.Log().Error("failed to revoke staff badges",
-			zap.String("event_id", eventID.String()),
-			zap.String("user_id", actor.ID.String()),
-			zap.Error(err))
+			slog.String("event_id", eventID.String()),
+			slog.String("user_id", actor.ID.String()),
+			telemetry.Err(err))
 	}
 
 	return nil

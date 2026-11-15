@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"lib/database"
+	"log/slog"
 	"payssage/ports"
 	"time"
 	"uuid"
@@ -16,7 +17,6 @@ import (
 	"lib/telemetry"
 	"payssage/models"
 
-	"go.uber.org/zap"
 	"resty.dev/v3"
 )
 
@@ -91,7 +91,7 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, args DeliverWebhookArgs
 	delivery, err := w.deliveries.GetByID(ctx, args.DeliveryID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			telemetry.Log().Error("webhook delivery: delivery not found", zap.String("delivery_id", args.DeliveryID.String()), zap.Error(err))
+			telemetry.Log().Error("webhook delivery: delivery not found", slog.String("delivery_id", args.DeliveryID.String()), telemetry.Err(err))
 			return nil
 		}
 		return err // the database is unreachable — retry
@@ -171,7 +171,7 @@ func (w *DeliverWebhookWorker) recordSuccess(
 		ResponseBody:    &responseBody,
 	})
 	if err != nil {
-		telemetry.Log().Error("webhook delivery: failed to record success", zap.String("delivery_id", delivery.ID.String()), zap.Error(err))
+		telemetry.Log().Error("webhook delivery: failed to record success", slog.String("delivery_id", delivery.ID.String()), telemetry.Err(err))
 		return err // genuinely worth retrying — we succeeded but couldn't record it
 	}
 	return nil
@@ -202,7 +202,7 @@ func (w *DeliverWebhookWorker) recordAttempt(
 		ResponseBody:    &responseBody,
 	})
 	if updateErr != nil {
-		telemetry.Log().Error("webhook delivery: failed to record attempt", zap.String("delivery_id", delivery.ID.String()), zap.Error(updateErr))
+		telemetry.Log().Error("webhook delivery: failed to record attempt", slog.String("delivery_id", delivery.ID.String()), telemetry.Err(updateErr))
 	}
 
 	return fmt.Errorf("webhook delivery attempt %d failed: status %d", attempts, responseStatus)
@@ -211,7 +211,7 @@ func (w *DeliverWebhookWorker) recordAttempt(
 // giveUp marks a delivery failed immediately, for errors that will never
 // resolve by retrying (missing event/endpoint row).
 func (w *DeliverWebhookWorker) giveUp(ctx context.Context, delivery *models.WebhookDelivery, responseStatus int, responseBody, reason string) {
-	telemetry.Log().Error("webhook delivery: giving up", zap.String("delivery_id", delivery.ID.String()), zap.String("reason", reason))
+	telemetry.Log().Error("webhook delivery: giving up", slog.String("delivery_id", delivery.ID.String()), slog.String("reason", reason))
 	_, _ = w.deliveries.Update(ctx, models.UpdateDeliveryParams{
 		ID:              delivery.ID,
 		Status:          models.WebhookDeliveryStatusFailed,

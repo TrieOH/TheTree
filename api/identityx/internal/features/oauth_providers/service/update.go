@@ -5,8 +5,6 @@ import (
 	"context"
 	"lib/crypto"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProviderInput) (*models.ProjectOAuthProviders, error) {
@@ -28,7 +26,7 @@ func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProvi
 	if payload.ClientSecret != nil {
 		encryptedSecret, err := crypto.EncryptPrivateKey([]byte(*payload.ClientSecret))
 		if err != nil {
-			telemetry.Log().Error("encrypt oauth client secret", zap.Error(err))
+			telemetry.Log().Error("encrypt oauth client secret", telemetry.Err(err))
 			return nil, err
 		}
 		row, err = o.Providers.UpdateClientSecret(ctx, payload.ID, encryptedSecret)

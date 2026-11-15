@@ -3,11 +3,10 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"log/slog"
 	"univents/errs"
 	"univents/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
@@ -38,8 +37,8 @@ func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 	err = o.Badges.AwardStaffBadgesForEdition(ctx, editionID)
 	if err != nil {
 		telemetry.Log().Error("failed to award staff badges for edition",
-			zap.String("edition_id", editionID.String()),
-			zap.Error(err))
+			slog.String("edition_id", editionID.String()),
+			telemetry.Err(err))
 	}
 
 	return nil

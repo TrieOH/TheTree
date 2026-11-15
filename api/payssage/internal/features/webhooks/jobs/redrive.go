@@ -3,13 +3,12 @@ package jobs
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	libjobs "lib/jobs"
 	"lib/telemetry"
 	"payssage/ports"
-
-	"go.uber.org/zap"
 )
 
 // RedriveWebhookDeliveriesArgs re-enqueues deliveries whose enqueue was
@@ -53,8 +52,8 @@ func (w *RedriveWebhookDeliveriesWorker) Work(ctx context.Context, _ RedriveWebh
 	}
 	if len(unsent) > 0 {
 		telemetry.Log().Warn("webhook delivery: redrove unsent deliveries",
-			zap.Int("found", len(unsent)),
-			zap.Int("failed", len(errs)),
+			slog.Int("found", len(unsent)),
+			slog.Int("failed", len(errs)),
 		)
 	}
 	return errors.Join(errs...)

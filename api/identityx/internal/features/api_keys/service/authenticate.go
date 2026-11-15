@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/api_keys"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // Authenticate resolves a raw API key into the caller's identity: parse,
@@ -23,29 +22,29 @@ import (
 func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.Identity, error) {
 	key, err := api_keys.ParseAPIKey(rawKey)
 	if err != nil {
-		telemetry.Log().Warn("api key parse failed", zap.Error(err))
+		telemetry.Log().Warn("api key parse failed", telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	apiKey, err := o.APIKeys.GetByPrefix(ctx, key.DisplayPrefix)
 	if err != nil {
-		telemetry.Log().Warn("api key lookup failed", zap.String("prefix", key.DisplayPrefix), zap.Error(err))
+		telemetry.Log().Warn("api key lookup failed", slog.String("prefix", key.DisplayPrefix), telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash, o.HmacSecret) {
-		telemetry.Log().Warn("api key hmac mismatch", zap.String("prefix", key.DisplayPrefix))
+		telemetry.Log().Warn("api key hmac mismatch", slog.String("prefix", key.DisplayPrefix))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
-		telemetry.Log().Warn("api key expired", zap.String("prefix", key.DisplayPrefix), zap.Time("expires_at", *apiKey.ExpiresAt))
+		telemetry.Log().Warn("api key expired", slog.String("prefix", key.DisplayPrefix), slog.Time("expires_at", *apiKey.ExpiresAt))
 		return nil, errs.ErrAPIKeyExpired
 	}
 
 	actor, err := o.Actors.GetByID(ctx, apiKey.SubjectID)
 	if err != nil {
-		telemetry.Log().Warn("actor lookup failed", zap.String("prefix", key.DisplayPrefix), zap.String("subject_id", apiKey.SubjectID.String()), zap.Error(err))
+		telemetry.Log().Warn("actor lookup failed", slog.String("prefix", key.DisplayPrefix), slog.String("subject_id", apiKey.SubjectID.String()), telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
@@ -59,7 +58,7 @@ func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.I
 	}
 	capJSON, _ := json.Marshal(pairs)
 
-	telemetry.Log().Debug("api key authenticated", zap.String("prefix", key.DisplayPrefix), zap.Strings("capabilities", pairs))
+	telemetry.Log().Debug("api key authenticated", slog.String("prefix", key.DisplayPrefix), slog.Any("capabilities", pairs))
 	return &models.Identity{
 		Sub: models.Subject{
 			ID:           actor.ID,

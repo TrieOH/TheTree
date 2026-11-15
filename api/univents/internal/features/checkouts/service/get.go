@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"time"
 	"uuid"
 
 	"lib/telemetry"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // Get is the resume read: the purchase owner-scoped (the caller must be the
@@ -50,16 +49,16 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 			select {
 			case <-ctx.Done():
 				telemetry.Log().Warn("checkouts: intent status fetch cancelled",
-					zap.String("intent_id", intentID.String()),
-					zap.Error(ctx.Err()))
+					slog.String("intent_id", intentID.String()),
+					telemetry.Err(ctx.Err()))
 				return nil
 			case <-time.After(o.intentRetryDelay):
 			}
 		}
 	}
 	telemetry.Log().Error("checkouts: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
-		zap.String("intent_id", intentID.String()),
-		zap.Int("attempts", o.intentAttempts),
-		zap.Error(lastErr))
+		slog.String("intent_id", intentID.String()),
+		slog.Int("attempts", o.intentAttempts),
+		telemetry.Err(lastErr))
 	return nil
 }

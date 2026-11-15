@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"lib/telemetry"
+	"log/slog"
 	"payssage/errs"
 	"payssage/models"
-
-	"go.uber.org/zap"
 )
 
 func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Intent) error {
@@ -58,8 +57,8 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 	}
 
 	telemetry.Log().Info("MP Cancel Payment Response",
-		zap.String("payment_id", providerData.TransactionID),
-		zap.String("body", resp.String()),
+		slog.String("payment_id", providerData.TransactionID),
+		slog.String("body", resp.String()),
 	)
 
 	if resp.IsStatusFailure() {

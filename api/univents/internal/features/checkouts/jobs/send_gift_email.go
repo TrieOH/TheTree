@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"uuid"
@@ -15,8 +16,6 @@ import (
 	"univents/assets"
 	"univents/models"
 	"univents/ports"
-
-	"go.uber.org/zap"
 )
 
 // EmailSender is the SMTP send seam. Satisfied by *email.Client; faked in
@@ -82,7 +81,7 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 		// Claimed before the job ran — they have an account now; the badge
 		// email covers the confirmation. No gift email needed.
 		telemetry.Log().Info("gift email skipped: recipient already has an account",
-			zap.String("registration_id", reg.ID.String()))
+			slog.String("registration_id", reg.ID.String()))
 		return nil
 	}
 	if reg.Status != models.RegistrationStatusConfirmed {
@@ -126,9 +125,9 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 	})
 	if err != nil {
 		telemetry.Log().Error("failed to send gifted-ticket email",
-			zap.String("registration_id", reg.ID.String()),
-			zap.String("to", reg.AttendeeEmail),
-			zap.Error(err))
+			slog.String("registration_id", reg.ID.String()),
+			slog.String("to", reg.AttendeeEmail),
+			telemetry.Err(err))
 		return err
 	}
 	return nil

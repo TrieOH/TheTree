@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 	"uuid"
 
@@ -14,8 +15,6 @@ import (
 	"lib/telemetry"
 	"univents/errs"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // webhookEventTypes — the normalized event types payssage delivers
@@ -39,7 +38,7 @@ const (
 func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 	if !o.validSignature(input) {
 		telemetry.Log().Warn("webhook: invalid signature",
-			zap.String("intent_id", input.IntentID.String()))
+			slog.String("intent_id", input.IntentID.String()))
 		return errs.ErrInvalidPayssageWebhookSignature
 	}
 
@@ -69,8 +68,8 @@ func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 		return o.refund(ctx, purchase)
 	default:
 		telemetry.Log().Warn("webhook: unhandled event type",
-			zap.String("event_type", input.EventType),
-			zap.String("intent_id", input.IntentID.String()))
+			slog.String("event_type", input.EventType),
+			slog.String("intent_id", input.IntentID.String()))
 		return nil
 	}
 }
@@ -99,7 +98,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 	}
 
 	telemetry.Log().Info("webhook: intent not found — waiting for checkout commit (D3)",
-		zap.String("intent_id", intentID.String()))
+		slog.String("intent_id", intentID.String()))
 	select {
 	case <-ctx.Done():
 		return nil, fmt.Errorf("webhook processing cancelled: %w", ctx.Err())
@@ -110,7 +109,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			telemetry.Log().Error("webhook: intent never correlated to a purchase (unknown intent or broken checkout)",
-				zap.String("intent_id", intentID.String()))
+				slog.String("intent_id", intentID.String()))
 			return nil, fmt.Errorf("purchase not found for intent %s", intentID)
 		}
 		return nil, err

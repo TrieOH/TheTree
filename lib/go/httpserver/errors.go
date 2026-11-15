@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 	fp "github.com/MintzyG/problematic"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 // Every error response is an RFC 9457 problem (ADR-0019). The Backend's
@@ -131,7 +131,7 @@ func checkListed(r *http.Request, slug string) {
 	if strict {
 		panic(msg)
 	}
-	telemetry.Log().Warn(msg, zap.String("operation", slot.id), zap.String("problem", slug))
+	telemetry.Log().Warn(msg, slog.String("operation", slot.id), slog.String("problem", slug))
 	trace.SpanFromContext(r.Context()).SetAttributes(attribute.String("problem.unlisted", slug))
 }
 
@@ -167,7 +167,7 @@ func problemFor(err error) (*fp.Problem, string) {
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	p, base := problemFor(err)
 	if p.Status >= http.StatusInternalServerError {
-		telemetry.Log().Error("request failed", zap.Int("status", p.Status), zap.String("path", r.URL.Path), zap.Error(err))
+		telemetry.Log().Error("request failed", slog.Int("status", p.Status), slog.String("path", r.URL.Path), telemetry.Err(err))
 	}
 	checkListed(r, p.Type)
 	countProblem(r, p.Type, p.Status)

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"uuid"
 
 	"lib/database"
@@ -14,8 +15,6 @@ import (
 	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
-
-	"go.uber.org/zap"
 )
 
 // ExpirePurchaseArgs is the `purchases.expire` job: expire one pending
@@ -84,8 +83,8 @@ func (w *ExpirePurchaseWorker) Work(ctx context.Context, args ExpirePurchaseArgs
 	if purchase.Status != models.PurchaseStatusPending {
 		// Already approved/cancelled/expired — nothing to do.
 		telemetry.Log().Info("expiry: purchase not pending — no-op",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.String("status", string(purchase.Status)))
+			slog.String("purchase_id", purchase.ID.String()),
+			slog.String("status", string(purchase.Status)))
 		return nil
 	}
 
@@ -171,15 +170,15 @@ func (w *ExpirePurchaseWorker) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		telemetry.Log().Error("expiry: marshal notifier payload",
-			zap.String("channel", notify.Channel),
-			zap.Error(err))
+			slog.String("channel", notify.Channel),
+			telemetry.Err(err))
 		return
 	}
 	err = w.notifier.Notify(ctx, notify.Channel, string(raw))
 	if err != nil {
 		telemetry.Log().Error("expiry: publish to notifier",
-			zap.String("channel", notify.Channel),
-			zap.String("payload", string(raw)),
-			zap.Error(err))
+			slog.String("channel", notify.Channel),
+			slog.String("payload", string(raw)),
+			telemetry.Err(err))
 	}
 }

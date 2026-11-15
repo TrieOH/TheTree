@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"lib/api_keys"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
+	"log/slog"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
 	project, err := o.Projects.GetByID(ctx, *payload.ProjectID)
 	if err != nil {
-		telemetry.Log().Info("Create api key", zap.String("project_id", payload.ProjectID.String()))
+		telemetry.Log().Info("Create api key", slog.String("project_id", payload.ProjectID.String()))
 		return nil, "", err
 	}
 

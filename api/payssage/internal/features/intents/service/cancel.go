@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"log/slog"
 	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 // cancellableStatuses is the set of intent statuses that can still be
@@ -45,9 +44,9 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	err = provider.CancelPendingPayment(ctx, intent)
 	if err != nil {
 		telemetry.Log().Error("error cancelling payment",
-			zap.String("provider", intent.Provider),
-			zap.String("intent_id", intent.ID.String()),
-			zap.Error(err),
+			slog.String("provider", intent.Provider),
+			slog.String("intent_id", intent.ID.String()),
+			telemetry.Err(err),
 		)
 		return nil, err
 	}

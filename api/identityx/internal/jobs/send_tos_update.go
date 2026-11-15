@@ -2,14 +2,13 @@ package jobs
 
 import (
 	"context"
+	"log/slog"
 
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/email"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // SendTosUpdateWorker fans a ToS-change notification out to every human
@@ -61,8 +60,8 @@ func (w *SendTosUpdateWorker) Work(ctx context.Context, args emails.SendTosUpdat
 		})
 		if err != nil {
 			telemetry.Log().Error("failed to render tos update email",
-				zap.String("actor_id", actor.ID.String()),
-				zap.Error(err),
+				slog.String("actor_id", actor.ID.String()),
+				telemetry.Err(err),
 			)
 			continue
 		}
@@ -75,9 +74,9 @@ func (w *SendTosUpdateWorker) Work(ctx context.Context, args emails.SendTosUpdat
 		})
 		if err != nil {
 			telemetry.Log().Error("failed to send tos update email",
-				zap.String("actor_id", actor.ID.String()),
-				zap.String("to", *actor.Email),
-				zap.Error(err),
+				slog.String("actor_id", actor.ID.String()),
+				slog.String("to", *actor.Email),
+				telemetry.Err(err),
 			)
 		}
 	}

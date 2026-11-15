@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
-	"go.uber.org/zap"
 )
 
 func NewClient(dbPool *pgxpool.Pool, workers *river.Workers, queues map[string]river.QueueConfig, periodicJobs []*river.PeriodicJob) *river.Client[pgx.Tx] {
@@ -36,6 +35,6 @@ func Stop(ctx context.Context, client *river.Client[pgx.Tx]) error {
 func LogStop(ctx context.Context, client *river.Client[pgx.Tx]) {
 	err := client.Stop(ctx)
 	if err != nil {
-		telemetry.Log().Warn("error stopping river", zap.Error(err))
+		telemetry.Log().Warn("error stopping river", telemetry.Err(err))
 	}
 }

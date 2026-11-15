@@ -14,7 +14,6 @@ import (
 	"univents/ports"
 
 	"github.com/coder/websocket"
-	"go.uber.org/zap"
 )
 
 const (
@@ -270,8 +269,8 @@ func (h *Hub) framesFor(status string, purchaseID, intentID uuid.UUID, hasIntent
 		return []outbound{h.terminalFrame(frameExpired, purchaseEventPayload{PurchaseID: purchaseID})}
 	default:
 		telemetry.Log().Warn("ws: unhandled purchase status in notification",
-			zap.String("status", status),
-			zap.String("purchase_id", purchaseID.String()))
+			slog.String("status", status),
+			slog.String("purchase_id", purchaseID.String()))
 		return nil
 	}
 }
@@ -288,7 +287,7 @@ func (h *Hub) statusDetail(intentID uuid.UUID, hasIntent bool) *string {
 	defer cancel()
 	intent, err := h.intents.GetIntent(ctx, intentID)
 	if err != nil {
-		telemetry.Log().Warn("ws: intent status_detail unavailable", zap.Error(err))
+		telemetry.Log().Warn("ws: intent status_detail unavailable", telemetry.Err(err))
 		return nil
 	}
 	return intent.StatusDetail

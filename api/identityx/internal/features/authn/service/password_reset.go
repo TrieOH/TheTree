@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"IdentityX/models"
 	"lib/crypto"
 	"lib/database"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // ForgotPassword mints and dispatches a reset link for the actor's email.
@@ -41,8 +40,8 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 	err = o.EmailSender.SendReset(ctx, actor, project)
 	if err != nil {
 		telemetry.Log().Error("failed to enqueue password reset email",
-			zap.String("actor_id", actor.ID.String()),
-			zap.Error(err),
+			slog.String("actor_id", actor.ID.String()),
+			telemetry.Err(err),
 		)
 	}
 	return nil

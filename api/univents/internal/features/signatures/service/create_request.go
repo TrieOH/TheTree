@@ -13,7 +13,6 @@ import (
 	"uuid"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 )
 
 func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSignatureRequestInput) (*models.SignatureRequest, error) {
@@ -77,7 +76,7 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send signature request email", zap.Error(err))
+		telemetry.Log().Error("failed to send signature request email", telemetry.Err(err))
 	}
 
 	return request, nil
