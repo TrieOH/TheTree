@@ -3,14 +3,13 @@ package jobs
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"uuid"
 
 	"lib/database"
 	"lib/telemetry"
 	"payssage/models"
 	"payssage/ports"
-
-	"go.uber.org/zap"
 )
 
 // FailWebhookDeliveryArgs is sent when the carrier has given up on a
@@ -45,8 +44,8 @@ func (w *FailWebhookDeliveryWorker) Work(ctx context.Context, args FailWebhookDe
 	}
 
 	telemetry.Log().Warn("webhook delivery: giving up after retries",
-		zap.String("delivery_id", delivery.ID.String()),
-		zap.Int("attempts", delivery.Attempts),
+		slog.String("delivery_id", delivery.ID.String()),
+		slog.Int("attempts", delivery.Attempts),
 	)
 	_, err = w.deliveries.Update(ctx, models.UpdateDeliveryParams{
 		ID:              delivery.ID,

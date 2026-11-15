@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 	"uuid"
 
@@ -10,8 +11,6 @@ import (
 	"univents/internal/features/checkouts/jobs"
 	"univents/internal/notify"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // statusReasonRefundedAfterExpiry marks a late approval that could not be
@@ -32,8 +31,8 @@ func (o *Operations) approve(ctx context.Context, purchase *models.Purchase) err
 		return o.lateApprove(ctx, purchase)
 	default: // cancelled — terminal
 		telemetry.Log().Warn("webhook: approval for terminal purchase ignored",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.String("status", string(purchase.Status)))
+			slog.String("purchase_id", purchase.ID.String()),
+			slog.String("status", string(purchase.Status)))
 		return nil
 	}
 }
@@ -80,9 +79,9 @@ func (o *Operations) lateApprove(ctx context.Context, purchase *models.Purchase)
 		}
 		o.notify(ctx, updated, items, models.PurchaseStatusExpired)
 		telemetry.Log().Error("webhook: late approval without full stock — refund deferred (D1), manual reconciliation needed",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.String("intent_id", intentIDString(purchase)),
-			zap.String("edition_id", purchase.EditionID.String()))
+			slog.String("purchase_id", purchase.ID.String()),
+			slog.String("intent_id", intentIDString(purchase)),
+			slog.String("edition_id", purchase.EditionID.String()))
 		return nil
 	}
 
@@ -116,7 +115,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
 				telemetry.Log().Warn("webhook: ticket item without registration",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			reg, err := o.Registrations.UpdateStatus(ctx, *item.RegistrationID, models.RegistrationStatusConfirmed, nil)
@@ -131,7 +130,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
 				telemetry.Log().Warn("webhook: product item without product_purchase",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.ProductPurchases.UpdateProductPurchaseStatus(ctx, *item.ProductPurchaseID, models.ProductPurchaseStatusConfirmed, nil)
@@ -164,8 +163,8 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 	err := o.Jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
 		telemetry.Log().Error("webhook: failed to enqueue gift email",
-			zap.String("registration_id", reg.ID.String()),
-			zap.Error(err))
+			slog.String("registration_id", reg.ID.String()),
+			telemetry.Err(err))
 	}
 }
 
@@ -222,16 +221,16 @@ func (o *Operations) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		telemetry.Log().Error("webhook: marshal notifier payload",
-			zap.String("channel", channelUniventsChanges),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
 		telemetry.Log().Error("webhook: publish to notifier",
-			zap.String("channel", channelUniventsChanges),
-			zap.String("payload", string(raw)),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			slog.String("payload", string(raw)),
+			telemetry.Err(err))
 	}
 }
 

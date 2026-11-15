@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -17,7 +18,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -135,7 +135,7 @@ func (w *statusWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 // logs writes one http_request line per request outside skip.
-func logs(logger *zap.Logger, skip []string) func(http.Handler) http.Handler {
+func logs(logger *slog.Logger, skip []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if hasPrefix(r.URL.Path, skip) {
@@ -146,12 +146,12 @@ func logs(logger *zap.Logger, skip []string) func(http.Handler) http.Handler {
 			ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(ww, r)
 			logger.Info("http_request",
-				zap.String("request_id", RequestIDFromCtx(r.Context())),
-				zap.String("method", r.Method),
-				zap.String("path", routePattern(r)),
-				zap.Int("status", ww.status),
-				zap.Duration("duration", time.Since(start)),
-				zap.String("remote_addr", r.RemoteAddr),
+				slog.String("request_id", RequestIDFromCtx(r.Context())),
+				slog.String("method", r.Method),
+				slog.String("path", routePattern(r)),
+				slog.Int("status", ww.status),
+				slog.Duration("duration", time.Since(start)),
+				slog.String("remote_addr", r.RemoteAddr),
 			)
 		})
 	}
@@ -213,7 +213,7 @@ func metrics(c *httpCollectors, skip []string) func(http.Handler) http.Handler {
 }
 
 // recoverer turns a handler panic into a logged 500.
-func recoverer(logger *zap.Logger) func(http.Handler) http.Handler {
+func recoverer(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
@@ -226,11 +226,11 @@ func recoverer(logger *zap.Logger) func(http.Handler) http.Handler {
 					panic(rec)
 				}
 				logger.Error("panic recovered",
-					zap.String("method", r.Method),
-					zap.String("path", r.URL.Path),
-					zap.Any("panic", rec),
-					zap.String("stack", string(debug.Stack())),
-					zap.String("remote_addr", r.RemoteAddr),
+					slog.String("method", r.Method),
+					slog.String("path", r.URL.Path),
+					slog.Any("panic", rec),
+					slog.String("stack", string(debug.Stack())),
+					slog.String("remote_addr", r.RemoteAddr),
 				)
 				WriteError(w, r, fmt.Errorf("panic: %v", rec))
 			}()

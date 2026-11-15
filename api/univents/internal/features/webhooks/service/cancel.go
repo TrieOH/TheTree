@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"lib/telemetry"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // cancel handles a terminal failure webhook (failed/rejected/cancelled): in
@@ -22,8 +21,8 @@ import (
 func (o *Operations) cancel(ctx context.Context, purchase *models.Purchase, to models.PurchaseStatus, reason *string) error {
 	if purchase.Status != models.PurchaseStatusPending {
 		telemetry.Log().Info("webhook: failure for non-pending purchase ignored",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.String("status", string(purchase.Status)))
+			slog.String("purchase_id", purchase.ID.String()),
+			slog.String("status", string(purchase.Status)))
 		return nil
 	}
 	return o.Tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -53,7 +52,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
 				telemetry.Log().Warn("webhook: ticket item without registration",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.Registrations.UpdateStatus(ctx, *item.RegistrationID, models.RegistrationStatusCancelled, nil)
@@ -63,7 +62,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
 				telemetry.Log().Warn("webhook: product item without product_purchase",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.ProductPurchases.UpdateProductPurchaseStatus(ctx, *item.ProductPurchaseID, models.ProductPurchaseStatusCancelled, nil)
@@ -73,7 +72,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 		case models.PurchaseItemTypeProgramOccurrence:
 			if item.ParticipationID == nil {
 				telemetry.Log().Warn("webhook: program item without participation",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.Participations.UpdateParticipationStatus(ctx, *item.ParticipationID, models.ProgramParticipationStatusCancelled)

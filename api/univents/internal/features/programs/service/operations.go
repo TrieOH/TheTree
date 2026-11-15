@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"uuid"
 
 	"lib/database"
@@ -10,8 +11,6 @@ import (
 	"univents/internal/authz"
 	"univents/internal/notify"
 	"univents/ports"
-
-	"go.uber.org/zap"
 )
 
 // Notifier is the LISTEN/NOTIFY publish surface for the store's stock
@@ -53,15 +52,15 @@ func (o *Operations) notifyStock(ctx context.Context, editionID, occurrenceID uu
 	})
 	if err != nil {
 		telemetry.Log().Error("programs: marshal notifier payload",
-			zap.String("channel", channelUniventsChanges),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
 		telemetry.Log().Error("programs: publish to notifier",
-			zap.String("channel", channelUniventsChanges),
-			zap.String("payload", string(raw)),
-			zap.Error(err))
+			slog.String("channel", channelUniventsChanges),
+			slog.String("payload", string(raw)),
+			telemetry.Err(err))
 	}
 }

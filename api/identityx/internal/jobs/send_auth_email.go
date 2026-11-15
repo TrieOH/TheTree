@@ -2,14 +2,13 @@ package jobs
 
 import (
 	"context"
+	"log/slog"
 
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/email"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // SendAuthEmailWorker renders and sends the async verify/reset email.
@@ -53,9 +52,9 @@ func (w *SendAuthEmailWorker) Work(ctx context.Context, args emails.SendAuthEmai
 	})
 	if err != nil {
 		telemetry.Log().Error("failed to send auth email",
-			zap.String("kind", args.TemplateKind),
-			zap.String("to", args.ToEmail),
-			zap.Error(err),
+			slog.String("kind", args.TemplateKind),
+			slog.String("to", args.ToEmail),
+			telemetry.Err(err),
 		)
 		return err
 	}

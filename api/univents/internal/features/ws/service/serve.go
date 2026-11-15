@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 	"uuid"
@@ -11,7 +12,6 @@ import (
 	"univents/models"
 
 	"github.com/coder/websocket"
-	"go.uber.org/zap"
 )
 
 // ServeWS is the raw WS route — `WS /ws?token=...` (D9). The token is the
@@ -31,8 +31,8 @@ func (o *Operations) ServeWS(w http.ResponseWriter, r *http.Request) {
 	tok, err := o.Tokens.Consume(r.Context(), hashToken(raw))
 	if err != nil {
 		telemetry.Log().Error("ws: token consume failed",
-			zap.String("purchase_id", r.URL.Query().Get("purchase_id")),
-			zap.Error(err))
+			slog.String("purchase_id", r.URL.Query().Get("purchase_id")),
+			telemetry.Err(err))
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -66,8 +66,8 @@ func (o *Operations) ServeWS(w http.ResponseWriter, r *http.Request) {
 	snap, err := o.snapshot(r.Context(), purchase)
 	if err != nil {
 		telemetry.Log().Error("ws: snapshot build failed",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.Error(err))
+			slog.String("purchase_id", purchase.ID.String()),
+			telemetry.Err(err))
 		_ = conn.Close(websocket.StatusInternalError, "snapshot failed")
 		return
 	}
@@ -136,16 +136,16 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 			select {
 			case <-ctx.Done():
 				telemetry.Log().Warn("ws: intent status fetch cancelled",
-					zap.String("intent_id", intentID.String()),
-					zap.Error(ctx.Err()))
+					slog.String("intent_id", intentID.String()),
+					telemetry.Err(ctx.Err()))
 				return nil
 			case <-time.After(o.intentRetryDelay):
 			}
 		}
 	}
 	telemetry.Log().Error("ws: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
-		zap.String("intent_id", intentID.String()),
-		zap.Int("attempts", o.intentAttempts),
-		zap.Error(lastErr))
+		slog.String("intent_id", intentID.String()),
+		slog.Int("attempts", o.intentAttempts),
+		telemetry.Err(lastErr))
 	return nil
 }

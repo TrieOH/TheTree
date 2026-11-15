@@ -13,7 +13,6 @@ import (
 	"lib/telemetry"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 )
 
 func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Signature) {
@@ -58,6 +57,6 @@ func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Sign
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send signature confirmation email", zap.Error(err))
+		telemetry.Log().Error("failed to send signature confirmation email", telemetry.Err(err))
 	}
 }

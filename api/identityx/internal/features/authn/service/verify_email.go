@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -10,8 +11,6 @@ import (
 	"IdentityX/models"
 	"lib/database"
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 // VerifyEmail redeems a single-use verify link through the token module:
@@ -65,8 +64,8 @@ func (o *Operations) ResendVerification(ctx context.Context, in models.ResendVer
 	err = o.EmailSender.SendVerify(ctx, actor, project)
 	if err != nil {
 		telemetry.Log().Error("failed to enqueue verification email",
-			zap.String("actor_id", actor.ID.String()),
-			zap.Error(err),
+			slog.String("actor_id", actor.ID.String()),
+			telemetry.Err(err),
 		)
 	}
 	return nil

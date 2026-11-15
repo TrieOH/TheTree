@@ -8,9 +8,8 @@ import (
 	"lib/crypto"
 	"lib/database"
 	"lib/telemetry"
+	"log/slog"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens *models.UserTokensOutput, err error) {
@@ -42,9 +41,9 @@ func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens
 		err = o.Tos.StampUse(ctx, actor.ID, *actor.ProjectID)
 		if err != nil {
 			telemetry.Log().Error("failed to stamp tos continued-use acceptance",
-				zap.String("actor_id", actor.ID.String()),
-				zap.String("project_id", actor.ProjectID.String()),
-				zap.Error(err),
+				slog.String("actor_id", actor.ID.String()),
+				slog.String("project_id", actor.ProjectID.String()),
+				telemetry.Err(err),
 			)
 		}
 	}

@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"log/slog"
 	"strings"
 	"time"
 	"univents/models"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 // ListByUser returns a user's active badges grouped by origin (attendant,
@@ -64,7 +63,7 @@ func (o *Operations) claimGiftsForUser(ctx context.Context, userID uuid.UUID) {
 	actor, err := o.Actors.GetByID(ctx, userID)
 	if err != nil {
 		telemetry.Log().Warn("badge claim: actor lookup failed",
-			zap.String("user_id", userID.String()), zap.Error(err))
+			slog.String("user_id", userID.String()), telemetry.Err(err))
 		return
 	}
 	if actor.Email == nil {
@@ -78,14 +77,14 @@ func (o *Operations) claimGiftsForUser(ctx context.Context, userID uuid.UUID) {
 	claimed, err := o.Registrations.ClaimAllByAttendeeEmail(ctx, email, userID)
 	if err != nil {
 		telemetry.Log().Warn("badge claim: gift claim failed",
-			zap.String("user_id", userID.String()), zap.Error(err))
+			slog.String("user_id", userID.String()), telemetry.Err(err))
 		return
 	}
 	for _, reg := range claimed {
 		_, err = o.EmitForConfirmedRegistration(ctx, reg.ID)
 		if err != nil {
 			telemetry.Log().Warn("badge claim: emission failed",
-				zap.String("registration_id", reg.ID.String()), zap.Error(err))
+				slog.String("registration_id", reg.ID.String()), telemetry.Err(err))
 		}
 	}
 }

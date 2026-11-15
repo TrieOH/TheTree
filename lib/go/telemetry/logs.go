@@ -1,35 +1,25 @@
 package telemetry
 
 import (
+	"log/slog"
 	"os"
 	"sync"
-
-	"lib/errx"
-
-	"go.uber.org/zap"
 )
 
 var (
-	logger      *zap.Logger
-	debugLogger *zap.Logger
+	logger      *slog.Logger
+	debugLogger *slog.Logger
 	once        sync.Once
 )
 
 func Init() {
 	once.Do(func() {
-		var err error
-		logger, err = zap.NewProduction()
-		if err != nil {
-			errx.Exit(err, "error starting production logger")
-		}
-		debugLogger, err = zap.NewDevelopment()
-		if err != nil {
-			errx.Exit(err, "error starting development logger")
-		}
+		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true}))
+		debugLogger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))
 	})
 }
 
-func Log() *zap.Logger {
+func Log() *slog.Logger {
 	if logger == nil {
 		Init()
 	}
@@ -37,4 +27,9 @@ func Log() *zap.Logger {
 		return debugLogger
 	}
 	return logger
+}
+
+// Err is the attr errors are logged under.
+func Err(err error) slog.Attr {
+	return slog.Any("error", err)
 }

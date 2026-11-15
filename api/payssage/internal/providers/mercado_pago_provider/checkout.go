@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"payssage/errs"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
@@ -13,8 +14,6 @@ import (
 	"uuid"
 
 	"lib/telemetry"
-
-	"go.uber.org/zap"
 )
 
 func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, providerCheckoutData json.RawMessage) error {
@@ -90,7 +89,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		}
 	}
 
-	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))
+	telemetry.Log().Info("MP Create Payment Request", slog.Any("body", body))
 
 	// TODO remember to use external group feature we made
 	// TODO: fix the idemp key not being actual idemp
@@ -111,7 +110,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return fmt.Errorf("%w: mercadopago create payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
-	telemetry.Log().Info("MP Create Payment Request Raw Body", zap.String("body", resp.String()))
+	telemetry.Log().Info("MP Create Payment Request Raw Body", slog.String("body", resp.String()))
 
 	if resp.IsStatusFailure() {
 		return mapMPError(resp.StatusCode(), resp.ResultError())

@@ -2,14 +2,13 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/crypto"
 	"lib/telemetry"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) error {
@@ -74,8 +73,8 @@ func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) e
 	err = o.EmailSender.SendVerify(ctx, actor, project)
 	if err != nil {
 		telemetry.Log().Error("failed to enqueue verification email",
-			zap.String("actor_id", actor.ID.String()),
-			zap.Error(err),
+			slog.String("actor_id", actor.ID.String()),
+			telemetry.Err(err),
 		)
 	}
 

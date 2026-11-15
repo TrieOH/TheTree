@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"lib/telemetry"
+	"log/slog"
 	"math"
 	"payssage/errs"
 	"payssage/models"
 	"strconv"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 // Refund fully reverses an approved MercadoPago payment (full refund only —
@@ -73,8 +72,8 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	}
 
 	telemetry.Log().Info("MP Refund Payment Response",
-		zap.String("payment_id", providerData.TransactionID),
-		zap.String("body", resp.String()),
+		slog.String("payment_id", providerData.TransactionID),
+		slog.String("body", resp.String()),
 	)
 
 	if resp.IsStatusFailure() {

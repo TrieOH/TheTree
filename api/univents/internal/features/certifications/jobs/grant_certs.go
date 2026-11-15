@@ -7,13 +7,12 @@ import (
 	"lib/database"
 	"lib/email"
 	"lib/telemetry"
+	"log/slog"
 	"os"
 	"univents/assets"
 	"univents/models"
 	"univents/ports"
 	"uuid"
-
-	"go.uber.org/zap"
 )
 
 type GrantCertsForEditionArgs struct {
@@ -55,8 +54,8 @@ func (w *GrantCertsWorker) Work(ctx context.Context, args GrantCertsForEditionAr
 	errs := w.grantEditionAttendanceCerts(ctx, args.EditionID)
 	for _, e := range errs {
 		telemetry.Log().Warn("cert emission had errors",
-			zap.String("user_id", e.UserID.String()),
-			zap.String("error", e.Error),
+			slog.String("user_id", e.UserID.String()),
+			slog.String("error", e.Error),
 		)
 	}
 	if len(errs) > 0 {
@@ -84,8 +83,8 @@ func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, args GrantCert
 	errs := w.grantProgramCerts(ctx, args.EditionID, args.ProgramID)
 	for _, e := range errs {
 		telemetry.Log().Warn("cert emission had errors",
-			zap.String("user_id", e.UserID.String()),
-			zap.String("error", e.Error),
+			slog.String("user_id", e.UserID.String()),
+			slog.String("error", e.Error),
 		)
 	}
 	if len(errs) > 0 {
@@ -233,13 +232,13 @@ func (w *grantCertsDeps) emitCerts(ctx context.Context, editionID uuid.UUID, tem
 func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certification, certName, toEmail, toName string) {
 	edition, err := w.editions.GetByID(ctx, cert.EditionID)
 	if err != nil {
-		telemetry.Log().Error("failed to get edition for cert email", zap.Error(err))
+		telemetry.Log().Error("failed to get edition for cert email", telemetry.Err(err))
 		return
 	}
 
 	event, err := w.events.GetByID(ctx, edition.EventID)
 	if err != nil {
-		telemetry.Log().Error("failed to get event for cert email", zap.Error(err))
+		telemetry.Log().Error("failed to get event for cert email", telemetry.Err(err))
 		return
 	}
 
@@ -256,7 +255,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		VerifyLink:   verifyLink,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to render cert email", zap.Error(err))
+		telemetry.Log().Error("failed to render cert email", telemetry.Err(err))
 		return
 	}
 
@@ -267,7 +266,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send cert email", zap.Error(err))
+		telemetry.Log().Error("failed to send cert email", telemetry.Err(err))
 		return
 	}
 

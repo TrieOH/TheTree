@@ -1,0 +1,107 @@
+# Local setup
+
+- **Order:** 3
+- **Summary:** Install the tools, start the four APIs, and run an app against them.
+
+## 1. Install the tools
+
+Install these yourself:
+
+- Go 1.27 (check with `go version`)
+- Node 26 (`node --version`)
+- Docker with Docker Compose (`docker compose version`)
+- [`just`](https://just.systems), a command runner (`just --version`)
+
+Then turn on pnpm and install the rest (sqlc, golangci-lint, gotestsum, gitleaks, trivy):
+
+```sh
+corepack enable
+just setup
+```
+
+`just setup` puts tools in `$(go env GOPATH)/bin` and `~/.local/bin`. If a command then says "command not found", add both to your `PATH`:
+
+```sh
+# bash or zsh
+export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"
+# fish
+fish_add_path ~/.local/bin ~/go/bin
+```
+
+## 2. Create the env files
+
+```sh
+cp .example.env .env
+for api in identityx univents payssage informd; do
+  cp api/$api/.example.env api/$api/.env
+done
+```
+
+Then fill these in. For secrets, `openssl rand -hex 32` prints a good value.
+
+| File | Fill in |
+| --- | --- |
+| `.env` | `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY`: any values. They're the login for the local file storage. |
+| `api/identityx/.env` | `POSTGRES_PASSWORD` and `IDX_POSTGRES_PASSWORD`: the same value. `ENCRYPTION_KEY`, `HMAC_SECRET`: secrets. |
+| `api/univents/.env` | `HMAC_SECRET`: a secret |
+| `api/payssage/.env` | `POSTGRES_PASSWORD` and `PAYSSAGE_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_PROJECT_ID`, `IDENTITY_X_API_KEY`. |
+| `api/informd/.env` | `POSTGRES_PASSWORD` and `INFORMD_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_URL`, `IDENTITY_X_PROJECT_ID`, `IDENTITY_X_API_KEY`. |
+
+<Callout type="warning" title="TODO">How to get the IdentityX project ID and API key for Payssage and Informd on a fresh machine.</Callout>
+
+Git ignores every `.env` file.
+
+## 3. Start the APIs
+
+```sh
+pnpm install
+just gen
+just up
+```
+
+- `pnpm install` installs the JavaScript packages and the git hooks.
+- `just gen` builds the generated code.
+- `just up` starts a Postgres for each API and migrates it. Then it starts the four APIs, the file storage, and Mailpit, which catches the emails the APIs send.
+
+Check that it worked: `just ps` lists the containers, and `curl localhost:8080/health` answers from IdentityX.
+
+To work on one API, run `just run <api>` instead, for example `just run univents`. It also starts the APIs that one calls.
+
+## 4. Run an app
+
+```sh
+cp front/univents-solid/.env.example front/univents-solid/.env
+pnpm univents dev
+```
+
+The apps name their example file `.env.example`. The APIs use `.example.env`.
+
+The example already points at your local APIs. Replace `AUTH_SESSION_PASSWORD` with the output of `openssl rand -hex 32`.
+
+The other apps run the same way: `pnpm identityx dev`, `pnpm payssage dev`, `pnpm informd dev`. The portal runs with `pnpm -F portal dev`.
+
+<Callout type="warning" title="New env var?">An app only sees the variables listed in its `front/<app>/wrangler.jsonc`, even in dev. Add new ones there as well as in `.env`.</Callout>
+
+## Ports
+
+| Product | API | Postgres | App |
+| --- | --- | --- | --- |
+| IdentityX | `8080` | `5432` | `3001` |
+| Payssage | `8082` | `5434` | `3003` |
+| Informd | `8083` | `5435` | `3004` |
+| Univents | `8081` | `5433` | `3002` |
+
+The portal runs on `3010`, Mailpit on `8025`, and the file storage (RustFS) on `9000`, with its console on `9001`.
+
+## Everyday commands
+
+`<api>` is one of `identityx`, `payssage`, `informd`, `univents`.
+
+| To | Run |
+| --- | --- |
+| Stop everything | `just down` |
+| Go tests | `just test <api>` |
+| Go lint | `just lint <api>` |
+| Migrate one database | `just migrate <api>` |
+| Typecheck one app | `pnpm -F <package> tsc`, with the package name from the app's `package.json` |
+| Rebuild generated code | `just gen` |

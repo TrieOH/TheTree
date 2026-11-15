@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"lib/telemetry"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 type TxKey struct{}
@@ -61,10 +61,10 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 			if !committed {
 				rbErr := tx.Rollback(ctx)
 				if rbErr != nil {
-					telemetry.Log().Error("error during tx rollback after panic", zap.Error(rbErr))
+					telemetry.Log().Error("error during tx rollback after panic", telemetry.Err(rbErr))
 				}
 			}
-			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
+			telemetry.Log().Error("transaction function panicked", slog.Any("panic", p))
 			err = fmt.Errorf("transaction panicked: %v", p)
 		}
 	}()
@@ -75,17 +75,17 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	if err != nil {
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after usecase error", zap.Error(rbErr))
+			telemetry.Log().Error("error during tx rollback after usecase error", telemetry.Err(rbErr))
 		}
 		return err
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		telemetry.Log().Error("error during tx commit", zap.Error(err))
+		telemetry.Log().Error("error during tx commit", telemetry.Err(err))
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
+			telemetry.Log().Error("error during tx rollback after commit failure", telemetry.Err(rbErr))
 		}
 		return fmt.Errorf("commit transaction: %w", err)
 	}

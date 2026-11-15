@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"lib/telemetry"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // refund handles a payment.refunded webhook (refund plan slice 3): in a tx,
@@ -18,8 +17,8 @@ import (
 func (o *Operations) refund(ctx context.Context, purchase *models.Purchase) error {
 	if purchase.Status != models.PurchaseStatusApproved {
 		telemetry.Log().Info("webhook: refund for non-approved purchase ignored",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.String("status", string(purchase.Status)))
+			slog.String("purchase_id", purchase.ID.String()),
+			slog.String("status", string(purchase.Status)))
 		return nil
 	}
 	return o.Tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -53,7 +52,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
 				telemetry.Log().Warn("webhook: refunded ticket item without registration",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.Registrations.UpdateStatus(ctx, *item.RegistrationID, models.RegistrationStatusCancelled, nil)
@@ -67,7 +66,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
 				telemetry.Log().Warn("webhook: refunded product item without product_purchase",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.ProductPurchases.UpdateProductPurchaseStatus(ctx, *item.ProductPurchaseID, models.ProductPurchaseStatusCancelled, nil)
@@ -77,7 +76,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 		case models.PurchaseItemTypeProgramOccurrence:
 			if item.ParticipationID == nil {
 				telemetry.Log().Warn("webhook: refunded program item without participation",
-					zap.String("purchase_id", purchase.ID.String()))
+					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
 			_, err := o.Participations.UpdateParticipationStatus(ctx, *item.ParticipationID, models.ProgramParticipationStatusCancelled)

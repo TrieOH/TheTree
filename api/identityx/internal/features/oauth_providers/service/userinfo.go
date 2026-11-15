@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 	"uuid"
 
@@ -14,7 +15,6 @@ import (
 	"lib/oauth"
 	"lib/telemetry"
 
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
@@ -85,9 +85,9 @@ func (o *Operations) updateExistingIdentity(
 		err = o.Tos.StampUse(ctx, actor.ID, *actor.ProjectID)
 		if err != nil {
 			telemetry.Log().Error("failed to stamp tos continued-use acceptance",
-				zap.String("actor_id", actor.ID.String()),
-				zap.String("project_id", actor.ProjectID.String()),
-				zap.Error(err),
+				slog.String("actor_id", actor.ID.String()),
+				slog.String("project_id", actor.ProjectID.String()),
+				telemetry.Err(err),
 			)
 		}
 	}
@@ -167,7 +167,7 @@ func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds o
 	exchangeCtx := context.WithValue(ctx, oauth2.HTTPClient, o.Client.Client())
 	providerToken, err := cfg.Exchange(exchangeCtx, code)
 	if err != nil {
-		telemetry.Log().Error("oauth code exchange failed", zap.Error(err))
+		telemetry.Log().Error("oauth code exchange failed", telemetry.Err(err))
 		return nil, nil, errs.ErrOAuthCodeExchange
 	}
 	if providerToken == nil {

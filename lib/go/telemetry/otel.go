@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"slices"
 
-	"go.opentelemetry.io/contrib/bridges/otelzap"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	prombridge "go.opentelemetry.io/contrib/bridges/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
@@ -21,8 +22,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var serviceName string
@@ -114,7 +113,7 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 			return fail(fmt.Errorf("log exporter: %w", err))
 		}
 		lp := sdklog.NewLoggerProvider(sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)), sdklog.WithResource(res))
-		teeLogs(otelzap.NewCore(appName, otelzap.WithLoggerProvider(lp)))
+		teeLogs(otelslog.NewHandler(appName, otelslog.WithLoggerProvider(lp), otelslog.WithSource(true)))
 		shutdowns = append(shutdowns, lp.Shutdown)
 	}
 
@@ -122,12 +121,10 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 	return shutdown, nil
 }
 
-// teeLogs makes telemetry.Log() write to core as well as stdout.
-func teeLogs(core zapcore.Core) {
+// teeLogs makes telemetry.Log() write to h as well as stdout.
+func teeLogs(h slog.Handler) {
 	Init()
-	logger = logger.WithOptions(zap.WrapCore(func(stdout zapcore.Core) zapcore.Core {
-		return zapcore.NewTee(stdout, core)
-	}))
+	logger = slog.New(slog.NewMultiHandler(logger.Handler(), h))
 }
 
 // Shutdown flushes and stops the pipeline Start started, logging failures.
@@ -137,6 +134,6 @@ func Shutdown(ctx context.Context, shutdown func(context.Context) error, appName
 	}
 	err := shutdown(ctx)
 	if err != nil {
-		Log().Error("error shutting down telemetry for "+appName, zap.Error(err))
+		Log().Error("error shutting down telemetry for "+appName, Err(err))
 	}
 }

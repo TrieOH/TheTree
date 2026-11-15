@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"slices"
 	"sync"
 	"uuid"
@@ -11,8 +12,6 @@ import (
 
 	"univents/internal/notify"
 	"univents/models"
-
-	"go.uber.org/zap"
 )
 
 // RelayManager owns the stock-delta fan-out: ONE notifier subscription for
@@ -126,8 +125,8 @@ func (r *Relay) broadcast(stock *notify.StockNotification) {
 	availability, err := r.avail.Availability(context.Background(), r.editionID)
 	if err != nil {
 		telemetry.Log().Error("store: relay availability read failed",
-			zap.String("edition_id", r.editionID.String()),
-			zap.Error(err))
+			slog.String("edition_id", r.editionID.String()),
+			telemetry.Err(err))
 		return
 	}
 

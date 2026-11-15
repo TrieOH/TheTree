@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 	"uuid"
 
@@ -21,7 +22,6 @@ import (
 	"lib/telemetry"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 )
 
 // Config carries the token-policy knobs the Manager needs. Resolved once
@@ -229,7 +229,7 @@ func (m *Manager) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]an
 	for _, k := range keys {
 		jwk, err := crypto.PublicKeyToJWKS(k.ID.String(), k.PublicKey)
 		if err != nil {
-			telemetry.Log().Warn("skipping malformed key", zap.String("key_id", k.ID.String()), zap.Error(err))
+			telemetry.Log().Warn("skipping malformed key", slog.String("key_id", k.ID.String()), telemetry.Err(err))
 			continue
 		}
 		jwks = append(jwks, jwk)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"lib/email"
 	"lib/telemetry"
+	"log/slog"
 	"os"
 	"strings"
 	"univents/assets"
@@ -12,7 +13,6 @@ import (
 	"uuid"
 
 	"github.com/skip2/go-qrcode"
-	"go.uber.org/zap"
 )
 
 // sendBadgeEmail emails the participant their badge exactly once: the QR
@@ -23,19 +23,19 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 		// Unreachable via EmitForConfirmedRegistration (accountless
 		// registrations never emit), kept as a guard for future callers.
 		telemetry.Log().Info("badge email skipped: attendee has no account yet",
-			zap.String("registration_id", reg.ID.String()))
+			slog.String("registration_id", reg.ID.String()))
 		return
 	}
 
 	edition, err := o.Editions.GetByID(ctx, reg.EditionID)
 	if err != nil {
-		telemetry.Log().Error("failed to get edition for badge email", zap.Error(err))
+		telemetry.Log().Error("failed to get edition for badge email", telemetry.Err(err))
 		return
 	}
 
 	event, err := o.Events.GetByID(ctx, edition.EventID)
 	if err != nil {
-		telemetry.Log().Error("failed to get event for badge email", zap.Error(err))
+		telemetry.Log().Error("failed to get event for badge email", telemetry.Err(err))
 		return
 	}
 
@@ -44,7 +44,7 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 
 	qrPNG, err := qrcode.Encode(actionURL, qrcode.Medium, 256)
 	if err != nil {
-		telemetry.Log().Error("failed to render badge QR for email", zap.Error(err))
+		telemetry.Log().Error("failed to render badge QR for email", telemetry.Err(err))
 		return
 	}
 
@@ -55,7 +55,7 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 		BadgeLink:    badgeLink,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to render badge email", zap.Error(err))
+		telemetry.Log().Error("failed to render badge email", telemetry.Err(err))
 		return
 	}
 
@@ -70,7 +70,7 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 		Data:      qrPNG,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send badge email", zap.Error(err))
+		telemetry.Log().Error("failed to send badge email", telemetry.Err(err))
 		return
 	}
 
