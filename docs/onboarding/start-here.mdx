@@ -1,0 +1,36 @@
+# Start here
+
+- **Order:** 1
+- **Summary:** What TrieOH is, and the order to read these docs in.
+
+TrieOH builds four products. They share one repo, TheTree, because they share code and use each other.
+
+| Product | What it does |
+| --- | --- |
+| IdentityX | Login, accounts, organizations, projects and API keys |
+| Payssage | Payments through MercadoPago |
+| Informd | Forms and their responses |
+| Univents | Events: tickets, check-in, badges and certificates |
+
+Each product is a Go API and a web app. Every app signs in through IdentityX, and Univents takes payments through Payssage.
+
+You're reading the portal, `portal.trieoh.com`. It holds the team's docs, issues, deploys and metrics.
+
+## Read these in order
+
+<Cards>
+  <Card title="1. Repo tour" href="/docs/onboarding/repo-tour">Where everything lives in TheTree.</Card>
+  <Card title="2. Local setup" href="/docs/onboarding/local-setup">Run the APIs and an app on your machine.</Card>
+  <Card title="3. Architecture" href="/docs/onboarding/architecture">How a request travels in production.</Card>
+  <Card title="4. Writing docs" href="/docs/onboarding/writing-docs">How to add a page like this one.</Card>
+</Cards>
+
+## Two rules to know on day one
+
+1. Pushing a tag deploys to production. A tag looks like `payssage/v0.7.10`. Ask before you push one. Pushing to `main` deploys nothing.
+2. Git hooks check your work when you commit and push. `pnpm install` sets them up. Every commit and push must pass them. When a hook fails, fix what it reports and commit again.
+
+## Where things are tracked
+
+- Work: Linear, team TRI, with one Linear project per product.
+- Decisions and the reasons behind them: `docs/adr/` in the repo, shown in the portal under Docs, then Decisions.

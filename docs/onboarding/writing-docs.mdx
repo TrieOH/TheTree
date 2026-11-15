@@ -1,5 +1,6 @@
 # Writing docs
 
+- **Order:** 5
 - **Summary:** How portal docs are written, and every component they can use.
 
 Portal docs are Markdown or MDX files in the repo. They're built with the portal, so a doc changes when the portal is released.
@@ -13,7 +14,7 @@ Portal docs are Markdown or MDX files in the repo. They're built with the portal
 
 ## Shape of a doc
 
-Start with a `# Title`. A list of `**Field:** value` lines right under it becomes the page's header and is left out of the body, the way the ADRs carry their status and date. Everything after that is ordinary Markdown: `##` sections get anchors you can link to, tables, and fenced code highlighted in both themes.
+Start with a `# Title`. A list of `**Field:** value` lines right under it becomes the page's header and is left out of the body, the way the ADRs carry their status and date. `**Order:** 3` sets where a doc sits in its folder's list; docs without one come after, by title. Everything after that is ordinary Markdown: `##` sections get anchors you can link to, tables, and fenced code highlighted in both themes.
 
 ```ts
 // front/portal/src/server.ts
