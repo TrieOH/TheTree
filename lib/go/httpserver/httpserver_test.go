@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 func testRouter(t *testing.T, cfg Config) http.Handler {
@@ -38,10 +40,13 @@ func TestHealthReturnsAppName(t *testing.T) {
 	}
 }
 
-// Metrics are pushed (lib/telemetry bridges the default Prometheus registry
-// to OTLP), so the request collectors must land in the default registry and
+// Metrics are pushed (lib/telemetry exports the global meter provider over
+// OTLP), so the request instruments must record on the global meter and
 // nothing is served for scraping.
 func TestMetricsCollectedNotServed(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	otel.SetMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))
+
 	h := testRouter(t, Config{
 		Routes: func(r *chi.Mux) {
 			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
@@ -52,18 +57,8 @@ func TestMetricsCollectedNotServed(t *testing.T) {
 
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/work", nil))
 
-	families, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		t.Fatalf("gather: %v", err)
-	}
-	found := false
-	for _, f := range families {
-		if f.GetName() == "http_requests_total" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("default registry does not contain http_requests_total")
+	if _, ok := collectMetrics(t, reader)["http_requests_total"]; !ok {
+		t.Fatalf("global meter did not record http_requests_total")
 	}
 
 	rec := httptest.NewRecorder()
@@ -256,4 +251,21 @@ func TestNewServerTimeouts(t *testing.T) {
 	if srv.ReadTimeout != 30*time.Second || srv.WriteTimeout != 60*time.Second || srv.IdleTimeout != 120*time.Second {
 		t.Fatalf("timeouts = %v/%v/%v, want 30s/60s/120s", srv.ReadTimeout, srv.WriteTimeout, srv.IdleTimeout)
 	}
+}
+
+// collectMetrics reads reader once and returns its metrics by name.
+func collectMetrics(t *testing.T, reader *sdkmetric.ManualReader) map[string]metricdata.Metrics {
+	t.Helper()
+	var rm metricdata.ResourceMetrics
+	err := reader.Collect(t.Context(), &rm)
+	if err != nil {
+		t.Fatalf("collect: %v", err)
+	}
+	out := map[string]metricdata.Metrics{}
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			out[m.Name] = m
+		}
+	}
+	return out
 }

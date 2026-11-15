@@ -10,7 +10,7 @@ tag here (see [Releases & deploys](#releases--deploys)).
 
 | Layer | Tech | Notes |
 |---|---|---|
-| Backends | Go 1.27 · chi · sqlc · goose · river | 4 microservices in `api/` |
+| Backends | Go 1.27 · chi · sqlc · goose | 4 microservices in `api/` |
 | Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
 | Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |

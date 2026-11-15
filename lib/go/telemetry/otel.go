@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/contrib/bridges/otelslog"
-	prombridge "go.opentelemetry.io/contrib/bridges/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -56,8 +55,8 @@ func (s Signal) Enabled() bool {
 // the next thaw and by the shutdown):
 //
 //   - traces: the global tracer provider.
-//   - metrics: the default Prometheus registry (request and pool collectors)
-//     bridged into OTLP, plus anything recorded on the global meter.
+//   - metrics: the global meter provider (request, pool, runtime and
+//     process metrics, plus anything else recorded on it).
 //   - logs: telemetry.Log() is teed into OTLP; stdout logging stays.
 func Start(ctx context.Context, appName string) (func(context.Context) error, error) {
 	serviceName = appName
@@ -101,10 +100,14 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 		if err != nil {
 			return fail(fmt.Errorf("metric exporter: %w", err))
 		}
-		reader := sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithProducer(prombridge.NewMetricProducer()))
+		reader := sdkmetric.NewPeriodicReader(exporter)
 		mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader), sdkmetric.WithResource(res))
 		otel.SetMeterProvider(mp)
 		shutdowns = append(shutdowns, mp.Shutdown)
+		err = runtimeInstruments(mp.Meter("lib/telemetry"))
+		if err != nil {
+			return fail(fmt.Errorf("runtime metrics: %w", err))
+		}
 	}
 
 	if Logs.Enabled() {

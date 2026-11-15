@@ -17,6 +17,7 @@ import (
 
 	fp "github.com/MintzyG/problematic"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -109,7 +110,11 @@ func countProblem(r *http.Request, slug string, status int) {
 	if slot, ok := r.Context().Value(operationSlotKey{}).(*operationSlot); ok {
 		operation = slot.id
 	}
-	c.problems.WithLabelValues(operation, slug, strconv.Itoa(status)).Inc()
+	c.problems.Add(r.Context(), 1, metric.WithAttributes(
+		attribute.String("operation", operation),
+		attribute.String("problem", slug),
+		attribute.String("status", strconv.Itoa(status)),
+	))
 }
 
 // checkListed reports a problem the answering operation's x-problems

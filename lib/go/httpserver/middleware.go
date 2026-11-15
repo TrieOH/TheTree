@@ -16,8 +16,9 @@ import (
 	"uuid"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/time/rate"
 )
 
@@ -158,36 +159,41 @@ func logs(logger *slog.Logger, skip []string) func(http.Handler) http.Handler {
 }
 
 type httpCollectors struct {
-	requests *prometheus.CounterVec
-	duration *prometheus.HistogramVec
-	problems *prometheus.CounterVec
+	requests metric.Int64Counter
+	duration metric.Float64Histogram
+	problems metric.Int64Counter
 }
 
-// newCollectors registers the HTTP metrics. Names, labels and buckets are
-// what dashboards query: keep them stable.
-func newCollectors(reg prometheus.Registerer) (*httpCollectors, error) {
-	c := &httpCollectors{
-		requests: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Total number of HTTP requests.",
-		}, []string{"route", "method", "status"}),
-		duration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
-			Help:    "Histogram of HTTP response times.",
-			Buckets: prometheus.ExponentialBuckets(0.00025, 2, 16),
-		}, []string{"route"}),
-		problems: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "http_problems_total",
-			Help: "Problem answers by operation, problem type slug and status.",
-		}, []string{"operation", "problem", "status"}),
+// durationBuckets are 0.25ms doubling 16 times (~8s).
+var durationBuckets = func() []float64 {
+	b := make([]float64, 16)
+	for i := range b {
+		b[i] = 0.00025 * float64(int(1)<<i)
 	}
-	for _, col := range []prometheus.Collector{c.requests, c.duration, c.problems} {
-		err := reg.Register(col)
-		if err != nil {
-			return nil, err
-		}
+	return b
+}()
+
+// newCollectors creates the HTTP instruments on meter. Names, attributes and
+// buckets are what dashboards query: keep them stable. Names carry their
+// Prometheus suffixes and no unit, so OTLP ingestion stores them as is.
+func newCollectors(meter metric.Meter) (*httpCollectors, error) {
+	requests, err := meter.Int64Counter("http_requests_total",
+		metric.WithDescription("Total number of HTTP requests."))
+	if err != nil {
+		return nil, err
 	}
-	return c, nil
+	duration, err := meter.Float64Histogram("http_request_duration_seconds",
+		metric.WithDescription("Histogram of HTTP response times."),
+		metric.WithExplicitBucketBoundaries(durationBuckets...))
+	if err != nil {
+		return nil, err
+	}
+	problems, err := meter.Int64Counter("http_problems_total",
+		metric.WithDescription("Problem answers by operation, problem type slug and status."))
+	if err != nil {
+		return nil, err
+	}
+	return &httpCollectors{requests: requests, duration: duration, problems: problems}, nil
 }
 
 // metrics counts and times requests per route outside skip. The status
@@ -204,9 +210,14 @@ func metrics(c *httpCollectors, skip []string) func(http.Handler) http.Handler {
 			ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(ww, r)
 			route := routePattern(r)
-			c.requests.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
+			c.requests.Add(r.Context(), 1, metric.WithAttributes(
+				attribute.String("route", route),
+				attribute.String("method", r.Method),
+				attribute.String("status", http.StatusText(ww.status)),
+			))
 			if !realtime(r) {
-				c.duration.WithLabelValues(route).Observe(time.Since(start).Seconds())
+				c.duration.Record(r.Context(), time.Since(start).Seconds(),
+					metric.WithAttributes(attribute.String("route", route)))
 			}
 		})
 	}

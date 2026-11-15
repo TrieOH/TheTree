@@ -19,8 +19,8 @@ import (
 	"lib/telemetry"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric/noop"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
@@ -226,7 +226,7 @@ var (
 
 func collectors() (*httpCollectors, error) {
 	collectorsOnce.Do(func() {
-		collectorsVal, errCollectors = newCollectors(prometheus.DefaultRegisterer)
+		collectorsVal, errCollectors = newCollectors(otel.Meter("lib/httpserver"))
 	})
 	return collectorsVal, errCollectors
 }
