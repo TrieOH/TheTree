@@ -56,14 +56,19 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 		return fmt.Errorf("%w: mercadopago cancel payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
-	telemetry.Log().Info("MP Cancel Payment Response",
-		slog.String("payment_id", providerData.TransactionID),
-		slog.String("body", resp.String()),
-	)
-
 	if resp.IsStatusFailure() {
-		return mapMPError(resp.StatusCode(), resp.ResultError())
+		return mapMPError("cancel payment", resp.StatusCode(), resp.ResultError(),
+			slog.String("intent_id", intent.ID.String()),
+			slog.String("payment_id", providerData.TransactionID),
+		)
 	}
+
+	telemetry.Log().Info("MP payment cancelled",
+		slog.String("intent_id", intent.ID.String()),
+		slog.String("payment_id", providerData.TransactionID),
+		slog.String("status", mpResp.Status),
+		slog.String("status_detail", mpResp.StatusDetail),
+	)
 
 	providerData.OrderStatus = mpResp.Status
 	providerData.OrderStatusDetail = mpResp.StatusDetail

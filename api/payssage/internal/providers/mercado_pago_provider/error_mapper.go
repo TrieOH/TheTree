@@ -2,8 +2,11 @@ package mercado_pago_provider
 
 import (
 	"encoding/json"
+	"log/slog"
 
 	"payssage/errs"
+
+	"lib/telemetry"
 )
 
 // mpErrorCause mirrors a single entry in MercadoPago's error response "cause" array.
@@ -35,8 +38,9 @@ var knownMPErrorCodes = map[int]string{
 // errs.ProviderError. statusCode is the HTTP status MP returned; resultErr
 // is whatever was populated via resty's SetResultError (map[string]any or
 // similar). Payssage's problem is picked from statusCode by the problem switch
-// (internal/app).
-func mapMPError(statusCode int, resultErr any) error {
+// (internal/app). It logs MP's error code and message under "MP <op>
+// failed" with attrs, never the response body: MP echoes the payer back.
+func mapMPError(op string, statusCode int, resultErr any, attrs ...any) error {
 	var body mpErrorBody
 	raw, err := json.Marshal(resultErr)
 	if err == nil {
@@ -60,5 +64,11 @@ func mapMPError(statusCode int, resultErr any) error {
 		perr.CauseDescription = cause.Description
 		perr.Reason = knownMPErrorCodes[cause.Code]
 	}
+	telemetry.Log().Warn("MP "+op+" failed", append(attrs,
+		slog.Int("status", statusCode),
+		slog.String("mp_error", perr.Code),
+		slog.String("mp_message", perr.Message),
+		slog.Int("mp_cause_code", perr.CauseCode),
+	)...)
 	return perr
 }

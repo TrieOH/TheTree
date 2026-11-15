@@ -2,6 +2,7 @@ package mercado_pago_provider
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -57,26 +58,27 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.Provid
 		return models.ProviderCredentialData{}, err
 	}
 
-	telemetry.Log().Info("MP exchange response",
-		slog.Int("status", resp.StatusCode),
-		slog.String("body", string(rawBody)),
-	)
-
 	var result struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 		PublicKey    string `json:"public_key"`
 		UserID       int    `json:"user_id"`
+		Error        string `json:"error"`
+		Message      string `json:"message"`
 	}
 	err = json.Unmarshal(rawBody, &result)
 	if err != nil {
-		telemetry.Log().Error("error unmarshaling MP exchange code response body", telemetry.Err(err))
+		telemetry.Log().Error("error unmarshaling MP exchange code response body", slog.Int("status", resp.StatusCode), telemetry.Err(err))
 		return models.ProviderCredentialData{}, err
 	}
 
 	if result.AccessToken == "" {
-		telemetry.Log().Error("MP exchange code response had empty access token", slog.Any("result struct", result), slog.Any("rawBody", rawBody))
-		return models.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
+		telemetry.Log().Error("MP exchange code response had empty access token",
+			slog.Int("status", resp.StatusCode),
+			slog.String("mp_error", result.Error),
+			slog.String("mp_message", result.Message),
+		)
+		return models.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: status %d: %s", resp.StatusCode, cmp.Or(result.Message, result.Error, "no access token"))
 	}
 
 	return models.ProviderCredentialData{
