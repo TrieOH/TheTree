@@ -71,14 +71,21 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 		return fmt.Errorf("%w: mercadopago refund payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
-	telemetry.Log().Info("MP Refund Payment Response",
-		slog.String("payment_id", providerData.TransactionID),
-		slog.String("body", resp.String()),
-	)
-
 	if resp.IsStatusFailure() {
-		return mapMPError(resp.StatusCode(), resp.ResultError())
+		return mapMPError("refund payment", resp.StatusCode(), resp.ResultError(),
+			slog.String("intent_id", intent.ID.String()),
+			slog.String("payment_id", providerData.TransactionID),
+		)
 	}
+
+	telemetry.Log().Info("MP refund created",
+		slog.String("intent_id", intent.ID.String()),
+		slog.String("payment_id", providerData.TransactionID),
+		slog.Int64("refund_id", mpResp.ID),
+		slog.String("status", mpResp.Status),
+		slog.String("status_detail", mpResp.StatusDetail),
+		slog.Float64("amount", mpResp.Amount),
+	)
 
 	// The refund POST returns the refund object; the payment itself is still
 	// `approved` until MP processes it (the payment.refunded webhook follows).

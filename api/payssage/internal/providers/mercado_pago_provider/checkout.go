@@ -89,8 +89,6 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		}
 	}
 
-	telemetry.Log().Info("MP Create Payment Request", slog.Any("body", body))
-
 	// TODO remember to use external group feature we made
 	// TODO: fix the idemp key not being actual idemp
 	idempotencyKey := uuid.NewV7()
@@ -110,11 +108,22 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return fmt.Errorf("%w: mercadopago create payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
-	telemetry.Log().Info("MP Create Payment Request Raw Body", slog.String("body", resp.String()))
-
 	if resp.IsStatusFailure() {
-		return mapMPError(resp.StatusCode(), resp.ResultError())
+		return mapMPError("create payment", resp.StatusCode(), resp.ResultError(),
+			slog.String("intent_id", intent.ID.String()),
+			slog.String("payment_method", checkoutData.PaymentMethodID),
+			slog.Int64("amount_cents", intent.AmountCents),
+		)
 	}
+
+	telemetry.Log().Info("MP payment created",
+		slog.String("intent_id", intent.ID.String()),
+		slog.Int64("payment_id", mpResp.ID),
+		slog.String("status", mpResp.Status),
+		slog.String("status_detail", mpResp.StatusDetail),
+		slog.String("payment_method", checkoutData.PaymentMethodID),
+		slog.Int64("amount_cents", intent.AmountCents),
+	)
 
 	providerData := &models.MercadoPagoIntentData{
 		OrderID:           strconv.FormatInt(mpResp.ID, 10),
