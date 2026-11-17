@@ -1,0 +1,169 @@
+# The ticket_types feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /editions/{edition_id}/ticket-types:
+    get:
+      tags: [ticket_types]
+      operationId: listTicketTypes
+      x-cache: shared
+      summary: List an edition's ticket types
+      description: |
+        Lists the ticket types available for the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition ticket types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/TicketType'
+    post:
+      tags: [ticket_types]
+      operationId: createTicketType
+      summary: Create a ticket type
+      description: |
+        Creates a ticket type for the edition (price in cents, optional
+        max quantity, access level for gated areas). The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketTypeRequest'
+            example:
+              name: General Admission
+              description: Standard entry ticket.
+              access_level: 0
+              price_cents: 15000
+              max_quantity: 500
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Ticket type created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/TicketType'
+
+  /ticket-types/{ticket_type_id}:
+    get:
+      tags: [ticket_types]
+      operationId: getTicketType
+      summary: Get a ticket type
+      description: Fetches a single ticket type. Public.
+      security: []
+      parameters:
+        - name: ticket_type_id
+          in: path
+          required: true
+          description: Ticket type ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested ticket type
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/TicketType'
+    patch:
+      tags: [ticket_types]
+      operationId: patchTicketType
+      summary: Update a ticket type
+      description: |
+        Updates ticket type details. The actor must be an owner or admin
+        of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_type_id
+          in: path
+          required: true
+          description: Ticket type ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTicketTypeRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Ticket type updated
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/TicketType'
+
+components:
+  schemas:
+    CreateTicketTypeRequest:
+      type: object
+      description: Request body for ticket type creation. Mirrors `models.CreateTicketTypeRequest`.
+      required: [name, access_level, price_cents]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          minimum: 0
+        price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        max_quantity:
+          type: [ integer, "null" ]
+          description: Null = unlimited.
+
+    PatchTicketTypeRequest:
+      type: object
+      description: Request body for ticket type updates. Mirrors `models.PatchTicketTypeRequest`.
+      required: [name, access_level, price_cents]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          minimum: 0
+        price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        max_quantity:
+          type: [ integer, "null" ]

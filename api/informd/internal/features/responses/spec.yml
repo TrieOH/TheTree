@@ -1,0 +1,73 @@
+# The responses feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /forms/{form_id}/responses:
+    post:
+      tags: [responses]
+      operationId: submitResponse
+      summary: Submit a response
+      description: |
+        Submits a response to an open form: an optional email plus one
+        answer per field (field answers upsert per response). Public —
+        this is the submission endpoint embedded in the public form
+        flow. Responders are identified by email when provided.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+            example:
+              email: respondent@example.com
+              answers:
+                - field_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  answer:
+                    value: Jane Doe
+      x-problems: [400, 404, 409, 500]
+      responses:
+        '201':
+          description: Response submitted
+
+components:
+  schemas:
+    SubmitRequest:
+      type: object
+      description: Request body for response submission. Mirrors `models.SubmitRequest`.
+      properties:
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Responder email, used to identify/merge responses.
+        answers:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmitAnswer'
+
+    SubmitAnswer:
+      type: object
+      description: One field answer in a submission. Mirrors `models.SubmitAnswer`.
+      required: [field_id, answer]
+      properties:
+        field_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        answer:
+          type: [ object, "null" ]
+          description: The answer value; shape depends on the field type.
+
+    FormNotOpenForResponses:
+      x-problem:
+        slug: form-not-open-for-responses
+        status: 400
+        title: Form Not Open For Responses
+        description: "Form is not open for responses."
+        error: ErrFormNotOpenForResponses
+        message: "this form isn't open, so it doesn't accept responses; ask its owner to open it"

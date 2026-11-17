@@ -1,0 +1,142 @@
+# The profile_schemas feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /profile-schema:
+    get:
+      tags: [profile_schemas]
+      operationId: getPlatformProfileSchema
+      summary: Get the platform-wide profile schema
+      description: |
+        Fetches the platform-wide JSON Schema used to validate actor
+        profiles (applies to actors with no project). Public read.
+      security: []
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Platform profile schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProfileSchema'
+    put:
+      tags: [profile_schemas]
+      operationId: upsertPlatformProfileSchema
+      x-scope: platform-only
+      summary: Upsert the platform-wide profile schema
+      description: |
+        Sets (or replaces) the platform-wide JSON Schema for actor
+        profiles. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileSchemaRequest'
+            example:
+              schema:
+                type: object
+                properties:
+                  full_name:
+                    type: string
+              active: true
+      x-problems: [400, 401, 500, 503]
+      responses:
+        '200':
+          description: Schema upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProfileSchema'
+
+  /projects/{project_id}/profile-schema:
+    get:
+      tags: [profile_schemas]
+      operationId: getProjectProfileSchema
+      summary: Get the project profile schema
+      description: |
+        Fetches the JSON Schema used to validate actor profiles within
+        the project. Public read.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Project profile schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProfileSchema'
+    put:
+      tags: [profile_schemas]
+      operationId: upsertProjectProfileSchema
+      x-scope: platform-only
+      summary: Upsert the project profile schema
+      description: |
+        Sets (or replaces) the JSON Schema for actor profiles within the
+        project. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileSchemaRequest'
+      x-problems: [400, 401, 404, 500, 503]
+      responses:
+        '200':
+          description: Schema upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProfileSchema'
+
+components:
+  schemas:
+    ProjectProfileSchema:
+      x-go-type: models.ProjectProfileSchema
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A profile validation schema. Mirrors `models.ProjectProfileSchema`.
+      required: [schema, version, active, created_at, updated_at]
+      properties:
+        project_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Project the schema applies to; null = platform-wide default.
+        schema:
+          type: object
+          description: The JSON Schema (draft 2020-12) used to validate profiles.
+          additionalProperties: true
+        version:
+          type: integer
+          description: Monotonically increasing schema version.
+        active:
+          type: boolean
+          description: Whether this schema is the active one for its scope.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UpsertProfileSchemaRequest:
+      type: object
+      description: Request body for schema upserts. Mirrors `models.UpsertProfileSchemaRequest`.
+      required: [schema, active]
+      properties:
+        schema:
+          type: object
+          description: The JSON Schema to store.
+          additionalProperties: true
+          x-go-type: 'json.RawMessage'
+        active:
+          type: boolean
+          description: Whether the schema should become active immediately.

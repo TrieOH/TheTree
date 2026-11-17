@@ -52,7 +52,7 @@ func WithIdentity(ctx context.Context, identity *Identity) context.Context {
 
 // ErrNoIdentity is RequireIdentity on a request no auth middleware
 // authenticated. The Backends' error maps answer it with a 401.
-var ErrNoIdentity = errors.New("identity not found in context")
+var ErrNoIdentity = errors.New("this operation needs a signed-in caller; send a bearer token or an API key")
 
 // RequireIdentity returns the caller's identity, or ErrNoIdentity.
 func RequireIdentity(ctx context.Context) (*Identity, error) {

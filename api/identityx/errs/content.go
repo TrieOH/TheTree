@@ -19,8 +19,7 @@ func (e *TemplateRenderError) Unwrap() error { return e.Err }
 
 // Terms of service.
 var (
-	ErrTosExists = errors.New("project already has terms of service; update them instead")
-	ErrTosEmpty  = errors.New("terms of service content must not be empty")
+	ErrTosEmpty = errors.New("terms of service content must not be empty")
 )
 
 // ProfileSchemaViolationError is a profile its scope's schema rejects; the

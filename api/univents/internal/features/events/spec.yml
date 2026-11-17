@@ -1,0 +1,411 @@
+# The events feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /events:
+    get:
+      tags: [events]
+      operationId: listPublicEvents
+      x-cache: shared
+      summary: List public events
+      description: |
+        Lists publicly visible events (active events with published
+        editions). Public.
+      security: []
+      x-problems: [500]
+      responses:
+        '200':
+          description: Public events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Event'
+    post:
+      tags: [events]
+      operationId: createEvent
+      summary: Create an event
+      description: |
+        Creates an event owned by the authenticated actor. The creator
+        becomes the event owner. New events start in `draft` status.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              full_name: TrieOH Developers Conference
+              acronym: TDC
+              slug: trieoh-dev-conf
+              description: A yearly gathering of TrieOH developers.
+              contact_email: events@trieoh.com
+      x-problems: [400, 401, 500]
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/{event_slug}:by-slug:
+    get:
+      tags: [events]
+      operationId: getEventBySlug
+      x-cache: shared
+      summary: Get an event by slug
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        event by its slug. Public.
+      security: []
+      parameters:
+        - name: event_slug
+          in: path
+          required: true
+          description: Event slug.
+          schema:
+            type: string
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested event
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/owned:
+    get:
+      tags: [events]
+      operationId: listOwnedEvents
+      summary: List events you own
+      description: |
+        Lists the events owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Events owned by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/joined:
+    get:
+      tags: [events]
+      operationId: listJoinedEvents
+      summary: List events you are a member of
+      description: |
+        Lists the events the authenticated actor is a member of (any
+        role: owner, admin, or staff).
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Events the actor belongs to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/{event_id}:
+    patch:
+      tags: [events]
+      operationId: patchEvent
+      summary: Update an event
+      description: |
+        Updates event details. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/{event_id}/publish:
+    post:
+      tags: [events]
+      operationId: publishEvent
+      summary: Publish an event
+      description: |
+        Moves the event from `draft` to `active`. Requires an owner or
+        admin role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Event published
+
+  /events/{event_id}/discontinue:
+    post:
+      tags: [events]
+      operationId: discontinueEvent
+      summary: Discontinue an event
+      description: |
+        Discontinues an active event (status becomes `discontinued`).
+        Requires an owner or admin role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Event discontinued
+
+  /events/{event_id}/members:
+    get:
+      tags: [events]
+      operationId: listEventMembers
+      summary: List event members
+      description: |
+        Lists the members of an event with their roles. Requires an
+        owner, admin, or staff role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Event members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventMember'
+    post:
+      tags: [events]
+      operationId: addEventMember
+      summary: Add an event member
+      description: |
+        Adds an actor (by email) to the event with the given role. The
+        authenticated actor must be an owner or admin.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddEventMemberRequest'
+            example:
+              email: user@example.com
+              role: staff
+      x-problems: [400, 401, 403, 404, 409, 500]
+      responses:
+        '201':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventMember'
+
+  /events/{event_id}/members/{user_id}:
+    delete:
+      tags: [events]
+      operationId: removeEventMember
+      summary: Remove an event member
+      description: |
+        Removes a member from the event by email. The authenticated actor
+        must be an owner or admin. NOTE: the `user_id` path parameter is
+        part of the interface but the member to remove is identified by
+        the request body email.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+        - name: user_id
+          in: path
+          required: true
+          description: User (actor) ID of the member to remove.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  x-go-type: string
+                  x-oapi-codegen-extra-tags:
+                    validate: "required,email"
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Member removed
+
+components:
+  schemas:
+    CreateEventRequest:
+      type: object
+      description: Request body for event creation. Mirrors `models.CreateEventRequest`.
+      required: [full_name, slug]
+      properties:
+        full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        acronym:
+          type: [ string, "null" ]
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    PatchEventRequest:
+      type: object
+      description: Request body for event updates. Mirrors `models.PatchEventRequest`.
+      required: [full_name, slug]
+      properties:
+        full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        acronym:
+          type: [ string, "null" ]
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    EventMemberRole:
+      x-go-type: models.EventMemberRole
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [owner, admin, staff]
+
+    EventMember:
+      x-go-type: models.EventMember
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: Membership of a user in an event. Mirrors `models.EventMember`.
+      required: [id, event_id, user_id, role, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        event_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/EventMemberRole'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    AddEventMemberRequest:
+      type: object
+      description: Request body for adding an event member. Mirrors `models.AddEventMemberRequest`.
+      required: [email, role]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=owner admin staff"
+          $ref: '#/components/schemas/EventMemberRole'
+
+    # events, editions, templates, payments
+    EventNotDraft:
+      x-problem:
+        slug: event-not-draft
+        status: 400
+        title: Event Not Draft
+        description: "Cannot publish non draft event."
+        error: ErrEventNotDraft
+        message: "only a draft event can be published, and this one isn't a draft"
+
+    EventNotActive:
+      x-problem:
+        slug: event-not-active
+        status: 400
+        title: Event Not Active
+        description: "Cannot discontinue non active event."
+        error: ErrEventNotActive
+        message: "only an active event can be discontinued, and this one isn't active"

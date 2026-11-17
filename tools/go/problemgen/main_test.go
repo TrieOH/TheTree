@@ -248,8 +248,43 @@ func TestRejects(t *testing.T) {
 			spec: spec,
 			want: "slug not-found is declared by both",
 		},
+		"message without error": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., message: why }\n"),
+			spec: spec,
+			want: "a message belongs to a problem's error",
+		},
+		"error without message": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad }\n"),
+			spec: spec,
+			want: "needs a message",
+		},
+		"message repeats the title": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad Thing, description: Bad., error: ErrBad, message: bad thing. }\n"),
+			spec: spec,
+			want: "repeats the title",
+		},
+		"message ends a sentence": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: you did a bad thing. }\n"),
+			spec: spec,
+			want: "reads like any Go error string",
+		},
+		"message capitalized": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: You did a bad thing }\n"),
+			spec: spec,
+			want: "reads like any Go error string",
+		},
+		"error on a problem with members": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: why it failed }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
+			spec: spec,
+			want: "answered from a typed error",
+		},
+		"error not a Go name": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: badError, message: why it failed }\n"),
+			spec: spec,
+			want: "must be an exported Go identifier starting with Err",
+		},
 		"untyped ref": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad. }\n      required: [p]\n      properties:\n        p: { $ref: '#/components/schemas/Problem' }\n"),
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad. }\n      required: [p]\n      properties:\n        p: { $ref: '../problems.yml#/components/schemas/Problem' }\n"),
 			spec: spec,
 			want: "has no x-problem-go-type",
 		},
@@ -278,6 +313,199 @@ func TestParam(t *testing.T) {
 	} {
 		if got := param(in); got != want {
 			t.Errorf("param(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// featureSpec is a feature's spec.yml: a path the spec imports, a schema
+// of its own, one of the spec's, and a problem.
+const featureSpec = `paths:
+  /pay:
+    post:
+      operationId: pay
+      x-problems: [card-declined, not-found]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayInput' }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '../../../api-spec.yml#/components/schemas/Receipt' }
+  /unused:
+    get:
+      responses:
+        "200": { description: ok }
+components:
+  parameters:
+    PayID: { name: pay_id, in: path, required: true, schema: { type: string } }
+  schemas:
+    PayInput:
+      type: object
+      properties:
+        amount: { $ref: '#/components/schemas/Cents' }
+    Cents: { type: integer }
+    CardDeclined:
+      x-problem: { slug: card-declined, status: 402, title: Card Declined, description: The card was declined. }
+`
+
+const featureRoot = `openapi: 3.1.0
+paths:
+  /pay:
+    $ref: './internal/features/pay/spec.yml#/paths/~1pay'
+  /unused:
+    $ref: './internal/features/pay/spec.yml#/paths/~1unused'
+components:
+  schemas:
+    Receipt: { type: object }
+`
+
+func writeFeature(t *testing.T, specPath, body string) {
+	t.Helper()
+	path := filepath.Join(filepath.Dir(specPath), "internal", "features", "pay", "spec.yml")
+	err := os.MkdirAll(filepath.Dir(path), 0o750)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(path, []byte(body), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFeatureSpec(t *testing.T) {
+	specPath := fixture(t, ownProblems, featureRoot)
+	writeFeature(t, specPath, featureSpec)
+	bundled, src := generate(t, specPath)
+
+	op := dig(t, bundled, "paths", "/pay", "post")
+	if got := dig(t, op, "requestBody", "content", "application/json", "schema", "$ref"); got != "#/components/schemas/PayInput" {
+		t.Errorf("own schema ref = %v", got)
+	}
+	if got := dig(t, op, "responses", "200", "content", "application/json", "schema", "$ref"); got != "#/components/schemas/Receipt" {
+		t.Errorf("spec schema ref = %v", got)
+	}
+	if got := dig(t, bundled, "components", "schemas", "PayInput", "properties", "amount", "$ref"); got != "#/components/schemas/Cents" {
+		t.Errorf("nested ref = %v", got)
+	}
+	if dig(t, bundled, "components", "parameters", "PayID") == nil {
+		t.Error("the feature's parameters are not merged")
+	}
+	if dig(t, op, "responses", "402", "$ref") != "#/components/responses/CardDeclinedProblem" {
+		t.Error("the feature's problem is not answered")
+	}
+	if !strings.Contains(src, "func CardDeclined(detail string)") {
+		t.Error("the feature's problem has no constructor")
+	}
+}
+
+func TestFeatureSpecRejects(t *testing.T) {
+	cases := map[string]struct {
+		root, feature, want string
+	}{
+		"path never imported": {
+			root:    "openapi: 3.1.0\npaths:\n  /pay:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\ncomponents:\n  schemas:\n    Receipt: { type: object }\n",
+			feature: featureSpec,
+			want:    "paths /unused is never imported",
+		},
+		"imported under another path": {
+			root:    "openapi: 3.1.0\npaths:\n  /other:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\n",
+			feature: "paths:\n  /pay:\n    get: { responses: { \"200\": { description: ok } } }\n",
+			want:    "under another path",
+		},
+		"missing component": {
+			root:    "openapi: 3.1.0\npaths:\n  /pay:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\n",
+			feature: "paths:\n  /pay:\n    get:\n      responses:\n        \"200\":\n          description: ok\n          content: { application/json: { schema: { $ref: '#/components/schemas/Gone' } } }\n",
+			want:    "declares no schemas Gone",
+		},
+		"schema declared twice": {
+			root:    featureRoot,
+			feature: strings.Replace(featureSpec, "    Cents: { type: integer }", "    Cents: { type: integer }\n    Receipt: { type: object }", 1),
+			want:    "Receipt is also declared by the spec",
+		},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			specPath := fixture(t, ownProblems, c.root)
+			writeFeature(t, specPath, c.feature)
+			dir := filepath.Dir(specPath)
+			err := run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, c.want)
+			}
+		})
+	}
+}
+
+const namedProblems = `
+components:
+  schemas:
+    AddSelf:
+      x-problem:
+        slug: add-self
+        status: 400
+        title: Add Self
+        description: The caller tried to add themselves.
+        error: ErrAddSelf
+        message: you can't add yourself to the project; ask an admin to add you
+`
+
+func TestNamedErrors(t *testing.T) {
+	specPath := fixture(t, namedProblems, "openapi: 3.1.0\npaths:\n  /x:\n    post:\n      x-problems: [add-self]\n")
+	dir := filepath.Dir(specPath)
+	err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module svc\n\ngo 1.27\n"), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundled, src := generate(t, specPath)
+
+	for _, want := range []string{`"svc/errs"`, "{errs.ErrAddSelf, AddSelf}"} {
+		if !strings.Contains(src, want) {
+			t.Errorf("package lacks %s", want)
+		}
+	}
+	x := dig(t, bundled, "components", "schemas", "AddSelfProblem", "x-problem").(map[string]any)
+	if _, ok := x["error"]; ok {
+		t.Error("the bundle shows the Go error's name")
+	}
+	errsSrc, err := os.ReadFile(filepath.Join(dir, errsFile)) //nolint:gosec // test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `ErrAddSelf = errors.New("you can't add yourself to the project; ask an admin to add you")`
+	if !strings.Contains(string(errsSrc), want) {
+		t.Errorf("errs lacks %s:\n%s", want, errsSrc)
+	}
+}
+
+func TestSharedProblemNamesNoError(t *testing.T) {
+	specPath := fixture(t, ownProblems, spec)
+	root := filepath.Dir(filepath.Dir(specPath))
+	shared := strings.Replace(sharedProblems, "description: Missing. }", "description: Missing., error: ErrGone, message: it is gone for good }", 1)
+	err := os.WriteFile(filepath.Join(root, "problems.yml"), []byte(shared), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Dir(specPath)
+	err = run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
+	if err == nil || !strings.Contains(err.Error(), "names no error") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCapitalized(t *testing.T) {
+	for in, want := range map[string]bool{
+		"This failed":           true,
+		"this failed":           false,
+		"IdentityX is down":     false,
+		"OAuth state expired":   false,
+		"API key expired":       false,
+		"a path parameter is X": false,
+	} {
+		if got := capitalized(in); got != want {
+			t.Errorf("capitalized(%q) = %v, want %v", in, got, want)
 		}
 	}
 }

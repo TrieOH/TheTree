@@ -38,7 +38,7 @@ func (h *Handlers) GetWallet(ctx context.Context, req openapi.GetWalletRequestOb
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetWallet201JSONResponse(*wallet), nil
+	return openapi.GetWallet200JSONResponse(*wallet), nil
 }
 
 func (h *Handlers) ListOrganizationWallets(ctx context.Context, req openapi.ListOrganizationWalletsRequestObject) (openapi.ListOrganizationWalletsResponseObject, error) {
@@ -46,7 +46,7 @@ func (h *Handlers) ListOrganizationWallets(ctx context.Context, req openapi.List
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListOrganizationWallets201JSONResponse{Items: wallets}, nil
+	return openapi.ListOrganizationWallets200JSONResponse{Items: wallets}, nil
 }
 
 func (h *Handlers) ListWallets(ctx context.Context, _ openapi.ListWalletsRequestObject) (openapi.ListWalletsResponseObject, error) {
@@ -54,7 +54,7 @@ func (h *Handlers) ListWallets(ctx context.Context, _ openapi.ListWalletsRequest
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListWallets201JSONResponse{Items: wallets}, nil
+	return openapi.ListWallets200JSONResponse{Items: wallets}, nil
 }
 
 func (h *Handlers) SetWalletFee(ctx context.Context, req openapi.SetWalletFeeRequestObject) (openapi.SetWalletFeeResponseObject, error) {

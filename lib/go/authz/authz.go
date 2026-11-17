@@ -14,7 +14,7 @@ type Role interface {
 
 // ErrInsufficientRole is what the named-error role checks return (ADR-0016);
 // lib/httpserver maps it to 403 for every Backend.
-var ErrInsufficientRole = errors.New("insufficient permissions")
+var ErrInsufficientRole = errors.New("your role here doesn't allow this operation; ask an admin or the owner for a higher role")
 
 // AtLeast returns ErrInsufficientRole when role ranks below minRole.
 func AtLeast(role, minRole Role) error {

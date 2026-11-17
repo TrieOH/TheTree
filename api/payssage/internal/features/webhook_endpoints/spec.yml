@@ -1,0 +1,141 @@
+# The webhook_endpoints feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /wallets/{wallet_id}/webhooks/endpoints:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookEndpoints
+      summary: List a wallet's webhook endpoints
+      description: |
+        Lists the webhook endpoints registered on the wallet. The actor
+        must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Wallet webhook endpoints
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEndpoint'
+    post:
+      tags: [webhooks]
+      operationId: createWebhookEndpoint
+      summary: Create a webhook endpoint
+      description: |
+        Registers a tenant webhook endpoint on the wallet. Payssage will
+        POST provider events to `url` (see the top-level "Webhooks for
+        tenants" section for the delivery envelope and signature
+        headers). The returned `secret` is used to verify the
+        `X-Payssage-Signature` header on each delivery. The actor must
+        own the wallet.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookEndpointRequest'
+            example:
+              name: Payment events
+              url: https://app.example.com/webhooks/payments
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Webhook endpoint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+
+  /webhooks/endpoints/{endpoint_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookEndpoint
+      summary: Get a webhook endpoint
+      description: |
+        Fetches a single webhook endpoint by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The requested endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+    delete:
+      tags: [webhooks]
+      operationId: deleteWebhookEndpoint
+      summary: Delete a webhook endpoint
+      description: |
+        Deletes a webhook endpoint and stops future deliveries to it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
+      responses:
+        '204':
+          description: Endpoint deleted
+
+components:
+  schemas:
+    WebhookEndpoint:
+      x-go-type: models.WebhookEndpoint
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A tenant webhook endpoint. `secret` is the HMAC key used to sign
+        deliveries; verify the `X-Payssage-Signature` header with it.
+        Mirrors `models.WebhookEndpoint`.
+      required: [id, wallet_id, name, url, secret, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        secret:
+          type: string
+          description: HMAC-SHA256 signing key for delivery verification.
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWebhookEndpointRequest:
+      type: object
+      description: Request body for webhook endpoint creation. Mirrors `models.CreateWebhookEndpointRequest`.
+      required: [name, url]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri

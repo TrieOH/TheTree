@@ -19,7 +19,8 @@
 #   pnpm-lock.yaml / pnpm-workspace.yaml / package.json / patches → all
 #   root-workspace TS members (univents-solid has its own lockfile — root
 #   lock files don't affect it).
-#   api/<svc>/api-spec.yml → also lib/ts/<svc> + the fronts importing
+#   api/<svc>/api-spec.yml, its problems.yml or a feature's spec.yml
+#     → also lib/ts/<svc> + the fronts importing
 #   @trieoh/<svc>-api; the gitignored orval clients are regenerated first.
 
 set -eu
@@ -154,10 +155,11 @@ for tool in golangci-lint gotestsum pnpm; do
 done
 
 # The orval TS clients are gitignored (`just gen-ts`): TS checks need them
-# present and in step with any staged api-spec.yml, so regenerate first.
+# present and in step with any staged api-spec.yml, problems.yml or feature
+# spec.yml, so regenerate first.
 if [ -s "$ENGINE_TMP/ts_targets" ]; then
     stale=0
-    grep -q '^api/[^/]*/api-spec\.yml$' "$ENGINE_TMP/staged" && stale=1
+    grep -Eq '^api/[^/]*/(api-spec|problems|internal/features/[^/]*/spec)\.yml$' "$ENGINE_TMP/staged" && stale=1
     for d in lib/ts/*/; do
         [ -f "${d}package.json" ] && grep -q '"./client/endpoints.ts"' "${d}package.json" \
             && [ ! -d "${d}client" ] && stale=1

@@ -3,7 +3,11 @@
 // and the HTTP mapper (internal/app) can all match on these errors without
 // importing each other.
 //
-// A sentinel's text is the message a client reads. Errors that carry data
-// are typed; request fields go on through lib/fielderr. What status each
-// error is answered with is decided in one place, internal/app/errmap's problem switch.
+// A problem the API answers names its sentinel in problems.yml or in its
+// feature's spec.yml (x-problem's error and message): tools/problemgen
+// generates it into errs.gen.go, its message the detail a client reads,
+// and maps it to its problem. Written by hand here are the errors that
+// carry data (typed, mapped by internal/app/errmap's problem switch), the
+// not-found errors and the schema's check constraints, answered with the
+// shared problems. Request fields at fault go on through lib/fielderr.
 package errs

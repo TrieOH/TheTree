@@ -1,0 +1,92 @@
+# The webhook_events feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /wallets/{wallet_id}/webhooks/events:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookEvents
+      summary: List a wallet's webhook events
+      description: |
+        Lists the provider webhook events recorded against the wallet.
+        The actor must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Wallet webhook events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEvent'
+
+  /webhooks/events/{event_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookEvent
+      summary: Get a webhook event
+      description: |
+        Fetches a single webhook event (normalized provider event) by ID.
+        `payload` is the raw provider payload as received.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: Webhook event ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The requested event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEvent'
+
+components:
+  schemas:
+    WebhookEvent:
+      x-go-type: models.WebhookEvent
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A normalized provider webhook event. `event_type` is normalized
+        (e.g. `payment.succeeded`), `payload` is the raw provider payload
+        as received, and `external_id` is the provider's own event id
+        used for deduplication. Mirrors `models.WebhookEvent`.
+      required: [id, wallet_id, intent_id, provider, external_id, event_type, payload, received_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        intent_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        provider:
+          type: string
+        external_id:
+          type: string
+          description: Provider's own event/resource id.
+        event_type:
+          type: string
+          description: Normalized event type (e.g. `payment.succeeded`).
+        payload:
+          type: object
+          description: Raw provider event payload.
+          additionalProperties: true
+        received_at:
+          type: string
+          format: date-time

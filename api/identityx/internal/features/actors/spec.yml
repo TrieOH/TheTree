@@ -1,0 +1,121 @@
+# The actors feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /projects/{project_id}/actors:
+    get:
+      tags: [actors]
+      operationId: listActors
+      summary: List project actors
+      description: |
+        Lists the actors registered in the project. The authenticated
+        actor must be a user or member of the project (project-scoped
+        service accounts included). Never public.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Project actors
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Actor'
+    post:
+      tags: [actors]
+      operationId: createActor
+      x-scope: platform-only
+      summary: Create a project actor
+      description: |
+        Creates an actor in the project (used by services that provision
+        project identities — e.g. a workspace API key holder creating a
+        service actor). The authenticated actor must be a platform-level
+        client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../api-spec.yml#/components/schemas/CreateActorRequest'
+            example:
+              auth_method: api_key
+              type: service
+              email: checkout@example.com
+      x-problems: [400, 401, 404, 500, 503]
+      responses:
+        '201':
+          description: Actor created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Actor'
+
+  /projects/{project_id}/actors/{actor_id}:
+    get:
+      tags: [actors]
+      operationId: getActor
+      summary: Get a project actor by ID
+      description: |
+        Fetches a single actor from the project by ID. The authenticated
+        actor must be a user or member of the project (project-scoped
+        service accounts included). Never public.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Actor'
+
+  /projects/{project_id}/actors/{actor_email}:by_email:
+    get:
+      tags: [actors]
+      operationId: getActorByEmail
+      summary: Get a project actor by email
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        actor from the project by email address. The authenticated actor
+        must be a user or member of the project (project-scoped service
+        accounts included). Never public.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - name: actor_email
+          in: path
+          required: true
+          description: Email address of the actor to fetch.
+          schema:
+            x-go-type: string
+            type: string
+            format: email
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Actor'

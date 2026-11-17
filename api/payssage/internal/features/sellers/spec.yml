@@ -1,0 +1,56 @@
+# The sellers feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /wallets/{wallet_id}/sellers:
+    get:
+      tags: [sellers]
+      operationId: listWalletSellers
+      summary: List a wallet's sellers
+      description: |
+        Lists the sellers (provider accounts that split transactions)
+        bound to the wallet. The actor must own the wallet.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Wallet sellers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Seller'
+
+components:
+  schemas:
+    Seller:
+      x-go-type: models.Seller
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A provider account that splits transactions. Mirrors `models.Seller`.
+      required: [id, wallet_id, provider, provider_user_id, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        provider:
+          type: string
+        provider_user_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time

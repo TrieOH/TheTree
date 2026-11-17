@@ -1,0 +1,625 @@
+# The certifications feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /programs/{program_id}/certifications/emit:
+    post:
+      tags: [certifications]
+      operationId: emitProgramCertifications
+      summary: Enqueue certification emission for a program
+      description: |
+        Enqueues the `cert.grant_occurrence` job for the program's
+        participants. The job is idempotent: it only emits certificates
+        for participants who do not already hold one for the program
+        (accountless gifted participants are skipped), and records
+        failures for later inspection via
+        `/editions/{edition_id}/certifications/emission-errors`. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Grant job enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramCertEmissionResult'
+
+  /editions/{edition_id}/certifications/templates:
+    get:
+      tags: [certifications]
+      operationId: listCertificationTemplates
+      summary: List an edition's certification templates
+      description: |
+        Lists the certification templates of the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition certification templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertificationTemplate'
+    post:
+      tags: [certifications]
+      operationId: createCertificationTemplate
+      summary: Create a certification template
+      description: |
+        Creates a certification template for the edition (`edition_attendance`
+        or `program_attendance`; the latter is linked to programs after
+        creation). The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCertificationTemplateRequest'
+            example:
+              kind: edition_attendance
+              name: Edition Attendance Certificate
+              description: Awarded to attendees of the edition.
+              design_data:
+                background: "#ffffff"
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Certification template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificationTemplate'
+
+  /certifications/templates/{template_id}:
+    get:
+      tags: [certifications]
+      operationId: getCertificationTemplate
+      summary: Get a certification template
+      description: Fetches a single certification template. Public.
+      security: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificationTemplate'
+    put:
+      tags: [certifications]
+      operationId: updateCertificationTemplate
+      summary: Update a certification template
+      description: |
+        Updates a certification template's details and design. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCertificationTemplateRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificationTemplate'
+    delete:
+      tags: [certifications]
+      operationId: deleteCertificationTemplate
+      summary: Delete a certification template
+      description: |
+        Deletes a certification template. The actor must be an owner or
+        admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Template deleted
+
+  /certifications/templates/{template_id}/link:
+    post:
+      tags: [certifications]
+      operationId: linkCertificationTemplate
+      summary: Link a program to a certification template
+      description: |
+        Links a program to a `program_attendance` certification
+        template, making the template eligible for that program's
+        attendees. The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertTemplateProgramRequest'
+            example:
+              program_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Program linked to the template
+    delete:
+      tags: [certifications]
+      operationId: unlinkCertificationTemplate
+      summary: Unlink a program from a certification template
+      description: |
+        Removes a program link from a certification template. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertTemplateProgramRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Program unlinked from the template
+
+  /certifications/templates/{template_id}/links:
+    get:
+      tags: [certifications]
+      operationId: listCertificationTemplateLinks
+      summary: List a template's program links
+      description: |
+        Lists the program links of a certification template. Public.
+      security: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Template program links
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertificationTemplateProgram'
+
+  /verify/{hash}:
+    get:
+      tags: [certifications]
+      operationId: verifyCertification
+      summary: Verify a certification by hash
+      description: |
+        Verifies a certification by its public verification hash.
+        Returns validity and the certificate when found. Public.
+      security: []
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          description: Certification verification hash.
+          schema:
+            type: string
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyCertResponse'
+
+  /certifications/{cert_id}:
+    get:
+      tags: [certifications]
+      operationId: getCertification
+      summary: Get a certification
+      description: |
+        Fetches a single certification (emitted certificate). The actor
+        must be the certificate holder or an event member.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cert_id
+          in: path
+          required: true
+          description: Certification ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: The requested certification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certification'
+
+  /editions/{edition_id}/certifications:
+    get:
+      tags: [certifications]
+      operationId: listEditionCertifications
+      summary: List an edition's certifications
+      description: |
+        Lists the certifications emitted for the edition. The actor must
+        be an owner, admin, or staff of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Edition certifications
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Certification'
+
+  /certifications:
+    get:
+      tags: [certifications]
+      operationId: listMyCertifications
+      summary: List your certifications
+      description: |
+        Lists the certifications issued to the authenticated actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Certifications issued to the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Certification'
+
+  /certifications/{cert_id}/invalidate:
+    post:
+      tags: [certifications]
+      operationId: invalidateCertification
+      summary: Invalidate a certification
+      description: |
+        Invalidates an emitted certification with a reason. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cert_id
+          in: path
+          required: true
+          description: Certification ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvalidCertReason'
+            example:
+              reason: Erroneous emission
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Certification invalidated
+
+  /editions/{edition_id}/certifications/emission-errors:
+    get:
+      tags: [certifications]
+      operationId: listCertificationEmissionErrors
+      summary: List an edition's emission errors
+      description: |
+        Lists the certification emission errors recorded for the
+        edition (attendees whose certificates failed to emit). The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Edition emission errors
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertEmissionError'
+
+components:
+  schemas:
+    CertificationTemplateKind:
+      x-go-type: models.CertificationTemplateKind
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [edition_attendance, program_attendance]
+
+    CertificationTemplate:
+      x-go-type: models.CertificationTemplate
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A certificate design template. Mirrors `models.CertificationTemplate`.
+      required: [id, edition_id, kind, name, design_data, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        kind:
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          description: Opaque design data consumed by the certificate renderer.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateCertificationTemplateRequest:
+      type: object
+      description: Request body for certification template creation. Mirrors `models.CreateCertificationTemplateRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+
+    UpdateCertificationTemplateRequest:
+      type: object
+      description: Request body for certification template updates. Mirrors `models.UpdateCertificationTemplateRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+
+    CertificationTemplateProgram:
+      x-go-type: models.CertificationTemplateProgram
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A program link on a certification template. Mirrors `models.CertificationTemplateProgram`.
+      required: [id, template_id, program_id, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        template_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        program_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CertTemplateProgramRequest:
+      type: object
+      description: Request body for (un)linking a program to a template. Mirrors `models.CertTemplateProgramRequest`.
+      required: [program_id]
+      properties:
+        program_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    Certification:
+      x-go-type: models.Certification
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An emitted certificate. Mirrors `models.Certification`.
+      required: [id, edition_id, registration_id, user_id, verification_hash, valid, email_sent, issued_at, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        template_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        registration_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        program_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Program the certificate was emitted for, when program-scoped.
+        verification_hash:
+          type: string
+          description: Public hash used by the /verify/{hash} endpoint.
+        valid:
+          type: boolean
+          description: Whether the certificate is currently valid.
+        invalid_reason:
+          type: [ string, "null" ]
+        email_sent:
+          type: boolean
+        issued_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProgramCertEmissionResult:
+      type: object
+      description: Result of enqueueing a program certification grant job.
+      required: [program_id, queued]
+      properties:
+        program_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        queued:
+          type: boolean
+          description: True when the cert grant job was enqueued.
+
+    CertEmissionError:
+      x-go-type: models.CertEmissionError
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A failed certificate emission attempt. Mirrors `models.CertEmissionError`.
+      required: [id, edition_id, user_id, error_message, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        template_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        program_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    InvalidCertReason:
+      type: object
+      description: Request body for certificate invalidation. Mirrors `models.InvalidCertReason`.
+      required: [reason]
+      properties:
+        reason:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    VerifyCertResponse:
+      x-go-type: models.VerifyCertResponse
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: Result of certificate verification. Mirrors `models.VerifyCertResponse`.
+      required: [valid]
+      properties:
+        valid:
+          type: boolean
+        template_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        cert:
+          allOf:
+            - $ref: '#/components/schemas/Certification'
+          description: The certificate, when found.

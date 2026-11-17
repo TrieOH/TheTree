@@ -4,8 +4,16 @@
 //
 //	go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
 //
-// The problems come from two files next to the spec: the shared
-// ../problems.yml (api/problems.yml) and the Backend's own problems.yml. A
+// The spec is split by feature: each path item is a $ref into its feature's
+// internal/features/<name>/spec.yml, which declares the path, the
+// components only that feature uses and the problems only it answers. Refs
+// are ordinary relative OpenAPI refs (a feature reaches the spec's shared
+// components as ../../../api-spec.yml#/components/...). The bundle inlines
+// the paths, merges every file's components under their own names and
+// leaves only local refs; a feature path the spec never imports fails.
+//
+// The problems come from the shared ../problems.yml (api/problems.yml), the
+// Backend's own problems.yml and every feature's spec.yml. A
 // problem is a schema with an x-problem block (slug, status, title,
 // description) and only its extension members. The bundle merges the files'
 // schemas into the spec, expands each problem into a <Name>Problem schema
@@ -17,12 +25,22 @@
 // The package gets one constructor per problem, with the extensions as
 // typed parameters, the docs the harness serves at /problems/{slug}, and
 // Mapper.
+//
+// A problem without members may name its Go error and the error's text:
+// x-problem's error (ErrAddSelf) and message, the detail clients read. The
+// error is generated into the Backend's errs package (errs/errs.gen.go,
+// next to the spec) and Mapper answers it with its problem, so the
+// Backend's own mapper keeps only its typed errors. A message that only
+// repeats the title fails: the detail says what went wrong and what to do.
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -42,6 +60,11 @@ func run(specPath, specOut, goOut string) error {
 	if err != nil {
 		return err
 	}
+	module, err := modulePath(filepath.Dir(specPath))
+	if err != nil {
+		return err
+	}
+	b.module = module
 	spec, err := b.bundle()
 	if err != nil {
 		return err
@@ -58,5 +81,43 @@ func run(specPath, specOut, goOut string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(goOut, src, 0o600) //nolint:gosec // as above
+	err = os.WriteFile(goOut, src, 0o600) //nolint:gosec // as above
+	if err != nil {
+		return err
+	}
+	errsSrc, err := b.errsSource()
+	if err != nil {
+		return err
+	}
+	errsOut := filepath.Join(filepath.Dir(specPath), errsFile)
+	if errsSrc == nil {
+		err = os.Remove(errsOut) //nolint:gosec // as above
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	err = os.MkdirAll(filepath.Dir(errsOut), 0o750) //nolint:gosec // as above
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(errsOut, errsSrc, 0o600) //nolint:gosec // as above
+}
+
+// modulePath is the Go module the spec's Backend is, from its go.mod: the
+// generated mapper imports its errs package.
+func modulePath(dir string) (string, error) {
+	raw, err := os.ReadFile(filepath.Join(dir, "go.mod")) //nolint:gosec // the Backend's own go.mod
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	for line := range strings.SplitSeq(string(raw), "\n") {
+		if rest, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
+			return strings.TrimSpace(rest), nil
+		}
+	}
+	return "", errors.New("go.mod declares no module")
 }

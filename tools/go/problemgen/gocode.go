@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
 	"go/token"
@@ -25,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	%ERRS%
 	"lib/authz"
 	kit "lib/backend/identityx"
 	"lib/database"
@@ -42,13 +44,19 @@ type BatchItem struct {
 	Problem *fp.Problem ` + "`json:\"problem\"`" + `
 }
 
-// Mapper answers err with app, the Backend's own switch, then with the
-// shared cases. An error neither knows is the generic 500.
+// Mapper answers err with app, the Backend's own switch for its typed
+// errors, then with the named errors its problems declare, then with the
+// shared cases. An error none knows is the generic 500.
 func Mapper(app fp.ErrorMapper) fp.ErrorMapper {
 	var m fp.ErrorMapper
 	m = func(err error) *fp.Problem {
 		if p := app(err); p != nil {
 			return p
+		}
+		for _, c := range named {
+			if errors.Is(err, c.target) {
+				return c.problem(c.target.Error())
+			}
 		}
 		if p := shared(err, m); p != nil {
 			return p
@@ -103,12 +111,16 @@ func shared(err error, m fp.ErrorMapper) *fp.Problem {
 	return nil
 }
 
-// sharedSentinels are the lib's named errors, each answered by its shared
-// problem with its own message as the detail.
-var sharedSentinels = []struct {
+// sentinel is a named error and the problem answering it, with the
+// error's text as the detail.
+type sentinel struct {
 	target  error
 	problem func(detail string) *fp.Problem
-}{
+}
+
+// sharedSentinels are the lib's named errors, each answered by its shared
+// problem with its own message as the detail.
+var sharedSentinels = []sentinel{
 	{database.ErrNotFound, NotFound},
 	{authz.ErrInsufficientRole, InsufficientRole},
 	{idx.ErrNoIdentity, Unauthenticated},
@@ -125,12 +137,30 @@ var sharedSentinels = []struct {
 }
 `
 
+// errsFile is where the Backend's generated named errors go, next to the
+// ones written by hand.
+const errsFile = "errs/errs.gen.go"
+
 func (b *bundler) goSource() ([]byte, error) {
 	var s strings.Builder
-	s.WriteString(prelude)
+	errsImport := ""
+	if b.hasErrors() {
+		errsImport = strconv.Quote(b.module + "/errs")
+	}
+	s.WriteString(strings.Replace(prelude, "%ERRS%", errsImport, 1))
 	for _, p := range b.problems {
 		writeConstructor(&s, p)
 	}
+
+	s.WriteString("\n// named are the Backend's named errors its problems declare, each\n")
+	s.WriteString("// answered by its problem with its own message as the detail.\n")
+	s.WriteString("var named = []sentinel{\n")
+	for _, p := range b.problems {
+		if p.Error != "" {
+			fmt.Fprintf(&s, "\t{errs.%s, %s},\n", p.Error, p.Name)
+		}
+	}
+	s.WriteString("}\n")
 
 	s.WriteString("\n// Docs documents every declared problem, for GET /problems/{slug}.\n")
 	s.WriteString("var Docs = []httpserver.ProblemDoc{\n")
@@ -143,6 +173,45 @@ func (b *bundler) goSource() ([]byte, error) {
 	src, err := format.Source([]byte(s.String()))
 	if err != nil {
 		return nil, fmt.Errorf("generated Go does not parse: %w\n%s", err, s.String())
+	}
+	return src, nil
+}
+
+func (b *bundler) hasErrors() bool {
+	for _, p := range b.problems {
+		if p.Error != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// errsSource is the Backend's errs file: one sentinel per problem that
+// names an error, its message as the text. Nil when none does.
+func (b *bundler) errsSource() ([]byte, error) {
+	if !b.hasErrors() {
+		return nil, nil
+	}
+	if b.module == "" {
+		return nil, errors.New("problems name errors, but the spec's directory has no go.mod")
+	}
+	var s strings.Builder
+	s.WriteString("// " + header + "\n\n")
+	s.WriteString("package errs\n\nimport \"errors\"\n\n")
+	s.WriteString("// The named errors the Backend's problems declare (tools/problemgen):\n")
+	s.WriteString("// each is answered by its problem, its text the detail clients read.\n")
+	s.WriteString("var (\n")
+	for _, p := range b.problems {
+		if p.Error == "" {
+			continue
+		}
+		fmt.Fprintf(&s, "\t// %s is answered as %s (%d %s).\n", p.Error, p.Slug, p.Status, p.Title)
+		fmt.Fprintf(&s, "\t%s = errors.New(%q)\n", p.Error, p.Message)
+	}
+	s.WriteString(")\n")
+	src, err := format.Source([]byte(s.String()))
+	if err != nil {
+		return nil, fmt.Errorf("generated errs does not parse: %w\n%s", err, s.String())
 	}
 	return src, nil
 }

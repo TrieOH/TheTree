@@ -1,0 +1,109 @@
+# The collectors feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /collectors:
+    get:
+      tags: [collectors]
+      operationId: listCollectors
+      summary: List your collectors
+      description: |
+        Lists the collectors (provider accounts that receive funds)
+        owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Collectors owned by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Collector'
+
+  /collectors/{collector_id}:
+    get:
+      tags: [collectors]
+      operationId: getCollector
+      summary: Get a collector by ID
+      description: |
+        Fetches a single collector owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collector_id
+          in: path
+          required: true
+          description: Collector ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The requested collector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collector'
+
+  /organizations/{organization_id}/collectors:
+    get:
+      tags: [collectors]
+      operationId: listOrganizationCollectors
+      summary: List organization collectors
+      description: |
+        Lists the collectors scoped to an organization. The actor must
+        belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Organization collectors
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Collector'
+
+components:
+  schemas:
+    Collector:
+      x-go-type: models.Collector
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A provider account that receives funds. Mirrors `models.Collector`.
+      required: [id, owner_id, provider, provider_user_id, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        owner_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        provider:
+          type: string
+          description: Provider slug (e.g. `mercadopago`).
+        provider_user_id:
+          type: string
+          description: User ID of the account at the provider.
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time

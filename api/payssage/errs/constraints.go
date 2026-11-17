@@ -9,27 +9,16 @@ import "errors"
 var (
 	// intents
 	ErrInvalidAmount             = errors.New("amount must be greater than zero")
-	ErrInvalidIntentStatus       = errors.New("invalid intent status")
-	ErrInvalidIntentStatusDetail = errors.New("invalid intent status detail")
+	ErrInvalidIntentStatus       = errors.New("intent status must be one of: pending, processing, succeeded, cancelled, failed, rejected, refunded")
+	ErrInvalidIntentStatusDetail = errors.New("intent status detail must be empty or one of: insufficient_funds, high_risk, invalid_card, card_disabled, expired_card, invalid_security_code, pending_review, other")
 
 	// oauth_states, org_members
-	ErrInvalidOAuthFlowType = errors.New("invalid oauth flow type")
-	ErrInvalidOrgRole       = errors.New("invalid organization member role")
+	ErrInvalidOAuthFlowType = errors.New("OAuth flow must be one of: collector, seller")
+	ErrInvalidOrgRole       = errors.New("organization role must be one of: owner, admin, member")
 
 	// wallets
-	ErrNegativeFee         = errors.New("fee (bps) must be non-negative")
-	ErrOrgWalletNameTaken  = errors.New("a wallet with this name already exists in this organization")
-	ErrPersonalWalletTaken = errors.New("a wallet with this name already exists")
+	ErrNegativeFee = errors.New("fee (bps) must be non-negative")
 
 	// webhooks
-	ErrInvalidDeliveryStatus = errors.New("invalid webhook delivery status")
-	ErrDeliveryExists        = errors.New("a delivery for this event and endpoint already exists")
-	ErrWebhookEventExists    = errors.New("a webhook event for this external id and type already exists for this provider")
-
-	// organizations, credentials, collectors, sellers
-	ErrOrgSlugTaken               = errors.New("an organization with this slug already exists")
-	ErrCredentialsConnected       = errors.New("credentials for this provider are already connected to this wallet")
-	ErrOrgCollectorConnected      = errors.New("this collector is already connected to this organization")
-	ErrPersonalCollectorConnected = errors.New("this collector is already connected to your account")
-	ErrSellerConnected            = errors.New("this seller is already connected to this wallet")
+	ErrInvalidDeliveryStatus = errors.New("webhook delivery status must be one of: pending, delivered, failed")
 )

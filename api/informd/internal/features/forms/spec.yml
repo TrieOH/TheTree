@@ -1,0 +1,598 @@
+# The forms feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /forms:
+    get:
+      tags: [forms]
+      operationId: listMyForms
+      summary: List your forms
+      description: |
+        Lists the forms the authenticated actor owns (excluding
+        archived). Accepts JWT or API key.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Forms owned by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Form'
+    post:
+      tags: [forms]
+      operationId: createForm
+      summary: Create a form
+      description: |
+        Creates a draft form owned by the authenticated actor. New forms
+        are standalone (no namespace) until moved into one.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../api-spec.yml#/components/schemas/CreateFormRequest'
+            example:
+              title: Registration Form
+      x-problems: [400, 401, 500]
+      responses:
+        '201':
+          description: Form created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/archived:
+    get:
+      tags: [forms]
+      operationId: listMyArchivedForms
+      summary: List your archived forms
+      description: |
+        Lists the archived forms owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Archived forms owned by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/{form_id}/asnwerable:
+    get:
+      tags: [forms]
+      operationId: getAnswerableForm
+      summary: Get the answerable view of a form
+      description: |
+        Returns the form with its steps and fields (no answers) for
+        respondents to fill out. Public — this is the view embedded in
+        the public submission flow. NOTE: the path keeps the original
+        spelling `asnwerable`, which is part of the interface.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Answerable form view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormAnswerable'
+
+  /forms/{form_id}/full:
+    get:
+      tags: [forms]
+      operationId: getFullForm
+      summary: Get the full form with answers
+      description: |
+        Returns the form with its steps, fields, and all submitted
+        answers — the editing/analytics view. The actor must be a member
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Full form view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullForm'
+
+  /forms/{form_id}/members:
+    get:
+      tags: [forms]
+      operationId: listFormMembers
+      summary: List form members
+      description: |
+        Lists the members of a form. The actor must be a member of the
+        form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Form members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormMember'
+    post:
+      tags: [forms]
+      operationId: addFormMember
+      summary: Add a form member
+      description: |
+        Adds an actor (by user ID) to the form with the given role. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFormMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              role: admin
+      x-problems: [400, 401, 403, 404, 409, 500]
+      responses:
+        '201':
+          description: Member added
+    delete:
+      tags: [forms]
+      operationId: removeFormMember
+      summary: Remove a form member
+      description: |
+        Removes an actor (by user ID) from the form. The actor must be
+        an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveFormMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Member removed
+
+  /forms/{form_id}/open:
+    post:
+      tags: [forms]
+      operationId: openForm
+      summary: Open a form
+      description: |
+        Moves a draft form to `open`, allowing public submissions. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: Form opened
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/{form_id}/close:
+    post:
+      tags: [forms]
+      operationId: closeForm
+      summary: Close a form
+      description: |
+        Moves an open form to `closed`, stopping submissions. The actor
+        must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: Form closed
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/{form_id}/archive:
+    post:
+      tags: [forms]
+      operationId: archiveForm
+      summary: Archive a form
+      description: |
+        Archives a closed form, moving it out of active listings. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: Form archived
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/{form_id}/redraft:
+    post:
+      tags: [forms]
+      operationId: redraftForm
+      summary: Redraft a form
+      description: |
+        Moves an archived (or closed) form back to `draft` for editing.
+        The actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: Form redrafted
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /forms/{form_id}/responses/count:
+    get:
+      tags: [forms]
+      operationId: getFormResponseCount
+      summary: Count a form's responses
+      description: |
+        Returns the number of responses submitted to the form. The actor
+        must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Response count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
+                    description: Number of responses.
+              example:
+                count: 42
+
+components:
+  schemas:
+    FormMemberRole:
+      x-go-type: models.FormMemberRole
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [member, admin, owner]
+
+    FormMember:
+      x-go-type: models.FormMember
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: Membership of a user in a form. Mirrors `models.FormMember`.
+      required: [user_id, form_id, role, added_at, added_by]
+      properties:
+        user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        form_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/FormMemberRole'
+        added_at:
+          type: string
+          format: date-time
+        added_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    AddFormMemberRequest:
+      type: object
+      description: Request body for adding a form member. Mirrors `models.AddFormMemberRequest`.
+      required: [user_id, role]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/FormMemberRole'
+
+    RemoveFormMemberRequest:
+      type: object
+      description: Request body for removing a form member. Mirrors `models.RemoveFormMemberRequest`.
+      required: [user_id]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    FullForm:
+      x-go-type: models.FullForm
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A form with its full structure (steps, fields, answers). Mirrors `models.FullForm`.
+      required: [form, steps]
+      properties:
+        form:
+          $ref: '../../../api-spec.yml#/components/schemas/Form'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullStep'
+
+    FullStep:
+      x-go-type: models.FullStep
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A step with its fields and answers. Mirrors `models.FullStep`.
+      required: [step, fields]
+      properties:
+        step:
+          $ref: '../../../api-spec.yml#/components/schemas/Step'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullField'
+
+    FullField:
+      x-go-type: models.FullField
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A field with its answers. Mirrors `models.FullField`.
+      required: [field, answers]
+      properties:
+        field:
+          $ref: '../../../api-spec.yml#/components/schemas/Field'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullAnswer'
+
+    FullAnswer:
+      x-go-type: models.FullAnswer
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: An answer with the responder's email. Mirrors `models.FullAnswer`.
+      required: [answer, responder]
+      properties:
+        answer:
+          $ref: '#/components/schemas/Answer'
+        responder:
+          type: string
+          description: Responder email.
+
+    FormAnswerable:
+      x-go-type: models.FormAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A form with its steps and fields (no answers) — the public answer view. Mirrors `models.FormAnswerable`.
+      required: [form, steps]
+      properties:
+        form:
+          $ref: '../../../api-spec.yml#/components/schemas/Form'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepAnswerable'
+
+    StepAnswerable:
+      x-go-type: models.StepAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A step with its fields, without answers. Mirrors `models.StepAnswerable`.
+      required: [step, fields]
+      properties:
+        step:
+          $ref: '../../../api-spec.yml#/components/schemas/Step'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldAnswerable'
+
+    FieldAnswerable:
+      x-go-type: models.FieldAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A field with its select configuration, without answers. Mirrors `models.FieldAnswerable`.
+      required: [field]
+      properties:
+        field:
+          $ref: '../../../api-spec.yml#/components/schemas/Field'
+        field_select_config:
+          allOf:
+            - $ref: '../../../api-spec.yml#/components/schemas/FieldSelectConfig'
+          description: Present when the field is a `select` field.
+
+    Answer:
+      x-go-type: models.Answer
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: One answer to a field within a response. Mirrors `models.Answer`.
+      required: [id, response_id, answered_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        response_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        field_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        answer:
+          type: [ object, "null" ]
+          description: The answer value; shape depends on the field type.
+        answered_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    # form lifecycle
+    OpenNotDraft:
+      x-problem:
+        slug: open-not-draft
+        status: 400
+        title: Open Not Draft
+        description: "Cannot open a form not on draft."
+        error: ErrOpenNotDraft
+        message: "only a draft form can be opened, and this one isn't a draft"
+
+    CloseNotOpen:
+      x-problem:
+        slug: close-not-open
+        status: 400
+        title: Close Not Open
+        description: "Cannot close a form not on open."
+        error: ErrCloseNotOpen
+        message: "only an open form can be closed, and this one isn't open"
+
+    RedraftNotOpen:
+      x-problem:
+        slug: redraft-not-open
+        status: 400
+        title: Redraft Not Open
+        description: "Cannot redraft a form not on open."
+        error: ErrRedraftNotOpen
+        message: "only an open form can go back to draft, and this one isn't open"
+
+    RedraftWithResponses:
+      x-problem:
+        slug: redraft-with-responses
+        status: 400
+        title: Redraft With Responses
+        description: "Cannot redraft a form with responses."
+        error: ErrRedraftWithResponses
+        message: "this form already has responses, so it can't go back to draft: editing it would change what those responses answered; duplicate the form instead"
+
+    ArchiveNotClosed:
+      x-problem:
+        slug: archive-not-closed
+        status: 400
+        title: Archive Not Closed
+        description: "Cannot archive a form not on closed."
+        error: ErrArchiveNotClosed
+        message: "only a closed form can be archived; close the form first"
+
+    FormNotAnswerable:
+      x-problem:
+        slug: form-not-answerable
+        status: 403
+        title: Form Not Answerable
+        description: "Form is not open for answers."
+        error: ErrFormNotAnswerable
+        message: "this form isn't open, so it can't be answered; ask its owner to open it"
+
+    # membership
+    AddSelfToForm:
+      x-problem:
+        slug: add-self-to-form
+        status: 400
+        title: Add Self To Form
+        description: "Users can't add themselves to forms."
+        error: ErrAddSelfToForm
+        message: "you can't add yourself to a form; ask one of its admins or its owner to add you"
+
+    FormOwnerAlreadyMember:
+      x-problem:
+        slug: form-owner-already-member
+        status: 400
+        title: Form Owner Already Member
+        description: "Owner of the form is already a member of the form."
+        error: ErrFormOwnerAlreadyMember
+        message: "the form's owner is already part of it and can't be added as a member"
+
+    AlreadyFormMember:
+      x-problem:
+        slug: already-form-member
+        status: 400
+        title: Already Form Member
+        description: "User is already a member of the form."
+        error: ErrAlreadyFormMember
+        message: "that person is already a member of the form; to change their role, update their membership instead of adding them again"
+
+    RemoveSelfFromForm:
+      x-problem:
+        slug: remove-self-from-form
+        status: 400
+        title: Remove Self From Form
+        description: "Users can't remove themselves from forms."
+        error: ErrRemoveSelfFromForm
+        message: "you can't remove yourself from a form; ask one of its admins or its owner to remove you"
+
+    RemoveFormOwner:
+      x-problem:
+        slug: remove-form-owner
+        status: 400
+        title: Remove Form Owner
+        description: "Cannot remove owner of the form."
+        error: ErrRemoveFormOwner
+        message: "the form's owner can't be removed; transfer ownership first"
+
+    NotFormMember:
+      x-problem:
+        slug: not-form-member
+        status: 400
+        title: Not Form Member
+        description: "User is not a member of the form."
+        error: ErrNotFormMember
+        message: "that person is not a member of the form, so there is no membership to change or remove"

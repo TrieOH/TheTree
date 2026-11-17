@@ -1,17 +1,8 @@
 package errs
 
 import (
-	"errors"
 	"fmt"
 	"uuid"
-)
-
-// Providers.
-var (
-	ErrProviderNotImplemented = errors.New("provider not implemented")
-	// ErrProviderRequestFailed is a provider call that never got an answer
-	// (network, timeout); the transport error is wrapped for the logs.
-	ErrProviderRequestFailed = errors.New("payment provider request failed")
 )
 
 // UnsupportedProviderError is a provider name Payssage does not know.
@@ -38,13 +29,6 @@ func (e *ProviderError) Error() string {
 	}
 	return e.Provider + ": " + e.Message
 }
-
-// Intents.
-var (
-	ErrSellerNotInWallet     = errors.New("seller does not belong to wallet")
-	ErrNoTransactionToRefund = errors.New("intent has no mercadopago transaction to refund")
-	ErrNoTransactionToCancel = errors.New("intent has no mercadopago transaction to cancel")
-)
 
 // IntentStatusError is an intent whose status does not allow the action
 // ("refunded", "cancelled").

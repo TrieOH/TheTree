@@ -191,9 +191,10 @@ engine_targets() {
     while IFS= read -r f; do
         [ -n "$f" ] || continue
         case "$f" in
-            api/*/api-spec.yml)
-                # the spec also feeds the orval TS client: check it and every
-                # front that imports it (@trieoh/<svc>-api)
+            api/*/api-spec.yml|api/*/problems.yml|api/*/internal/features/*/spec.yml)
+                # the spec (with its problems and features' spec.yml) also
+                # feeds the orval TS client: check it and every front that
+                # imports it (@trieoh/<svc>-api)
                 rest=${f#api/}; name=${rest%%/*}
                 [ -d "api/$name" ] && add_target "go:api/$name"
                 [ -d "lib/ts/$name" ] && add_target "ts:lib/ts/$name"

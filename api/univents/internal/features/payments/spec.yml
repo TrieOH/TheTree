@@ -1,0 +1,126 @@
+# The payments feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /events/{event_id}/payments/connect:
+    post:
+      tags: [events]
+      operationId: connectEventPayments
+      summary: Connect a Payssage seller to the event
+      description: |
+        Ensures the event's Payssage wallet exists (created lazily under the
+        platform identity, with the 5% marketplace fee) and starts the
+        provider OAuth flow for a seller on that wallet. Returns the provider
+        consent URL to send the user to, plus the event's wallet id. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectEventPaymentsRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Provider consent URL and event wallet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectEventPaymentsResult'
+
+  /events/{event_id}/payments/complete:
+    post:
+      tags: [events]
+      operationId: completeEventPayments
+      summary: Persist the connected seller on the event
+      description: |
+        Persists the seller and provider public key delivered by the OAuth
+        callback (seller_id is payssage's credential_id) on the event, after
+        verifying the seller belongs to the event's wallet. The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteEventPaymentsRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Event'
+
+  /events/{event_id}/payments:
+    delete:
+      tags: [events]
+      operationId: disconnectEventPayments
+      summary: Disconnect the event's seller (unlink only)
+      description: |
+        Clears the seller and provider public key from the event. The wallet
+        is kept — it is the event's permanent payment container — and can be
+        reconnected later. The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Seller unlinked
+
+components:
+  schemas:
+    ConnectEventPaymentsRequest:
+      type: object
+      description: Request body for connecting a Payssage seller to an event.
+      required: [provider]
+      properties:
+        provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    ConnectEventPaymentsResult:
+      type: object
+      description: Provider consent URL to send the user to, plus the event's wallet id.
+      required: [auth_url, wallet_id]
+      properties:
+        auth_url:
+          type: string
+          format: uri
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    CompleteEventPaymentsRequest:
+      type: object
+      description: Request body for persisting the connected seller on the event. Mirrors the payssage OAuth callback params (credential_id + public_key).
+      required: [seller_id, public_key]
+      properties:
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        public_key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    SellerNotInPlatformWallet:
+      x-problem:
+        slug: seller-not-in-platform-wallet
+        status: 400
+        title: Seller Not In Platform Wallet
+        description: "Seller does not belong to the platform payssage wallet."
+        error: ErrSellerNotInPlatformWallet
+        message: "that payment account isn't connected to Univents' Payssage wallet; connect it through Univents and try again"

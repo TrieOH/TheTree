@@ -18,8 +18,8 @@ import (
 // The request binding's rejections, each naming the offending field
 // (lib/fielderr). The Backend's mapper answers them (ADR-0019).
 var (
-	ErrInvalidParameter = errors.New("invalid request parameter")
-	ErrInvalidHeader    = errors.New("invalid request header")
+	ErrInvalidParameter = errors.New("a path or query parameter is missing or malformed; errors lists which")
+	ErrInvalidHeader    = errors.New("a required header is missing or malformed; errors lists which")
 	// errOperationNotRegistered is spec/codegen drift: an operation the
 	// auth resolver has no chain for. It is a 500.
 	errOperationNotRegistered = errors.New("operation not registered with auth resolver")

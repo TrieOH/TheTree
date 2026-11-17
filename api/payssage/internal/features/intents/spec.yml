@@ -1,0 +1,482 @@
+# The intents feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /intents:
+    get:
+      tags: [intents]
+      operationId: listIntentsByProfile
+      summary: List your payment intents
+      description: |
+        Lists the payment intents created by the authenticated actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Intents created by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Intent'
+
+  /intents/{intent_id}:
+    get:
+      tags: [intents]
+      operationId: getIntent
+      summary: Get a payment intent
+      description: |
+        Fetches a single payment intent (checkout attempt) by ID.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The requested intent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+  /intents/{intent_id}/cancel:
+    post:
+      tags: [intents]
+      operationId: cancelIntent
+      summary: Cancel a payment intent
+      description: |
+        Cancels a pending payment intent and returns its updated state.
+        Only intents still `pending` (or otherwise cancellable) can be
+        cancelled.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 409, 500]
+      responses:
+        '200':
+          description: Intent cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+  /intents/{intent_id}/refund:
+    post:
+      tags: [intents]
+      operationId: refundIntent
+      summary: Refund a succeeded payment intent (full refund)
+      description: |
+        Fully refunds a `succeeded` payment intent and returns its updated
+        state. The intent status stays `succeeded` until the provider's
+        `payment.refunded` webhook confirms the refund (webhook-only
+        confirmation, mirroring approval). Only `succeeded` intents are
+        refundable; an already-`refunded` intent returns as-is (idempotent).
+        Full refund only in v1 — no amount parameter (partials are a later
+        additive change).
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      x-problems: [401, 404, 409, 500]
+      responses:
+        '200':
+          description: Intent refunded (or refund initiated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+  /wallets/{wallet_id}/intents:
+    get:
+      tags: [intents]
+      operationId: listWalletIntents
+      summary: List a wallet's payment intents
+      description: |
+        Lists the payment intents raised against the wallet. The actor
+        must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Wallet intents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Intent'
+    post:
+      tags: [intents]
+      operationId: checkout
+      summary: Create a payment intent (checkout)
+      description: |
+        Starts a checkout: creates a payment intent against the wallet
+        for the given seller, currency, and amount. The provider handles
+        the payment out-of-band and reports the result via webhook. The
+        actor must own the wallet. See the `Intent` schema for the
+        provider-specific checkout data carried in
+        `checkout_provider_data`.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIntentRequest'
+            example:
+              seller_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              currency: BRL
+              amount_cents: 10000
+              checkout_provider_data:
+                payer:
+                  email: buyer@example.com
+                  first_name: Jane
+                  last_name: Doe
+              metadata:
+                order_id: "1234"
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+  /organizations/{organization_id}/intents:
+    get:
+      tags: [intents]
+      operationId: listOrganizationIntents
+      summary: List organization payment intents
+      description: |
+        Lists the payment intents raised against wallets scoped to the
+        organization. The actor must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Organization intents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Intent'
+
+  /testmode/intents/create:
+    post:
+      tags: [testmode, intents]
+      operationId: hardCreateIntent
+      summary: Create an intent directly (test mode)
+      description: |
+        Test-mode helper: hard-creates an intent with full control over
+        its status, provider, and provider data — no payment provider is
+        contacted. Use to simulate provider outcomes (e.g. seed a
+        `succeeded` intent so downstream systems observe the webhook
+        flow). Must be a wallet owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HardCreateIntentRequest'
+            example:
+              wallet_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              seller_id: 3fa85f64-5717-4562-b3fc-2c963f66afa7
+              amount_cents: 5000
+              currency: BRL
+              sandbox: true
+              provider: mercadopago
+              status: succeeded
+              provider_data: {}
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+  /testmode/intents/{intent_id}/refund:
+    post:
+      tags: [testmode, intents]
+      operationId: testmodeRefundIntent
+      summary: Refund an intent directly (test mode)
+      description: |
+        Test-mode helper: flips a `succeeded` intent to `refunded` and
+        stamps a fake refund marker in provider_data — no payment provider
+        is contacted. Use to simulate the provider's `payment.refunded`
+        outcome for downstream testing without a real refund.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Intent refunded (simulated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+
+components:
+  schemas:
+    IntentStatus:
+      x-go-type: models.IntentStatus
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [pending, processing, succeeded, cancelled, rejected, failed, refunded]
+
+    IntentStatusDetail:
+      x-go-type: models.IntentStatusDetail
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum:
+        - insufficient_funds
+        - high_risk
+        - invalid_card
+        - card_disabled
+        - expired_card
+        - invalid_security_code
+        - pending_review
+        - other
+
+    Intent:
+      x-go-type: models.Intent
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A payment attempt (checkout). `amount_cents` is the amount in
+        integer cents. `provider_data` carries provider-specific intent
+        data (e.g. MercadoPago order/transaction ids, PIX QR codes).
+        Mirrors `models.Intent`.
+      required: [id, wallet_id, seller_id, amount_cents, currency, sandbox, provider, status, provider_data, created_at, updated_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        seller_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        collector_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        amount_cents:
+          type: integer
+          format: int64
+          description: Amount in integer cents.
+        currency:
+          type: string
+          description: ISO 4217 currency code (e.g. `BRL`).
+        sandbox:
+          type: boolean
+        provider:
+          type: string
+          description: Provider slug (e.g. `mercadopago`).
+        status:
+          $ref: '#/components/schemas/IntentStatus'
+        status_detail:
+          allOf:
+            - $ref: '#/components/schemas/IntentStatusDetail'
+          description: Provider-reported failure/outcome detail, when present.
+        provider_data:
+          type: object
+          description: Provider-specific intent data (order/transaction ids, PIX QR codes, ...).
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          description: Caller-supplied metadata.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateIntentRequest:
+      type: object
+      description: |
+        Request body for checkout. `checkout_provider_data` is
+        provider-specific and may carry payer info, installments, card
+        tokens, etc. Mirrors `models.CreateIntentRequest`.
+      required: [seller_id, currency, amount_cents]
+      properties:
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          description: ISO 4217 currency code (e.g. `BRL`).
+        amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          format: int64
+          description: Amount in integer cents.
+        checkout_provider_data:
+          type: object
+          description: Provider-specific checkout payload.
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        external_id:
+          type: [ string, "null" ]
+          description: Caller's order id (e.g. the univents purchase id). Counterparty id — never payssage's own.
+        external_group:
+          type: [ string, "null" ]
+          description: Caller's grouping key (e.g. the univents edition id). Counterparty id — never payssage's own.
+
+    HardCreateIntentRequest:
+      type: object
+      description: |
+        Request body for test-mode intent creation. Mirrors
+        `models.HardCreateIntentRequest`.
+      required: [wallet_id, seller_id, amount_cents, currency, provider, status]
+      properties:
+        wallet_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        collector_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          format: int64
+        currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        sandbox:
+          type: boolean
+        provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        status:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/IntentStatus'
+        provider_data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        external_id:
+          type: [ string, "null" ]
+          description: Caller's order id (e.g. the univents purchase id).
+        external_group:
+          type: [ string, "null" ]
+          description: Caller's grouping key (e.g. the univents edition id).
+
+    InvalidProviderData:
+      x-problem:
+        slug: invalid-provider-data
+        status: 400
+        title: Invalid Provider Data
+        description: "Invalid provider_data."
+        error: ErrInvalidProviderData
+        message: "provider_data couldn't be read as JSON; send it as a JSON object with the provider's fields"
+
+    InvalidCheckoutProviderData:
+      x-problem:
+        slug: invalid-checkout-provider-data
+        status: 400
+        title: Invalid Checkout Provider Data
+        description: "Invalid checkout_provider_data."
+        error: ErrInvalidCheckoutProviderData
+        message: "checkout_provider_data couldn't be read; send it as a JSON object with the fields the provider's checkout needs"
+
+    InvalidMetadata:
+      x-problem:
+        slug: invalid-metadata
+        status: 400
+        title: Invalid Metadata
+        description: "Invalid metadata."
+        error: ErrInvalidMetadata
+        message: "metadata couldn't be read; send it as a flat JSON object"
+
+    TestModeOnly:
+      x-problem:
+        slug: test-mode-only
+        status: 503
+        title: Test Mode Only
+        description: "Test mode only."
+        error: ErrTestModeOnly
+        message: "this operation exists only for testing, and this Payssage isn't running in test mode"
+
+    # providers and intents
+    ProviderNotImplemented:
+      x-problem:
+        slug: provider-not-implemented
+        status: 400
+        title: Provider Not Implemented
+        description: "Provider not implemented."
+        error: ErrProviderNotImplemented
+        message: "this payment provider is known to Payssage, but payments through it aren't supported yet; use a seller on a supported provider"
+
+    SellerNotInWallet:
+      x-problem:
+        slug: seller-not-in-wallet
+        status: 400
+        title: Seller Not In Wallet
+        description: "Seller does not belong to wallet."
+        error: ErrSellerNotInWallet
+        message: "that seller isn't connected to this wallet; use one of the wallet's sellers, or connect this one to it first"
+
+  parameters:
+    IntentID:
+      name: intent_id
+      in: path
+      required: true
+      description: Payment intent ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'

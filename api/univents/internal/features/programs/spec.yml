@@ -1,0 +1,861 @@
+# The programs feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /editions/{edition_id}/programs:
+    get:
+      tags: [programs]
+      operationId: listEditionPrograms
+      x-cache: shared
+      summary: List an edition's programs
+      description: |
+        Lists the programs (schedule items: activities and checkpoints)
+        of the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition programs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Program'
+    post:
+      tags: [programs]
+      operationId: createProgram
+      summary: Create a program
+      description: |
+        Creates a program (activity or checkpoint) for the edition. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramRequest'
+            example:
+              kind: activity
+              name: Opening Keynote
+              description: Welcome and keynote session.
+              min_access_level: 0
+              staff_only: false
+              price: 0
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Program created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+
+  /programs/{program_id}:
+    get:
+      tags: [programs]
+      operationId: getProgram
+      summary: Get a program
+      description: Fetches a single program. Public.
+      security: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested program
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+    patch:
+      tags: [programs]
+      operationId: patchProgram
+      summary: Update a program
+      description: |
+        Updates program details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProgramRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Program updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+    delete:
+      tags: [programs]
+      operationId: deleteProgram
+      summary: Delete a program
+      description: |
+        Soft-deletes a program and its occurrences. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: The deleted program
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+
+  /programs/{program_id}/occurrences:
+    get:
+      tags: [programs]
+      operationId: listProgramOccurrences
+      summary: List a program's occurrences
+      description: |
+        Lists the occurrences (dated sessions) of a program. Public.
+      security: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Program occurrences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramOccurrence'
+    post:
+      tags: [programs]
+      operationId: createProgramOccurrence
+      summary: Create a program occurrence
+      description: |
+        Adds a dated occurrence to a program. The actor must be an owner
+        or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramOccurrenceRequest'
+            example:
+              starts_at: '2026-05-04T09:00:00Z'
+              ends_at: '2026-05-04T10:30:00Z'
+              max_capacity: 200
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Occurrence created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramOccurrence'
+
+  /editions/{edition_id}/occurrences:
+    get:
+      tags: [programs]
+      operationId: listEditionOccurrences
+      x-cache: shared
+      summary: List an edition's occurrences
+      description: |
+        Lists all occurrences across the edition's programs. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition occurrences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramOccurrence'
+
+  /occurrences/{occurrence_id}:
+    get:
+      tags: [programs]
+      operationId: getOccurrence
+      summary: Get an occurrence
+      description: Fetches a single program occurrence. Public.
+      security: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested occurrence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramOccurrence'
+    patch:
+      tags: [programs]
+      operationId: patchOccurrence
+      summary: Update an occurrence
+      description: |
+        Updates occurrence times and capacity. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProgramOccurrenceRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Occurrence updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramOccurrence'
+    delete:
+      tags: [programs]
+      operationId: deleteOccurrence
+      summary: Delete an occurrence
+      description: |
+        Soft-deletes an occurrence. The actor must be an owner or admin
+        of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: The deleted occurrence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramOccurrence'
+
+  /occurrences/{occurrence_id}/registration:
+    post:
+      tags: [programs]
+      operationId: registerOccurrence
+      summary: Sign the caller up for an occurrence
+      description: |
+        Self-service registration (activity registration feature). The
+        caller must hold a confirmed (paid or free) ticket in the
+        occurrence's edition, and the activity's access rules apply:
+        `staff_only` programs require an event staff role, and
+        `min_access_level` gates on the ticket's access level. Inside a
+        transaction the occurrence row is locked, occupancy is checked
+        against `max_capacity`, and a duplicate active registration is
+        rejected (409) — the partial unique index
+        (`uniq_program_participations_active_per_occurrence_attendee`) is
+        the concurrency backstop. Registering is always a fresh row: the
+        participation ledger is append-only, cancelled rows free the slot.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '201':
+          description: The created participation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParticipation'
+    delete:
+      tags: [programs]
+      operationId: deregisterOccurrence
+      summary: Cancel the caller's sign-up for an occurrence
+      description: |
+        Self-service de-registration. Flips the caller's live participation
+        to `cancelled` (history is kept; a re-registration inserts a fresh
+        row). The spot is locked once attendance is marked: a guarded
+        update only flips rows still in `registered`, so an
+        `attended`/`no_show` participation returns 409. Unknown occurrence
+        or not signed up is 404.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: The cancelled participation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParticipation'
+
+  /occurrences/{occurrence_id}/participants:
+    get:
+      tags: [programs]
+      operationId: listOccurrenceParticipants
+      summary: List an occurrence's participants
+      description: |
+        The staff attendance surface: every live participation with the
+        attendee's name/email from their registration. Any event staff
+        (owner/admin/staff) may read it. Cancelled rows are history and are
+        never listed — staff mark the people who are coming.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Occurrence participants
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramParticipant'
+
+  /occurrences/{occurrence_id}/check-in:
+    post:
+      tags: [programs]
+      operationId: checkInOccurrence
+      summary: Check an attendee in at a checkpoint occurrence
+      description: |
+        Staff-only checkpoint check-in. Checkpoints are pass-through —
+        attendees never register for them — so an attendee is marked
+        present by identity, gating only on "can they pass": a confirmed
+        edition ticket plus the checkpoint's access rules (`staff_only`,
+        `min_access_level`). The first scan upserts an attended
+        participation anchored to the attendee's edition-ticket
+        registration; re-scanning the same attendee is idempotent (the
+        live participation is flipped to `attended`, never duplicated).
+        Only checkpoint occurrences are accepted — activities keep the
+        mark-attended flow (400 otherwise).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+            example:
+              attendee_id: 2e6c6b0e-9c2a-4c1e-8d4f-9e1b7f3a5c2d
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: The attendance participation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParticipation'
+
+  /participations/{participation_id}/mark-attended:
+    post:
+      tags: [programs]
+      operationId: markParticipationAttended
+      summary: Mark a participant as attended
+      description: |
+        Staff-only attendance marking: flips the participation to
+        `attended`. Re-marking an already-attended participation is
+        idempotent, and a `no_show` → `attended` correction is allowed;
+        a cancelled participation (refunded purchase, or the attendee
+        dropped out) is 409 — a cancelled spot cannot be marked attended.
+        Once attended, the attendee's own de-registration is locked (409).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: participation_id
+          in: path
+          required: true
+          description: Participation ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '200':
+          description: The updated participation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParticipation'
+
+  /editions/{edition_id}/my-participations:
+    get:
+      tags: [programs]
+      operationId: listMyParticipations
+      summary: The caller's activity sign-ups in an edition
+      description: |
+        The single personal read of the activity registration feature (the
+        public schedule stays stateless — the front joins this against it
+        by `occurrence_id`). Returns the caller's live (non-cancelled)
+        participations joined with their program and occurrence; cancelled
+        rows are ledger history and never shown. `data` is `null` when the
+        caller holds no ticket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The caller's participations, or null without a ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MyParticipation'
+
+components:
+  schemas:
+    ProgramKind:
+      x-go-type: models.ProgramKind
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [activity, checkpoint]
+
+    Program:
+      x-go-type: models.Program
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A schedule item of an edition. Mirrors `models.Program`.
+      required: [id, edition_id, kind, name, staff_only, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        kind:
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          description: Minimum ticket access level required; null = open to all.
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+          description: Price in integer cents; null = free.
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CheckInRequest:
+      type: object
+      description: |
+        Request body for checkpoint check-in. `attendee_id` is the
+        IdentityX actor id resolved from the attendee's badge QR.
+      required: [attendee_id]
+      properties:
+        attendee_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    CreateProgramRequest:
+      type: object
+      description: Request body for program creation. Mirrors `models.CreateProgramRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          minimum: 0
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+
+    PatchProgramRequest:
+      type: object
+      description: Request body for program updates. Mirrors `models.PatchProgramRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          minimum: 0
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+
+    ProgramOccurrence:
+      x-go-type: models.ProgramOccurrence
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A dated session of a program. Mirrors `models.ProgramOccurrence`.
+      required: [id, program_id, edition_id, starts_at, ends_at, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        program_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+          description: Maximum attendees; null = unlimited.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProgramParticipation:
+      x-go-type: models.ProgramParticipation
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One person's sign-up for an occurrence. Mirrors `models.ProgramParticipation`.
+      required: [id, edition_id, occurrence_id, registration_id, status, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        registration_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProgramParticipationStatus:
+      type: string
+      enum: [registered, attended, no_show, cancelled]
+      description: |
+        `registered` = signed up; `attended`/`no_show` = staff marked the
+        outcome (attended locks the attendee's de-registration);
+        `cancelled` = dropped out or the purchase was refunded/expired.
+
+    MyParticipation:
+      x-go-type: models.MyParticipation
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: The caller's live sign-up joined with its program and occurrence. Mirrors `models.MyParticipation`.
+      required: [id, edition_id, occurrence_id, registration_id, status, created_at, program, occurrence]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        registration_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        program:
+          $ref: '#/components/schemas/Program'
+        occurrence:
+          $ref: '#/components/schemas/ProgramOccurrence'
+
+    ProgramParticipant:
+      x-go-type: models.ProgramParticipant
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One row of the staff attendance surface. Mirrors `models.ProgramParticipant`. `attendee_user_id` is null for attendees who have no IdentityX account yet (email-only gifted tickets).
+      required: [id, occurrence_id, registration_id, status, created_at, attendee_email, attendee_name]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        registration_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        attendee_user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        attendee_email:
+          type: string
+          format: email
+        attendee_name:
+          type: string
+
+    CreateProgramOccurrenceRequest:
+      type: object
+      description: Request body for occurrence creation. Mirrors `models.CreateProgramOccurrenceRequest`.
+      required: [starts_at, ends_at]
+      properties:
+        starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+          description: Null = unlimited.
+
+    PatchProgramOccurrenceRequest:
+      type: object
+      description: Request body for occurrence updates. Mirrors `models.PatchProgramOccurrenceRequest`.
+      required: [starts_at, ends_at]
+      properties:
+        starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+
+    # programs
+    TicketRequiredForActivity:
+      x-problem:
+        slug: ticket-required-for-activity
+        status: 403
+        title: Ticket Required For Activity
+        description: "A confirmed ticket is required to register for activities."
+        error: ErrTicketRequiredForActivity
+        message: "registering for activities needs a confirmed ticket for the edition; buy a ticket, or finish paying for it, first"
+
+    TicketRequiredForCheckpoint:
+      x-problem:
+        slug: ticket-required-for-checkpoint
+        status: 403
+        title: Ticket Required For Checkpoint
+        description: "A confirmed ticket is required to pass this checkpoint."
+        error: ErrTicketRequiredForCheckpoint
+        message: "passing this checkpoint needs a confirmed ticket for the edition"
+
+    AccessLevel:
+      x-problem:
+        slug: access-level
+        status: 403
+        title: Access Level
+        description: "The caller's ticket level does not grant access."
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, description: "What was refused: activity or checkpoint." }
+
+    AlreadyRegistered:
+      x-problem:
+        slug: already-registered
+        status: 409
+        title: Already Registered
+        description: "You are already registered for this activity."
+        error: ErrAlreadyRegistered
+        message: "you are already registered for this activity session"
+
+    OccurrenceFull:
+      x-problem:
+        slug: occurrence-full
+        status: 409
+        title: Occurrence Full
+        description: "This activity occurrence is full."
+        error: ErrOccurrenceFull
+        message: "this activity session is full; pick another session"
+
+    NotRegistered:
+      x-problem:
+        slug: not-registered
+        status: 404
+        title: Not Registered
+        description: "You are not registered for this activity."
+        error: ErrNotRegistered
+        message: "you aren't registered for this activity session, so there's no registration to cancel"
+
+    RegistrationLocked:
+      x-problem:
+        slug: registration-locked
+        status: 409
+        title: Registration Locked
+        description: "Registration is locked: attendance has been marked."
+        error: ErrRegistrationLocked
+        message: "attendance was already marked for this registration, so it can no longer be changed or cancelled"
+
+    CheckInNotCheckpoint:
+      x-problem:
+        slug: check-in-not-checkpoint
+        status: 400
+        title: Check In Not Checkpoint
+        description: "Check-in is only for checkpoint occurrences."
+        error: ErrCheckInNotCheckpoint
+        message: "check-in is only for checkpoint sessions; mark attendance for this one instead"
+
+    ParticipationCancelled:
+      x-problem:
+        slug: participation-cancelled
+        status: 409
+        title: Participation Cancelled
+        description: "Cannot mark attendance: participation was cancelled."
+        error: ErrParticipationCancelled
+        message: "this registration was cancelled, so attendance can't be marked for it"

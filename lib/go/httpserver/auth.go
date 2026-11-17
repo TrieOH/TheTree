@@ -21,8 +21,8 @@ type Authenticators struct {
 // its operation needs. An authenticator's error is written as it is; the
 // Backend's mapper answers both (ADR-0019).
 var (
-	ErrMissingBearer = errors.New("missing or invalid Authorization header")
-	ErrMissingAPIKey = errors.New("missing X-API-Key header")
+	ErrMissingBearer = errors.New("this operation needs a bearer token; send it as Authorization: Bearer <token>")
+	ErrMissingAPIKey = errors.New("this operation needs an API key; send it in the X-API-Key header")
 	ErrNoCredentials = errors.New("no authentication provided: expected X-API-Key or Authorization: Bearer <token>")
 )
 

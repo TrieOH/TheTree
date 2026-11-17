@@ -1,0 +1,47 @@
+# The store feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /editions/{edition_id}/store/stock:
+    get:
+      tags: [store]
+      operationId: listEditionStoreStock
+      summary: Current stock position for every purchasable item
+      description: |
+        REST twin of the storefront SSE snapshot: every purchasable item
+        (ticket types, product variants, program occurrences) and its
+        current stock position, recomputed from the availability ledger
+        (base − reserved across pending/approved purchases). `stock` is
+        `null` when the item is unlimited. Public, like the ticket list.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Current stock per purchasable item
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StoreStockItem'
+
+components:
+  schemas:
+    StoreStockItem:
+      type: object
+      description: One purchasable item's stock position — the REST twin of the SSE `snapshot`/`stock` payload. `stock` null = unlimited.
+      required: [id, item_type, stock]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        item_type:
+          $ref: '../../../api-spec.yml#/components/schemas/PurchaseItemType'
+        stock:
+          type: [ integer, "null" ]
+          description: Available units (base − reserved); null = unlimited.

@@ -121,8 +121,9 @@ gen +SERVICES=services:
     just gen-cf
 
 # The fronts import these clients; they are not committed, so run this after
-# cloning and whenever an api-spec.yml or problems.yml changes. orval reads
-# the bundled specs and always regenerates all four.
+# cloning and whenever an api-spec.yml, a problems.yml or a feature's
+# spec.yml changes. orval reads the bundled specs and always regenerates all
+# four.
 #
 # Generate the orval TS clients (lib/ts/<svc>/client).
 gen-ts:

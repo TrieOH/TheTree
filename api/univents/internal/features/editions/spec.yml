@@ -1,0 +1,370 @@
+# The editions feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /events/{event_slug}:by-slug/editions/{edition_slug}:by-slug:
+    get:
+      tags: [editions]
+      operationId: getEditionBySlug
+      summary: Get an edition by event slug and edition slug
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        edition by its slug nested under its event's slug. Public.
+      security: []
+      parameters:
+        - name: event_slug
+          in: path
+          required: true
+          description: Event slug.
+          schema:
+            type: string
+        - name: edition_slug
+          in: path
+          required: true
+          description: Edition slug.
+          schema:
+            type: string
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested edition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions:
+    get:
+      tags: [editions]
+      operationId: listPublicEditions
+      x-cache: shared
+      summary: List an event's public editions
+      description: |
+        Lists the published (non-draft) editions of an event. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Public editions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
+    post:
+      tags: [editions]
+      operationId: createEdition
+      summary: Create an edition
+      description: |
+        Creates a draft edition (run) of the event. The actor must be an
+        owner or admin of the event. Draft editions are invisible to
+        public listing until published.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEditionRequest'
+            example:
+              name: TrieOH Dev Conf 2026
+              slug: "2026"
+              starts_at: '2026-05-04T09:00:00Z'
+              ends_at: '2026-05-06T18:00:00Z'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Edition created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/active:
+    get:
+      tags: [editions]
+      operationId: getActiveEdition
+      summary: Get the event's active edition
+      description: |
+        Fetches the currently running (or next upcoming) published
+        edition of the event. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The active edition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/past:
+    get:
+      tags: [editions]
+      operationId: listPastEditions
+      summary: List the event's past editions
+      description: |
+        Lists the published editions that already ended. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Past editions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/upcoming:
+    get:
+      tags: [editions]
+      operationId: listUpcomingEditions
+      summary: List the event's upcoming editions
+      description: |
+        Lists the published editions that have not started yet. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Upcoming editions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/draft:
+    get:
+      tags: [editions]
+      operationId: listDraftEditions
+      summary: List the event's draft editions
+      description: |
+        Lists the unpublished (draft) editions of an event. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Draft editions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/{edition_id}:
+    patch:
+      tags: [editions]
+      operationId: patchEdition
+      summary: Update an edition
+      description: |
+        Updates edition details (dates, location, branding). The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEditionRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Edition updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Edition'
+
+  /events/{event_id}/editions/{edition_id}/publish:
+    post:
+      tags: [editions]
+      operationId: publishEdition
+      summary: Publish an edition
+      description: |
+        Publishes a draft edition, making it publicly visible and open
+        for registrations. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EventID'
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Edition published
+
+components:
+  schemas:
+    Edition:
+      x-go-type: models.Edition
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One run of an event. Mirrors `models.Edition`.
+      required: [id, event_id, name, slug, is_draft, starts_at, ends_at, created_by, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        event_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        name:
+          type: string
+        slug:
+          type: string
+        tagline:
+          type: [ string, "null" ]
+        description:
+          type: [ string, "null" ]
+        is_draft:
+          type: boolean
+          description: Whether the edition is unpublished.
+        registration_opens_at:
+          type: [ string, "null" ]
+          format: date-time
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        location_name:
+          type: [ string, "null" ]
+        location_description:
+          type: [ string, "null" ]
+          description: Venue address.
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        created_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateEditionRequest:
+      type: object
+      description: Request body for edition creation. Mirrors `models.CreateEditionRequest`.
+      required: [name, slug, starts_at, ends_at]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+
+    PatchEditionRequest:
+      type: object
+      description: Request body for edition updates. Mirrors `models.PatchEditionRequest`.
+      required: [name, slug, starts_at, ends_at]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        tagline:
+          type: [ string, "null" ]
+        description:
+          type: [ string, "null" ]
+        registration_opens_at:
+          type: [ string, "null" ]
+          format: date-time
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        location_name:
+          type: [ string, "null" ]
+        location_description:
+          type: [ string, "null" ]
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    EditionAlreadyPublished:
+      x-problem:
+        slug: edition-already-published
+        status: 400
+        title: Edition Already Published
+        description: "Edition is already published."
+        error: ErrEditionAlreadyPublished
+        message: "this edition is already published"

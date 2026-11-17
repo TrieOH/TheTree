@@ -1,0 +1,273 @@
+# The profiles feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /actors/{actor_id}/profile:
+    get:
+      tags: [profiles]
+      operationId: getPlatformProfile
+      x-scope: platform-only
+      summary: Get a platform actor's profile
+      description: |
+        Fetches the platform-scoped profile (actor with no project) of
+        the given actor. Public read.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorProfile'
+    put:
+      tags: [profiles]
+      operationId: upsertPlatformProfile
+      x-scope: platform-only
+      summary: Upsert a platform actor's profile
+      description: |
+        Sets (or replaces) the platform-scoped profile of the given
+        actor, validating against the active platform profile schema.
+        Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileRequest'
+            example:
+              profile:
+                full_name: Jane Doe
+      x-problems: [400, 401, 404, 500, 503]
+      responses:
+        '200':
+          description: Profile upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorProfile'
+
+  /projects/{project_id}/actors/{actor_id}/profile:
+    get:
+      tags: [profiles]
+      operationId: getProjectProfile
+      x-cache: shared
+      summary: Get a project actor's profile
+      description: |
+        Fetches the project-scoped profile of the given actor within the
+        project. Public read.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorProfile'
+    put:
+      tags: [profiles]
+      operationId: upsertProjectProfile
+      summary: Upsert a project actor's profile
+      description: |
+        Sets (or replaces) the project-scoped profile of the given actor
+        within the project, validating against the project's active
+        profile schema. Project users may update their own profile;
+        project admins/owners may update any profile in the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileRequest'
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
+      responses:
+        '200':
+          description: Profile upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorProfile'
+
+  /profiles/by-handle/{handle}:
+    get:
+      tags: [profiles]
+      operationId: getProfileByHandle
+      x-cache: shared
+      summary: Get a profile by handle
+      description: |
+        Fetches the profile with the given handle. Handles are unique when
+        present, so at most one profile matches. Public read.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProfileHandle'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorProfile'
+
+  /profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedPlatformProfiles
+      x-scope: platform-only
+      summary: List outdated platform actor profiles
+      description: |
+        Lists platform-scoped actor profiles that failed to migrate to the
+        active platform schema version and are flagged as outdated. The
+        admin resolves them manually (edit via the profile upsert, or fix
+        the schema). Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      x-problems: [401, 500, 503]
+      responses:
+        '200':
+          description: Outdated platform actor profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActorProfile'
+                    x-go-type: '[]ActorProfile'
+                    x-go-type-skip-optional-pointer: true
+
+  /projects/{project_id}/profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedProjectProfiles
+      summary: List outdated project actor profiles
+      description: |
+        Lists the project's actor profiles that failed to migrate to the
+        active project schema version and are flagged as outdated. The
+        admin resolves them manually. Requires a project admin.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 500, 503]
+      responses:
+        '200':
+          description: Outdated project actor profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActorProfile'
+                    x-go-type: '[]ActorProfile'
+                    x-go-type-skip-optional-pointer: true
+
+components:
+  schemas:
+    ActorProfile:
+      x-go-type: models.ActorProfile
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: An actor's profile payload. Mirrors `models.ActorProfile`.
+      required: [actor_id, profile, schema_version, outdated, updated_at]
+      properties:
+        actor_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        handle:
+          type: string
+          nullable: true
+          description: Unique handle for the profile. Null when not set.
+        pfp_url:
+          type: string
+          nullable: true
+          description: Profile picture URL, first-class column. Null when not set.
+        profile:
+          type: object
+          description: The profile data, validated against the active profile schema.
+          additionalProperties: true
+        schema_version:
+          type: integer
+          description: Profile schema version the profile was validated against.
+        outdated:
+          type: boolean
+          description: Whether the profile failed to migrate to the active schema.
+        updated_at:
+          type: string
+          format: date-time
+
+    UpsertProfileRequest:
+      type: object
+      description: Request body for profile upserts. Mirrors `models.UpsertProfileRequest`.
+      required: [profile]
+      properties:
+        handle:
+          type: string
+          nullable: true
+          description: >
+            Optional unique handle for the profile. Setting a handle that is
+            already in use fails; sending null or omitting the field leaves
+            the handle unchanged.
+        pfp_url:
+          type: string
+          nullable: true
+          description: >
+            Profile picture URL, first-class column. Sending null or omitting
+            the field leaves it unchanged.
+        profile:
+          type: object
+          description: Profile data to store, validated against the active schema.
+          additionalProperties: true
+          x-go-type: 'json.RawMessage'
+
+    NotProfileOwner:
+      x-problem:
+        slug: not-profile-owner
+        status: 403
+        title: Not Profile Owner
+        description: "Insufficient permissions."
+        error: ErrNotProfileOwner
+        message: "this is someone else's platform profile, and only its owner may change it"
+
+    ProfileSchemaViolation:
+      x-problem:
+        slug: profile-schema-violation
+        status: 400
+        title: Profile Schema Violation
+        description: "The profile breaks its project's profile schema; `errors` names the offending fields."
+
+  parameters:
+    ProfileHandle:
+      name: handle
+      in: path
+      required: true
+      description: Unique profile handle.
+      schema:
+        type: string
