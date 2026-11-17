@@ -424,7 +424,7 @@ components:
         title: Invalid Provider Data
         description: "Invalid provider_data."
         error: ErrInvalidProviderData
-        message: "provider_data couldn't be read as JSON. Send it as a JSON object with the provider's fields."
+        message: "provider_data couldn't be read as JSON; send it as a JSON object with the provider's fields"
 
     InvalidCheckoutProviderData:
       x-problem:
@@ -433,7 +433,7 @@ components:
         title: Invalid Checkout Provider Data
         description: "Invalid checkout_provider_data."
         error: ErrInvalidCheckoutProviderData
-        message: "checkout_provider_data couldn't be read. Send it as a JSON object with the fields the provider's checkout needs."
+        message: "checkout_provider_data couldn't be read; send it as a JSON object with the fields the provider's checkout needs"
 
     InvalidMetadata:
       x-problem:
@@ -442,7 +442,7 @@ components:
         title: Invalid Metadata
         description: "Invalid metadata."
         error: ErrInvalidMetadata
-        message: "metadata couldn't be read. Send it as a flat JSON object."
+        message: "metadata couldn't be read; send it as a flat JSON object"
 
     TestModeOnly:
       x-problem:
@@ -451,7 +451,7 @@ components:
         title: Test Mode Only
         description: "Test mode only."
         error: ErrTestModeOnly
-        message: "This operation exists only for testing, and this Payssage isn't running in test mode."
+        message: "this operation exists only for testing, and this Payssage isn't running in test mode"
 
     # providers and intents
     ProviderNotImplemented:
@@ -461,7 +461,7 @@ components:
         title: Provider Not Implemented
         description: "Provider not implemented."
         error: ErrProviderNotImplemented
-        message: "Payssage knows this payment provider but can't take payments through it yet. Use a seller on a supported provider."
+        message: "this payment provider is known to Payssage, but payments through it aren't supported yet; use a seller on a supported provider"
 
     SellerNotInWallet:
       x-problem:
@@ -470,7 +470,7 @@ components:
         title: Seller Not In Wallet
         description: "Seller does not belong to wallet."
         error: ErrSellerNotInWallet
-        message: "That seller isn't connected to this wallet. Use one of the wallet's sellers, or connect this one to it first."
+        message: "that seller isn't connected to this wallet; use one of the wallet's sellers, or connect this one to it first"
 
   parameters:
     IntentID:

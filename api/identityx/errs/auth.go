@@ -4,13 +4,13 @@ import "errors"
 
 // Identity and tokens.
 var (
-	ErrNoIdentity   = errors.New("identity not found in context")
-	ErrInvalidToken = errors.New("invalid token")
+	ErrNoIdentity   = errors.New("this operation needs a signed-in caller; send a bearer token or an API key")
+	ErrInvalidToken = errors.New("the token couldn't be read or verified; sign in again to get a new one")
 )
 
 // API keys.
 var (
-	ErrInvalidAPIKey = errors.New("invalid api key")
+	ErrInvalidAPIKey = errors.New("this API key is unknown, revoked or malformed; check the key you sent, or create a new one")
 )
 
 // Login, registration and setup.

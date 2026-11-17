@@ -17,5 +17,5 @@ var (
 	ErrEventNotFound         = errors.New("event not found")
 	ErrProductNotFound       = errors.New("product not found")
 	ErrSignatureNotFound     = errors.New("signature not found")
-	ErrWSTokenNotFound       = errors.New("ws token not found")
+	ErrWSTokenNotFound       = errors.New("live-updates token not found")
 )

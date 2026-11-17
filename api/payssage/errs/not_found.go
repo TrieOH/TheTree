@@ -6,7 +6,7 @@ import "errors"
 // lib/database.NotFoundError, so a caller can match the resource or any
 // missing row.
 var (
-	ErrOAuthStateNotFound      = errors.New("state not found")
+	ErrOAuthStateNotFound      = errors.New("OAuth state not found; start the connection again")
 	ErrWebhookEventNotFound    = errors.New("webhook event not found")
 	ErrWalletNotFound          = errors.New("wallet not found")
 	ErrWebhookEndpointNotFound = errors.New("webhook endpoint not found")

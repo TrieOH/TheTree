@@ -281,7 +281,7 @@ components:
         title: Add Self To Org
         description: "Users can't add themselves to organizations."
         error: ErrAddSelfToOrg
-        message: "You can't add yourself to an organization. Ask one of its admins or its owner to add you."
+        message: "you can't add yourself to an organization; ask one of its admins or its owner to add you"
 
     AddOwnerToOrg:
       x-problem:
@@ -290,7 +290,7 @@ components:
         title: Add Owner To Org
         description: "Owners can't be added to organizations they own."
         error: ErrAddOwnerToOrg
-        message: "The organization's owner is already part of it and can't be added as a member."
+        message: "the organization's owner is already part of it and can't be added as a member"
 
     AlreadyOrgMember:
       x-problem:
@@ -299,7 +299,7 @@ components:
         title: Already Org Member
         description: "User is already a member of the organization."
         error: ErrAlreadyOrgMember
-        message: "That person is already a member of the organization. To change their role, update their membership instead of adding them again."
+        message: "that person is already a member of the organization; to change their role, update their membership instead of adding them again"
 
     RemoveSelfFromOrg:
       x-problem:
@@ -308,7 +308,7 @@ components:
         title: Remove Self From Org
         description: "Cannot remove yourself from the organization."
         error: ErrRemoveSelfFromOrg
-        message: "You can't remove yourself from an organization. Ask one of its admins or its owner to remove you."
+        message: "you can't remove yourself from an organization; ask one of its admins or its owner to remove you"
 
     RemoveOrgOwner:
       x-problem:
@@ -317,7 +317,7 @@ components:
         title: Remove Org Owner
         description: "Cannot remove the owner of the organization."
         error: ErrRemoveOrgOwner
-        message: "The organization's owner can't be removed. Transfer ownership first."
+        message: "the organization's owner can't be removed; transfer ownership first"
 
     NotOrgMember:
       x-problem:
@@ -326,4 +326,4 @@ components:
         title: Not Org Member
         description: "User is not a member of the organization."
         error: ErrNotOrgMember
-        message: "That person is not a member of the organization, so there is no membership to change or remove."
+        message: "that person is not a member of the organization, so there is no membership to change or remove"

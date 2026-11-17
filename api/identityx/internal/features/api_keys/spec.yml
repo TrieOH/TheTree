@@ -126,7 +126,7 @@ components:
         title: API Key Expired
         description: "Api key expired."
         error: ErrAPIKeyExpired
-        message: "This API key has expired. Create a new key and use it instead."
+        message: "this API key has expired; create a new key and use it instead"
 
     InvalidCapabilities:
       x-problem:
@@ -135,4 +135,4 @@ components:
         title: Invalid Capabilities
         description: "Invalid capabilities."
         error: ErrInvalidCapabilities
-        message: "The key asks for capabilities this project doesn't define. Create those capabilities first, or request only existing ones."
+        message: "the key asks for capabilities this project doesn't define; create those capabilities first, or request only existing ones"

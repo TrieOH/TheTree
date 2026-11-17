@@ -19,7 +19,7 @@ var (
 
 // namespaces
 var (
-	ErrInvalidNamespaceMemberRole = errors.New("invalid namespace member role")
+	ErrInvalidNamespaceMemberRole = errors.New("namespace member role must be one of: owner, admin, member")
 )
 
 // responses, responders and invites

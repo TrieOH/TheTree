@@ -367,4 +367,4 @@ components:
         title: Edition Already Published
         description: "Edition is already published."
         error: ErrEditionAlreadyPublished
-        message: "This edition is already published."
+        message: "this edition is already published"

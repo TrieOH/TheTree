@@ -11,7 +11,7 @@ components:
         title: Platform Only
         description: "Platform-level authentication required."
         error: ErrPlatformOnly
-        message: "This operation manages the IdentityX platform itself, and the caller is scoped to a project. Sign in with a platform account (one with no project) and try again."
+        message: "this operation manages the IdentityX platform itself, and the caller is scoped to a project; sign in with a platform account (one with no project) and try again"
     InvalidAccessToken:
       x-problem:
         slug: invalid-access-token
@@ -19,7 +19,7 @@ components:
         title: Invalid Access Token
         description: "Invalid access token."
         error: ErrInvalidAccessToken
-        message: "The access token could not be verified: it is malformed, signed with the wrong algorithm, or its signature does not match. Sign in again to get a new one."
+        message: "the access token could not be verified: it is malformed, signed with the wrong algorithm, or its signature does not match; sign in again to get a new one"
     MissingKID:
       x-problem:
         slug: missing-kid
@@ -27,7 +27,7 @@ components:
         title: Missing KID
         description: "Missing kid."
         error: ErrMissingKID
-        message: "The token's header has no kid, so IdentityX can't tell which key signed it. Use a token IdentityX issued, unmodified."
+        message: "the token's header has no kid, so IdentityX can't tell which key signed it; use a token IdentityX issued, unmodified"
     InvalidKID:
       x-problem:
         slug: invalid-kid
@@ -35,7 +35,7 @@ components:
         title: Invalid KID
         description: "Invalid kid."
         error: ErrInvalidKID
-        message: "The token's kid is not a key id IdentityX issues (it must be a UUID). Use a token IdentityX issued, unmodified."
+        message: "the token's kid is not a key id IdentityX issues (it must be a UUID); use a token IdentityX issued, unmodified"
     OutdatedToken:
       x-problem:
         slug: outdated-token
@@ -43,7 +43,7 @@ components:
         title: Outdated Token
         description: "Outdated token."
         error: ErrOutdatedToken
-        message: "The key that signed this token no longer exists, so the token can't be verified. Sign in again to get a token signed with a current key."
+        message: "the key that signed this token no longer exists, so the token can't be verified; sign in again to get a token signed with a current key"
     SigningKeyRevoked:
       x-problem:
         slug: signing-key-revoked
@@ -51,7 +51,7 @@ components:
         title: Signing Key Revoked
         description: "Token signing key revoked."
         error: ErrSigningKeyRevoked
-        message: "The key that signed this token was revoked, so every token it signed is rejected. Sign in again to get a new token."
+        message: "the key that signed this token was revoked, so every token it signed is rejected; sign in again to get a new token"
     SigningKeyRetired:
       x-problem:
         slug: signing-key-retired
@@ -59,7 +59,7 @@ components:
         title: Signing Key Retired
         description: "Token signing key retired."
         error: ErrSigningKeyRetired
-        message: "The key that signed this token was rotated out and its grace period has ended. Refresh or sign in again to get a token signed with the current key."
+        message: "the key that signed this token was rotated out and its grace period has ended; refresh or sign in again to get a token signed with the current key"
     TokenRevoked:
       x-problem:
         slug: token-revoked
@@ -67,7 +67,7 @@ components:
         title: Token Revoked
         description: "Token has been revoked."
         error: ErrTokenRevoked
-        message: "This token was revoked, by a logout or a refresh that replaced it. Sign in again, or use the newest token pair."
+        message: "this token was revoked, by a logout or a refresh that replaced it; sign in again, or use the newest token pair"
 
     PasswordOnlyForHumans:
       x-problem:
@@ -76,7 +76,7 @@ components:
         title: Password Only For Humans
         description: "Only human actors can authenticate via password."
         error: ErrPasswordOnlyForHumans
-        message: "Only human actors sign in with an email and password. Service and machine actors authenticate with an API key instead."
+        message: "only human actors sign in with an email and password; service and machine actors authenticate with an API key instead"
     SetupRequired:
       x-problem:
         slug: setup-required
@@ -84,7 +84,7 @@ components:
         title: Setup Required
         description: "Please setup IDX first on /auth/setup."
         error: ErrSetupRequired
-        message: "IdentityX hasn't been set up yet, so it serves no other request. Create the first platform admin with POST /auth/setup, then retry."
+        message: "IdentityX hasn't been set up yet, so it serves no other request; create the first platform admin with POST /auth/setup, then retry"
     SetupCheckFailed:
       x-problem:
         slug: setup-check-failed
@@ -92,7 +92,7 @@ components:
         title: Setup Check Failed
         description: "Could not check setup state."
         error: ErrSetupCheckFailed
-        message: "IdentityX couldn't check whether setup is complete because its database didn't answer. Retry in a moment."
+        message: "IdentityX couldn't check whether setup is complete because its database didn't answer; retry in a moment"
 
     # action tokens
     ActionTokenInvalid:
@@ -104,7 +104,7 @@ components:
         # ErrActionTokenInvalid covers unparseable, wrongly-purposed, or
         # unknown tokens.
         error: ErrActionTokenInvalid
-        message: "This link's token isn't valid: it was altered, cut short or issued for a different action. Open the link from the latest email, or request a new one."
+        message: "this link's token isn't valid: it was altered, cut short or issued for a different action; open the link from the latest email, or request a new one"
     ActionTokenExpired:
       x-problem:
         slug: action-token-expired
@@ -114,7 +114,7 @@ components:
         # ErrActionTokenExpired covers tokens whose anti-replay record has
         # expired.
         error: ErrActionTokenExpired
-        message: "This link has expired. Request a new email and use its link before it expires."
+        message: "this link has expired; request a new email and use its link before it expires"
     ActionTokenUsed:
       x-problem:
         slug: action-token-used
@@ -124,7 +124,7 @@ components:
         # ErrActionTokenUsed covers tokens already consumed, including a
         # concurrent consume.
         error: ErrActionTokenUsed
-        message: "This link was already used, and each link works once. If you still need to act, request a new email."
+        message: "this link was already used, and each link works once; if you still need to act, request a new email"
 
     # access
     ActorOutsideProject:
@@ -134,7 +134,7 @@ components:
         title: Actor Outside Project
         description: "Insufficient permissions."
         error: ErrActorOutsideProject
-        message: "That actor belongs to another project, and the caller may only see actors of its own project."
+        message: "that actor belongs to another project, and the caller may only see actors of its own project"
 
     # membership
     AddSelfToProject:
@@ -144,7 +144,7 @@ components:
         title: Add Self To Project
         description: "Users can't add themselves to projects."
         error: ErrAddSelfToProject
-        message: "You can't add yourself to a project. Ask one of the project's admins or its owner to add you."
+        message: "you can't add yourself to a project; ask one of the project's admins or its owner to add you"
     AlreadyProjectMember:
       x-problem:
         slug: already-project-member
@@ -152,7 +152,7 @@ components:
         title: Already Project Member
         description: "User is already a member of the project."
         error: ErrAlreadyProjectMember
-        message: "That actor is already a member of the project. To change their role, update their membership instead of adding them again."
+        message: "that actor is already a member of the project; to change their role, update their membership instead of adding them again"
     RemoveSelfFromProject:
       x-problem:
         slug: remove-self-from-project
@@ -160,7 +160,7 @@ components:
         title: Remove Self From Project
         description: "Cannot remove yourself from the project."
         error: ErrRemoveSelfFromProject
-        message: "You can't remove yourself from a project. Ask one of the project's admins or its owner to remove you."
+        message: "you can't remove yourself from a project; ask one of the project's admins or its owner to remove you"
     NotProjectMember:
       x-problem:
         slug: not-project-member
@@ -168,7 +168,7 @@ components:
         title: Not Project Member
         description: "User is not a member of the project."
         error: ErrNotProjectMember
-        message: "That actor is not a member of the project, so there is no membership to change or remove."
+        message: "that actor is not a member of the project, so there is no membership to change or remove"
 
     # email templates, terms of service, profiles
     TemplateRender:
@@ -188,7 +188,7 @@ components:
         title: Email Taken For Scope
         description: "An account with this email already exists for this scope and auth method."
         error: ErrEmailTakenForScope
-        message: "An account with this email already exists here for this sign-in method. Sign in to it instead, or use a different email."
+        message: "an account with this email already exists here for this sign-in method; sign in to it instead, or use a different email"
     ExternalIdentityTaken:
       x-problem:
         slug: external-identity-taken
@@ -196,7 +196,7 @@ components:
         title: External Identity Taken
         description: "This external identity is already linked to this account."
         error: ErrExternalIdentityTaken
-        message: "This provider account is already linked to an IdentityX account. Sign in with it instead of linking it again."
+        message: "this provider account is already linked to an IdentityX account; sign in with it instead of linking it again"
     OrgSlugTaken:
       x-problem:
         slug: org-slug-taken
@@ -204,7 +204,7 @@ components:
         title: Org Slug Taken
         description: "An organization with this slug already exists."
         error: ErrOrgSlugTaken
-        message: "Another organization already uses this slug, and slugs are unique. Choose a different slug."
+        message: "another organization already uses this slug, and slugs are unique; choose a different slug"
     ProjectSlugTaken:
       x-problem:
         slug: project-slug-taken
@@ -212,7 +212,7 @@ components:
         title: Project Slug Taken
         description: "A project with this slug already exists."
         error: ErrProjectSlugTaken
-        message: "Another project already uses this slug, and slugs are unique. Choose a different slug."
+        message: "another project already uses this slug, and slugs are unique; choose a different slug"
     DomainTaken:
       x-problem:
         slug: domain-taken
@@ -220,7 +220,7 @@ components:
         title: Domain Taken
         description: "This domain is already verified by another project."
         error: ErrDomainTaken
-        message: "Another project has already verified this domain, and a domain belongs to one project. Use a different domain, or remove it from the other project first."
+        message: "another project has already verified this domain, and a domain belongs to one project; use a different domain, or remove it from the other project first"
     OAuthProviderConfigured:
       x-problem:
         slug: oauth-provider-configured
@@ -228,7 +228,7 @@ components:
         title: OAuth Provider Configured
         description: "This OAuth provider is already configured for this project."
         error: ErrOAuthProviderConfigured
-        message: "This project already has this OAuth provider configured. Update the existing configuration instead of creating another."
+        message: "this project already has this OAuth provider configured; update the existing configuration instead of creating another"
     DuplicateOAuthState:
       x-problem:
         slug: duplicate-oauth-state
@@ -236,7 +236,7 @@ components:
         title: Duplicate OAuth State
         description: "Duplicate OAuth login state."
         error: ErrDuplicateOAuthState
-        message: "An OAuth login with this state is already in progress. Start a new login to get a fresh state."
+        message: "an OAuth login with this state is already in progress; start a new login to get a fresh state"
     APIKeyPrefixTaken:
       x-problem:
         slug: api-key-prefix-taken
@@ -244,7 +244,7 @@ components:
         title: API Key Prefix Taken
         description: "An API key with this display prefix already exists."
         error: ErrAPIKeyPrefixTaken
-        message: "An API key with this display prefix already exists. Create the key again to get a new prefix."
+        message: "an API key with this display prefix already exists; create the key again to get a new prefix"
     CapabilityExists:
       x-problem:
         slug: capability-exists
@@ -252,7 +252,7 @@ components:
         title: Capability Exists
         description: "A capability with this resource and action already exists for this scope."
         error: ErrCapabilityExists
-        message: "A capability with this resource and action already exists here. Reuse it instead of creating a duplicate."
+        message: "a capability with this resource and action already exists here; reuse it instead of creating a duplicate"
     ProjectProfileSchemaExists:
       x-problem:
         slug: project-profile-schema-exists
@@ -260,7 +260,7 @@ components:
         title: Project Profile Schema Exists
         description: "A profile schema already exists for this project."
         error: ErrProjectProfileSchemaExists
-        message: "This project already has a profile schema. Publish a new version of it instead of creating another."
+        message: "this project already has a profile schema; publish a new version of it instead of creating another"
     ProfileSchemaVersionExists:
       x-problem:
         slug: profile-schema-version-exists
@@ -268,7 +268,7 @@ components:
         title: Profile Schema Version Exists
         description: "This profile schema version already exists for the scope."
         error: ErrProfileSchemaVersionExists
-        message: "This profile schema already has a version with this number. Publish it under the next version number."
+        message: "this profile schema already has a version with this number; publish it under the next version number"
     PlatformSchemaVersionExists:
       x-problem:
         slug: platform-schema-version-exists
@@ -276,7 +276,7 @@ components:
         title: Platform Schema Version Exists
         description: "A platform profile schema version already exists."
         error: ErrPlatformSchemaVersionExists
-        message: "The platform profile schema already has a version with this number. Publish it under the next version number."
+        message: "the platform profile schema already has a version with this number; publish it under the next version number"
     HandleTaken:
       x-problem:
         slug: handle-taken
@@ -284,7 +284,7 @@ components:
         title: Handle Taken
         description: "This handle is already in use by another profile."
         error: ErrHandleTaken
-        message: "Another profile already uses this handle. Choose a different one."
+        message: "another profile already uses this handle; choose a different one"
     EmailTemplateExists:
       x-problem:
         slug: email-template-exists
@@ -292,7 +292,7 @@ components:
         title: Email Template Exists
         description: "This project already has an email template of this kind."
         error: ErrEmailTemplateExists
-        message: "This project already has an email template of this kind. Update that template instead of creating another."
+        message: "this project already has an email template of this kind; update that template instead of creating another"
     TosAlreadyExists:
       x-problem:
         slug: tos-already-exists
@@ -300,7 +300,7 @@ components:
         title: ToS Already Exists
         description: "This project already has terms of service."
         error: ErrTosAlreadyExists
-        message: "This project already has terms of service. Publish a new version of them instead of creating another."
+        message: "this project already has terms of service; publish a new version of them instead of creating another"
     TosAlreadyAccepted:
       x-problem:
         slug: tos-already-accepted
@@ -308,7 +308,7 @@ components:
         title: ToS Already Accepted
         description: "This actor has already accepted this terms version."
         error: ErrTosAlreadyAccepted
-        message: "This actor already accepted this version of the terms; there's nothing more to accept."
+        message: "this actor already accepted this version of the terms; there's nothing more to accept"
     AlreadyBlacklisted:
       x-problem:
         slug: already-blacklisted
@@ -316,4 +316,4 @@ components:
         title: Already Blacklisted
         description: "This target is already blacklisted for this scope."
         error: ErrAlreadyBlacklisted
-        message: "This target is already blacklisted here; there's nothing more to block."
+        message: "this target is already blacklisted here; there's nothing more to block"

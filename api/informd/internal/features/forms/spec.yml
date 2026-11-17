@@ -495,7 +495,7 @@ components:
         title: Open Not Draft
         description: "Cannot open a form not on draft."
         error: ErrOpenNotDraft
-        message: "Only a draft form can be opened, and this one isn't a draft."
+        message: "only a draft form can be opened, and this one isn't a draft"
 
     CloseNotOpen:
       x-problem:
@@ -504,7 +504,7 @@ components:
         title: Close Not Open
         description: "Cannot close a form not on open."
         error: ErrCloseNotOpen
-        message: "Only an open form can be closed, and this one isn't open."
+        message: "only an open form can be closed, and this one isn't open"
 
     RedraftNotOpen:
       x-problem:
@@ -513,7 +513,7 @@ components:
         title: Redraft Not Open
         description: "Cannot redraft a form not on open."
         error: ErrRedraftNotOpen
-        message: "Only an open form can go back to draft, and this one isn't open."
+        message: "only an open form can go back to draft, and this one isn't open"
 
     RedraftWithResponses:
       x-problem:
@@ -522,7 +522,7 @@ components:
         title: Redraft With Responses
         description: "Cannot redraft a form with responses."
         error: ErrRedraftWithResponses
-        message: "This form already has responses, so it can't go back to draft: editing it would change what those responses answered. Duplicate the form instead."
+        message: "this form already has responses, so it can't go back to draft: editing it would change what those responses answered; duplicate the form instead"
 
     ArchiveNotClosed:
       x-problem:
@@ -531,7 +531,7 @@ components:
         title: Archive Not Closed
         description: "Cannot archive a form not on closed."
         error: ErrArchiveNotClosed
-        message: "Only a closed form can be archived. Close the form first."
+        message: "only a closed form can be archived; close the form first"
 
     FormNotAnswerable:
       x-problem:
@@ -540,7 +540,7 @@ components:
         title: Form Not Answerable
         description: "Form is not open for answers."
         error: ErrFormNotAnswerable
-        message: "This form isn't open, so it can't be answered. Ask its owner to open it."
+        message: "this form isn't open, so it can't be answered; ask its owner to open it"
 
     # membership
     AddSelfToForm:
@@ -550,7 +550,7 @@ components:
         title: Add Self To Form
         description: "Users can't add themselves to forms."
         error: ErrAddSelfToForm
-        message: "You can't add yourself to a form. Ask one of its admins or its owner to add you."
+        message: "you can't add yourself to a form; ask one of its admins or its owner to add you"
 
     FormOwnerAlreadyMember:
       x-problem:
@@ -559,7 +559,7 @@ components:
         title: Form Owner Already Member
         description: "Owner of the form is already a member of the form."
         error: ErrFormOwnerAlreadyMember
-        message: "The form's owner is already part of it and can't be added as a member."
+        message: "the form's owner is already part of it and can't be added as a member"
 
     AlreadyFormMember:
       x-problem:
@@ -568,7 +568,7 @@ components:
         title: Already Form Member
         description: "User is already a member of the form."
         error: ErrAlreadyFormMember
-        message: "That person is already a member of the form. To change their role, update their membership instead of adding them again."
+        message: "that person is already a member of the form; to change their role, update their membership instead of adding them again"
 
     RemoveSelfFromForm:
       x-problem:
@@ -577,7 +577,7 @@ components:
         title: Remove Self From Form
         description: "Users can't remove themselves from forms."
         error: ErrRemoveSelfFromForm
-        message: "You can't remove yourself from a form. Ask one of its admins or its owner to remove you."
+        message: "you can't remove yourself from a form; ask one of its admins or its owner to remove you"
 
     RemoveFormOwner:
       x-problem:
@@ -586,7 +586,7 @@ components:
         title: Remove Form Owner
         description: "Cannot remove owner of the form."
         error: ErrRemoveFormOwner
-        message: "The form's owner can't be removed. Transfer ownership first."
+        message: "the form's owner can't be removed; transfer ownership first"
 
     NotFormMember:
       x-problem:
@@ -595,4 +595,4 @@ components:
         title: Not Form Member
         description: "User is not a member of the form."
         error: ErrNotFormMember
-        message: "That person is not a member of the form, so there is no membership to change or remove."
+        message: "that person is not a member of the form, so there is no membership to change or remove"
