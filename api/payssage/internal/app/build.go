@@ -86,7 +86,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 			})),
 			intentHandlers: intents.NewHandlers(intents.New(intents.Deps{
 				Intents: intentsRepo, Wallets: walletsRepo, Orgs: orgsRepo, Collectors: collectorsRepo,
-				Sellers: sellersRepo, Authz: az, Registry: registry,
+				Sellers: sellersRepo, Authz: az, Registry: registry, TestMode: cfg.TestMode,
 			})),
 			webhookHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
 				Jobs: d.Jobs, Events: eventsRepo, Endpoints: endpointsRepo, Deliveries: deliveriesRepo,

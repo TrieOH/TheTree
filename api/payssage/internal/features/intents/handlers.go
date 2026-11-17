@@ -3,7 +3,6 @@ package intents
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	"payssage/errs"
 	"payssage/internal/features/intents/service"
@@ -62,9 +61,6 @@ func (h *Handlers) GetIntent(ctx context.Context, req openapi.GetIntentRequestOb
 }
 
 func (h *Handlers) HardCreateIntent(ctx context.Context, req openapi.HardCreateIntentRequestObject) (openapi.HardCreateIntentResponseObject, error) {
-	if os.Getenv("TEST_MODE") != "true" {
-		return nil, errs.ErrTestModeOnly
-	}
 	providerData, err := json.Marshal(req.Body.ProviderData)
 	if err != nil {
 		return nil, errs.ErrInvalidProviderData
@@ -134,12 +130,9 @@ func (h *Handlers) RefundIntent(ctx context.Context, req openapi.RefundIntentReq
 }
 
 // TestmodeRefundIntent simulates a provider refund: flips a succeeded intent
-// to refunded without contacting the provider. TEST_MODE-gated like
+// to refunded without contacting the provider. Test mode only, like
 // hardCreateIntent.
 func (h *Handlers) TestmodeRefundIntent(ctx context.Context, req openapi.TestmodeRefundIntentRequestObject) (openapi.TestmodeRefundIntentResponseObject, error) {
-	if os.Getenv("TEST_MODE") != "true" {
-		return nil, errs.ErrTestModeOnly
-	}
 	intent, err := h.ops.TestmodeRefund(ctx, req.IntentId)
 	if err != nil {
 		return nil, err

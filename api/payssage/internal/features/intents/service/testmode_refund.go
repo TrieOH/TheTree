@@ -9,12 +9,15 @@ import (
 	"uuid"
 )
 
-// TestmodeRefund simulates a provider refund (TEST_MODE-gated in the
-// handler): flips a succeeded intent to refunded and stamps a fake refund
-// marker in provider_data — no provider is contacted. Mirrors the real
-// refund's postconditions so downstream systems observe the same state the
-// payment.refunded webhook would produce.
+// TestmodeRefund simulates a provider refund (only when TestMode is on, and
+// only for the wallet's admins): flips a succeeded intent to refunded and
+// stamps a fake refund marker in provider_data — no provider is contacted.
+// Mirrors the real refund's postconditions so downstream systems observe
+// the same state the payment.refunded webhook would produce.
 func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
+	if !o.TestMode {
+		return nil, errs.ErrTestModeOnly
+	}
 	intent, err := o.Intents.GetByID(ctx, intentID)
 	if err != nil {
 		return nil, err

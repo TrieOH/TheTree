@@ -23,6 +23,10 @@ type Config struct {
 	// them to this queue producer, which delivers them back to /events; the
 	// deploy's scheduler fires the periodic ones there.
 	JobsURL string `env:"JOBS_URL"`
+
+	// TestMode turns on the /testmode routes, which fake provider outcomes.
+	// Never on in production.
+	TestMode bool `env:"TEST_MODE"`
 }
 
 type MercadoPagoConfig struct {
