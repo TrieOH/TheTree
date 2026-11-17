@@ -263,6 +263,16 @@ func TestRejects(t *testing.T) {
 			spec: spec,
 			want: "repeats the title",
 		},
+		"message ends a sentence": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: you did a bad thing. }\n"),
+			spec: spec,
+			want: "reads like any Go error string",
+		},
+		"message capitalized": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: You did a bad thing }\n"),
+			spec: spec,
+			want: "reads like any Go error string",
+		},
 		"error on a problem with members": {
 			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: why it failed }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
 			spec: spec,
@@ -439,7 +449,7 @@ components:
         title: Add Self
         description: The caller tried to add themselves.
         error: ErrAddSelf
-        message: You can't add yourself to the project; ask an admin to add you.
+        message: you can't add yourself to the project; ask an admin to add you
 `
 
 func TestNamedErrors(t *testing.T) {
@@ -464,7 +474,7 @@ func TestNamedErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `ErrAddSelf = errors.New("You can't add yourself to the project; ask an admin to add you.")`
+	want := `ErrAddSelf = errors.New("you can't add yourself to the project; ask an admin to add you")`
 	if !strings.Contains(string(errsSrc), want) {
 		t.Errorf("errs lacks %s:\n%s", want, errsSrc)
 	}
@@ -482,5 +492,20 @@ func TestSharedProblemNamesNoError(t *testing.T) {
 	err = run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
 	if err == nil || !strings.Contains(err.Error(), "names no error") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCapitalized(t *testing.T) {
+	for in, want := range map[string]bool{
+		"This failed":           true,
+		"this failed":           false,
+		"IdentityX is down":     false,
+		"OAuth state expired":   false,
+		"API key expired":       false,
+		"a path parameter is X": false,
+	} {
+		if got := capitalized(in); got != want {
+			t.Errorf("capitalized(%q) = %v, want %v", in, got, want)
+		}
 	}
 }

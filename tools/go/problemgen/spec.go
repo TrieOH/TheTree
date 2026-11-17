@@ -644,8 +644,26 @@ func checkError(name, message, title string) error {
 		return fmt.Errorf("error %s needs a message, the detail clients read", name)
 	case sameText(message, title):
 		return errors.New("the message repeats the title; say what went wrong and what to do about it")
+	case strings.ContainsAny(message[len(message)-1:], ".!?:\n") || capitalized(message):
+		return errors.New("the message is the sentinel's text, so it reads like any Go error string: lowercase, no final punctuation")
 	}
 	return nil
+}
+
+// capitalized reports whether s starts with a capitalized word, the way
+// the linters judge an error string: a word with another capital (IdentityX,
+// OAuth) is a name, not a capitalized word.
+func capitalized(s string) bool {
+	word, _, _ := strings.Cut(s, " ")
+	for i, r := range word {
+		if i == 0 && !unicode.IsUpper(r) {
+			return false
+		}
+		if i > 0 && unicode.IsUpper(r) {
+			return false
+		}
+	}
+	return word != ""
 }
 
 // sameText reports whether a and b say the same, ignoring case and
