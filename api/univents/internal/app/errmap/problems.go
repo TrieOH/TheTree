@@ -189,6 +189,7 @@ func Problem(err error) *fp.Problem {
 var notFound = []error{
 	errs.ErrEditionNotFound,
 	errs.ErrBadgeTemplateNotFound,
+	errs.ErrBadgeEmissionNotFound,
 	errs.ErrProgramNotFound,
 	errs.ErrPurchaseNotFound,
 	errs.ErrTicketTypeNotFound,

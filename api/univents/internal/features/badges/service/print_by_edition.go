@@ -50,7 +50,7 @@ func (o *Operations) PrintByEdition(ctx context.Context, editionID uuid.UUID, em
 			EventName:   v.EventName,
 			EditionName: v.EditionName,
 			TicketName:  v.TicketName,
-			ActionURL:   profileURL(v.UserID),
+			ActionURL:   o.profileURL(v.UserID),
 		}
 		if t := idx.match(v.EditionID, v.TicketTypeID, v.Origin); t != nil {
 			id := t.ID

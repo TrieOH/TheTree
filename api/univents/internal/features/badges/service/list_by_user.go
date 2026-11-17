@@ -28,7 +28,7 @@ func (o *Operations) ListByUser(ctx context.Context, userID uuid.UUID) (*models.
 	now := time.Now()
 	var attendantCurrent, attendantPast, staffCurrent, staffPast []profileBadgeEntry
 	for _, v := range views {
-		entry := profileBadgeEntry{badge: profileBadge(v, idx), endsAt: v.EndsAt}
+		entry := profileBadgeEntry{badge: o.profileBadge(v, idx), endsAt: v.EndsAt}
 		current := v.EndsAt.After(now) || v.EndsAt.Equal(now)
 		switch v.Origin {
 		case models.BadgeEmissionOriginStaff:

@@ -1,10 +1,19 @@
 package service
 
 import (
-	"lib/email"
+	"context"
+	"time"
+
+	libjobs "lib/jobs"
 	"univents/internal/authz"
 	"univents/ports"
 )
+
+// Jobs is the background-work surface: the badge email is enqueued inside
+// the caller's tx with a delay. Satisfied by the lib/jobs carriers.
+type Jobs interface {
+	EnqueueAfter(ctx context.Context, job libjobs.Job, delay time.Duration) error
+}
 
 type Deps struct {
 	Repo          ports.BadgeTemplateRepo
@@ -13,8 +22,9 @@ type Deps struct {
 	Editions      ports.EditionRepo
 	Events        ports.EventRepo
 	Actors        ports.ActorResolver
-	Email         *email.Client
+	Jobs          Jobs
 	Authz         *authz.Service
+	AppURL        string // the Univents front, for the profile links on badges
 }
 
 type Operations struct{ Deps }

@@ -8,8 +8,6 @@ import (
 
 	"github.com/ovechkin-dm/mockio/mock"
 
-	"lib/email"
-
 	idx "sdk/identityx"
 	"univents/models"
 	"univents/ports"
@@ -94,7 +92,6 @@ func TestListByUser_ClaimsGiftAndEmitsDeferredBadge(t *testing.T) {
 		ThenReturn(&models.Edition{ID: editionID, Name: "2026", EventID: eventID}, nil)
 	mock.When(events.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
 		ThenReturn(&models.Event{FullName: "SCTI"}, nil)
-	emailClient := email.NewClient(email.Config{Host: "127.0.0.1", Port: 1, From: "badges@test.local"})
 
 	// The profile read resolves templates for the rendered editions.
 	templates := mock.Mock[ports.BadgeTemplateRepo]()
@@ -103,7 +100,7 @@ func TestListByUser_ClaimsGiftAndEmitsDeferredBadge(t *testing.T) {
 			{ID: uuid.New(), EditionID: editionID, Name: "Básico", DesignData: []byte(`{}`)},
 		}, nil)
 
-	ops := newOpsWithDeps(t, templates, emissions, registrations, editions, events, actors, emailClient, mock.Mock[ports.EventRepo]())
+	ops := newOpsWithDeps(t, templates, emissions, registrations, editions, events, actors, nil, mock.Mock[ports.EventRepo]())
 
 	groups, err := ops.ListByUser(context.Background(), userID)
 	if err != nil {

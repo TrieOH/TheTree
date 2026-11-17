@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	payssage "sdk/payssage"
 	"strings"
 	"univents/models"
@@ -27,7 +26,7 @@ func (o *Operations) Connect(ctx context.Context, eventID uuid.UUID, provider st
 	}
 
 	finalRedirectURL := fmt.Sprintf("%s/events/%s/payssage/oauth/callback",
-		strings.TrimRight(os.Getenv("APP_URL"), "/"), event.ID)
+		strings.TrimRight(o.AppURL, "/"), event.ID)
 
 	authURL, err := o.Payssage.ConnectProvider(ctx, provider, payssage.ConnectProviderRequest{
 		Flow:             payssage.OAuthFlowSeller,

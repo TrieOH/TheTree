@@ -8,6 +8,7 @@ import "errors"
 var (
 	ErrEditionNotFound       = errors.New("edition not found")
 	ErrBadgeTemplateNotFound = errors.New("badge template not found")
+	ErrBadgeEmissionNotFound = errors.New("badge emission not found")
 	ErrProgramNotFound       = errors.New("program not found")
 	ErrPurchaseNotFound      = errors.New("purchase not found")
 	ErrTicketTypeNotFound    = errors.New("ticket type not found")

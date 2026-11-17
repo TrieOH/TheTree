@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 	"uuid"
 
@@ -46,6 +45,7 @@ type SendGiftEmailWorker struct {
 	events        ports.EventRepo
 	ticketTypes   ports.TicketTypeRepo
 	email         EmailSender
+	appURL        string
 }
 
 func NewSendGiftEmailWorker(
@@ -54,6 +54,7 @@ func NewSendGiftEmailWorker(
 	events ports.EventRepo,
 	ticketTypes ports.TicketTypeRepo,
 	email EmailSender,
+	appURL string,
 ) *SendGiftEmailWorker {
 	return &SendGiftEmailWorker{
 		registrations: registrations,
@@ -61,6 +62,7 @@ func NewSendGiftEmailWorker(
 		events:        events,
 		ticketTypes:   ticketTypes,
 		email:         email,
+		appURL:        appURL,
 	}
 }
 
@@ -111,7 +113,7 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 		TicketTypeName: ticketType.Name,
 		// The claim is lazy: the event page's my-ticket read ties the
 		// ticket to the logged-in account and emits the deferred badge.
-		ClaimLink: strings.TrimRight(os.Getenv("APP_URL"), "/") + "/events/" + event.Slug,
+		ClaimLink: strings.TrimRight(w.appURL, "/") + "/events/" + event.Slug,
 	})
 	if err != nil {
 		return err

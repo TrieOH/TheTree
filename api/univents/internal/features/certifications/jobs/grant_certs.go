@@ -8,7 +8,6 @@ import (
 	"lib/email"
 	"lib/telemetry"
 	"log/slog"
-	"os"
 	"univents/assets"
 	"univents/models"
 	"univents/ports"
@@ -33,6 +32,7 @@ type grantCertsDeps struct {
 	editions ports.EditionRepo
 	events   ports.EventRepo
 	email    *email.Client
+	appURL   string
 }
 
 type GrantCertsWorker struct {
@@ -44,9 +44,10 @@ func NewGrantCertsWorker(
 	editions ports.EditionRepo,
 	events ports.EventRepo,
 	email *email.Client,
+	appURL string,
 ) *GrantCertsWorker {
 	return &GrantCertsWorker{
-		certs: certs, editions: editions, events: events, email: email,
+		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
 	}
 }
 
@@ -73,9 +74,10 @@ func NewGrantCertsForOccurrenceWorker(
 	editions ports.EditionRepo,
 	events ports.EventRepo,
 	email *email.Client,
+	appURL string,
 ) *GrantCertsForOccurrenceWorker {
 	return &GrantCertsForOccurrenceWorker{
-		certs: certs, editions: editions, events: events, email: email,
+		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
 	}
 }
 
@@ -242,7 +244,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		return
 	}
 
-	appURL := os.Getenv("APP_URL")
+	appURL := w.appURL
 	certLink := fmt.Sprintf("%s/certifications/%s", appURL, cert.ID)
 	verifyLink := fmt.Sprintf("%s/verify/%s", appURL, cert.VerificationHash)
 

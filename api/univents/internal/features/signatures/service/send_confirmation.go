@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 	"univents/assets"
 	"univents/models"
@@ -39,7 +38,7 @@ func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Sign
 		return
 	}
 
-	revokeLink := fmt.Sprintf("%s/signatures/revoke?token=%s", os.Getenv("APP_URL"), token)
+	revokeLink := fmt.Sprintf("%s/signatures/revoke?token=%s", o.AppURL, token)
 	body, err := assets.RenderSignatureCreatedEmail(assets.SignatureCreatedEmailData{
 		SignatoryName: sig.SignatoryName,
 		EventName:     event.FullName,

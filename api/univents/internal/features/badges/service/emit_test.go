@@ -4,11 +4,10 @@ import (
 	"context"
 	"testing"
 	"time"
+	badgejobs "univents/internal/features/badges/jobs"
 	"uuid"
 
 	"github.com/ovechkin-dm/mockio/mock"
-
-	"lib/email"
 
 	"univents/models"
 	"univents/ports"
@@ -35,27 +34,19 @@ func TestEmitForConfirmedRegistration_UpsertsAndEmailsOnce(t *testing.T) {
 
 	mock.When(registrations.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(reg, nil)
 
-	// The email goroutine needs real editions/events lookups and a live client
-	// (the SMTP dial fails harmlessly and is logged).
-	editions := mock.Mock[ports.EditionRepo]()
-	events := mock.Mock[ports.EventRepo]()
-	mock.When(editions.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
-		ThenReturn(&models.Edition{ID: editionID, Name: "Edition"}, nil)
-	mock.When(events.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
-		ThenReturn(&models.Event{FullName: "Event"}, nil)
-	emailClient := email.NewClient(email.Config{Host: "127.0.0.1", Port: 1, From: "badges@test.local"})
-
+	emissionID := uuid.New()
 	var upserted *models.BadgeEmission
 	mock.When(emissions.Upsert(mock.AnyContext(), mock.Any[*models.BadgeEmission]())).
 		ThenAnswer(func(args []any) []any {
 			e := args[1].(*models.BadgeEmission)
 			upserted = e
 			// First emission: no email yet.
-			em := &models.BadgeEmission{ID: uuid.New(), EditionID: e.EditionID, UserID: e.UserID, Origin: e.Origin, RegistrationID: e.RegistrationID}
+			em := &models.BadgeEmission{ID: emissionID, EditionID: e.EditionID, UserID: e.UserID, Origin: e.Origin, RegistrationID: e.RegistrationID}
 			return []any{em, nil}
 		})
 
-	ops := newOps(t, nil, emissions, registrations, editions, events, emailClient)
+	jobs := &fakeJobs{}
+	ops := newOps(t, nil, emissions, registrations, nil, nil, jobs)
 
 	emission, err := ops.EmitForConfirmedRegistration(context.Background(), regID)
 	if err != nil {
@@ -72,6 +63,12 @@ func TestEmitForConfirmedRegistration_UpsertsAndEmailsOnce(t *testing.T) {
 	}
 	if upserted.RegistrationID == nil || *upserted.RegistrationID != regID {
 		t.Errorf("want registration_id %s, got %v", regID, upserted.RegistrationID)
+	}
+
+	// The email goes out through the job queue, exactly once.
+	want := badgejobs.SendBadgeEmailArgs{EmissionID: emissionID, RegistrationID: regID}
+	if len(jobs.enqueued) != 1 || jobs.enqueued[0] != want {
+		t.Errorf("want one %+v enqueued, got %+v", want, jobs.enqueued)
 	}
 }
 
@@ -183,13 +180,16 @@ func TestEmitForConfirmedRegistration_NoSecondEmail(t *testing.T) {
 			return []any{em, nil}
 		})
 
-	ops := newOps(t, nil, emissions, registrations, nil, nil, nil)
+	jobs := &fakeJobs{}
+	ops := newOps(t, nil, emissions, registrations, nil, nil, jobs)
 
 	_, err := ops.EmitForConfirmedRegistration(context.Background(), regID)
 	if err != nil {
 		t.Fatalf("EmitForConfirmedRegistration: %v", err)
 	}
 
-	// The badge was already emailed once: no goroutine fires, no re-send.
-	_ = mock.Verify(emissions, mock.Never()).MarkEmailSent(mock.AnyContext(), mock.Any[uuid.UUID]())
+	// The badge was already emailed once: nothing is enqueued.
+	if len(jobs.enqueued) != 0 {
+		t.Errorf("want no job enqueued, got %+v", jobs.enqueued)
+	}
 }

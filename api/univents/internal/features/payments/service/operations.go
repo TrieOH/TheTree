@@ -28,6 +28,7 @@ type Deps struct {
 	Payssage PayssageClient
 	Authz    *authz.Service
 	WalletID uuid.UUID // the single platform wallet every event's seller lives on (D6)
+	AppURL   string    // the Univents front, where the OAuth flow lands back
 }
 
 type Operations struct{ Deps }

@@ -2,17 +2,24 @@ package service
 
 import (
 	"context"
-	"lib/database"
 	"lib/telemetry"
 	"log/slog"
+	"time"
+	"univents/internal/features/badges/jobs"
 	"univents/models"
 	"uuid"
 )
 
+// badgeEmailDelay holds the badge email back long enough for the caller's tx
+// to commit: it is enqueued inside the tx, before commit. On rollback the job
+// finds no confirmed registration and no-ops.
+const badgeEmailDelay = 30 * time.Second
+
 // EmitForConfirmedRegistration emits the participant badge for a confirmed
-// registration and emails it exactly once. Called by the checkout feature when
-// a registration is confirmed (paid: webhook approved; free: confirmed at
-// inscription). Non-confirmed registrations are a no-op.
+// registration and enqueues its email (the badges.send_email job sends it
+// exactly once). Called by the checkout feature when a registration is
+// confirmed (paid: webhook approved; free: confirmed at inscription).
+// Non-confirmed registrations are a no-op.
 func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrationID uuid.UUID) (*models.BadgeEmission, error) {
 	reg, err := o.Registrations.GetByID(ctx, registrationID)
 	if err != nil {
@@ -45,11 +52,12 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 	}
 
 	if emission.EmailSentAt == nil {
-		//nolint:gosec // Detach cancellation AND the caller's transaction before
-		// going async: WithoutCancel alone preserves TxKeyValue, so the email
-		// goroutine's DB reads would share the caller's tx connection and race
-		// it (pgx "conn busy" / SQLSTATE 08P01). The email only needs pool reads.
-		go o.sendBadgeEmail(database.WithoutTx(context.WithoutCancel(ctx)), reg, emission)
+		err = o.Jobs.EnqueueAfter(ctx, jobs.SendBadgeEmailArgs{EmissionID: emission.ID, RegistrationID: reg.ID}, badgeEmailDelay)
+		if err != nil {
+			telemetry.Log().Error("failed to enqueue badge email",
+				slog.String("registration_id", reg.ID.String()),
+				telemetry.Err(err))
+		}
 	}
 	return emission, nil
 }

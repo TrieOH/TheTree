@@ -6,7 +6,6 @@ import (
 	"lib/crypto"
 	"lib/email"
 	"lib/telemetry"
-	"os"
 	"time"
 	"univents/assets"
 	"univents/models"
@@ -57,7 +56,7 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 		return nil, fmt.Errorf("failed to encode signature token: %w", err)
 	}
 
-	link := fmt.Sprintf("%s/signature-requests/fulfill?token=%s", os.Getenv("APP_URL"), token)
+	link := fmt.Sprintf("%s/signature-requests/fulfill?token=%s", o.AppURL, token)
 	body, err := assets.RenderRequestSignatureEmail(assets.RequestSignatureEmailData{
 		SignatoryName: payload.SignatoryName,
 		EventName:     event.FullName,
