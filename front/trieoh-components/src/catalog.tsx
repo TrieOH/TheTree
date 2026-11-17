@@ -1565,6 +1565,25 @@ export function createCatalog(options: {
       ),
     },
     {
+      name: "VirtualizedContainer",
+      group: "Layout",
+      description: "Lista ou grid com rolagem contínua; monta apenas os itens próximos à tela.",
+      defaults: { mode: "Virtualizado", count: "10.000", columns: "1", overscan: "2" },
+      controls: [
+        select("mode", "Modo de renderização", ["Virtualizado", "Normal"]),
+        select("count", "Quantidade de itens", ["1.000", "10.000", "50.000"]),
+        select("columns", "Colunas", ["1", "2", "3"]),
+        select("overscan", "Linhas antecipadas", ["1", "2", "4"]),
+      ],
+      render: (v) => (
+        <iframe
+          title="Comparação de lista normal e virtualizada"
+          src={`#/preview/virtualized?mode=${v.mode}&count=${Number(String(v.count).replaceAll(".", ""))}&columns=${v.columns}&overscan=${v.overscan}&dark=${options.isDark()}`}
+          class={options.isDetail() ? "h-120 w-full rounded-md border border-border" : "h-40 w-80 border border-border"}
+        />
+      ),
+    },
+    {
       name: "PaginatedContainer",
       group: "Layout",
       description: "Coleção com busca, ordenação e paginação.",

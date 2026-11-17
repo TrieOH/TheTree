@@ -142,3 +142,5 @@ export {
   type RevealTag,
   type RevealVariant,
 } from "./reveal";
+
+export { VirtualizedContainer, type VirtualizedContainerProps } from "./virtualized-container";

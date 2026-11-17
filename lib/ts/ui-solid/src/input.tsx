@@ -1,6 +1,6 @@
 import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
-import { Show, createEffect, createSignal, onSettled } from "solid-js";
+import { Show, createEffect, createSignal, onSettled, untrack } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface InputProps {
@@ -173,9 +173,14 @@ export function Textarea(props: TextareaProps) {
       .filter(Boolean)
       .join(" ") || undefined;
 
-  const fit = () => {
+  const fit = (autosize: boolean | undefined, maxRows: number | undefined) => {
     const el = element;
-    if (!el || !props.autosize) return;
+    if (!el) return;
+    if (!autosize) {
+      el.style.height = "";
+      el.style.overflowY = "";
+      return;
+    }
 
     el.style.height = "auto";
     const style = getComputedStyle(el);
@@ -188,8 +193,8 @@ export function Textarea(props: TextareaProps) {
       parseFloat(style.lineHeight) || (parseFloat(style.fontSize) || 14) * 1.5;
     const content = el.scrollHeight + borders;
     const limit =
-      props.maxRows !== undefined
-        ? line * props.maxRows + padding + borders
+      maxRows !== undefined
+        ? line * maxRows + padding + borders
         : Infinity;
 
     el.style.height = `${Math.min(content, limit)}px`;
@@ -199,8 +204,14 @@ export function Textarea(props: TextareaProps) {
   // Re-fit when the text, the mode or the cap changes from outside.
   createEffect(
     () => [props.value, props.autosize, props.maxRows] as const,
-    () => fit(),
+    ([, autosize, maxRows]) => fit(autosize, maxRows),
   );
+
+  // DOM events and observers intentionally use the current option snapshot.
+  const fitCurrent = () => {
+    const [autosize, maxRows] = untrack(() => [props.autosize, props.maxRows] as const);
+    fit(autosize, maxRows);
+  };
 
   // Wrapping depends on width, so a width change needs a re-fit too.
   onSettled(() => {
@@ -209,7 +220,7 @@ export function Textarea(props: TextareaProps) {
     const observer = new ResizeObserver(() => {
       if (!element || element.offsetWidth === width) return;
       width = element.offsetWidth;
-      fit();
+      fitCurrent();
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -236,7 +247,7 @@ export function Textarea(props: TextareaProps) {
       aria-invalid={ariaInvalid()}
       onInput={(event) => {
         setTyped(event.currentTarget.value.length);
-        fit();
+        fitCurrent();
         props.onInput?.(event);
       }}
       onChange={props.onChange}

@@ -136,6 +136,10 @@ export function usage(name: string, v: Values): string {
     case "MultiStepSummaryCard":
       jsx = `<MultiStepSummaryCard summary={{\\n  title: ${q("title")}, badge: ${q("badge")}, items: [{ label: "Projeto", value: ${q("value")}, mono: ${q("mono")}, fullWidth: ${q("fullWidth")} }],\\n}} />`;
       break;
+    case "VirtualizedContainer":
+      setup = `const items = Array.from({ length: ${Number(String(v.count).replaceAll(".", ""))} }, (_, index) => index + 1);\\n\\n`;
+      jsx = `<VirtualizedContainer items={items} columns={${Number(v.columns)}} estimatedRowHeight={72} gap={8} overscan={${Number(v.overscan)}}>\\n  {item => <div class="rounded-md border p-4">Item {item}</div>}\\n</VirtualizedContainer>`;
+      break;
     case "PaginatedContainer":
       setup = state(q("filterValue"), "search");
       imports += ", EmptyState";
