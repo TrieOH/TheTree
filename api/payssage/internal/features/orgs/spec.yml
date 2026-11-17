@@ -1,0 +1,317 @@
+# The orgs feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /organizations:
+    get:
+      tags: [orgs]
+      operationId: listOrganizations
+      summary: List your organizations
+      description: |
+        Lists the organizations the authenticated actor belongs to.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Organizations the actor belongs to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+    post:
+      tags: [orgs]
+      operationId: createOrganization
+      summary: Create an organization
+      description: |
+        Creates an organization owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+            example:
+              name: TrieOH Labs
+              slug: trieoh-labs
+      x-problems: [400, 401, 500]
+      responses:
+        '201':
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+  /organizations/{organization_id}/members:
+    get:
+      tags: [orgs]
+      operationId: listOrganizationMembers
+      summary: List organization members
+      description: |
+        Lists the members of an organization. The actor must be a member
+        of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Organization members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationMember'
+    post:
+      tags: [orgs]
+      operationId: addOrganizationMember
+      summary: Add an organization member
+      description: |
+        Adds an existing actor (by email) to the organization with the
+        given role. The actor must be an admin or owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      x-problems: [400, 401, 403, 404, 409, 500]
+      responses:
+        '201':
+          description: Member added
+    delete:
+      tags: [orgs]
+      operationId: removeOrganizationMember
+      summary: Remove an organization member
+      description: |
+        Removes an actor (by email) from the organization. The actor must
+        be an admin or owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Member removed
+
+  /organizations/{organization_id}/member/{member_id}:
+    get:
+      tags: [orgs]
+      operationId: getOrganizationMemberByID
+      summary: Get an organization member by ID
+      description: |
+        Fetches a single organization member row by member ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+        - name: member_id
+          in: path
+          required: true
+          description: Member (actor) ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: The requested organization member row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationMember'
+
+  /organizations/{organization_id}/member/{member_email}:by_email:
+    get:
+      tags: [orgs]
+      operationId: getOrganizationMemberByEmail
+      summary: Get an organization member by email
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        organization member by email address.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+        - name: member_email
+          in: path
+          required: true
+          description: Email address of the member to fetch.
+          schema:
+            x-go-type: string
+            type: string
+            format: email
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: The requested organization member row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationMember'
+
+components:
+  schemas:
+    Organization:
+      x-go-type: models.Organization
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A Payssage organization. Mirrors `models.Organization`.
+      required: [id, owner_id, name, slug, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        owner_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        name:
+          type: string
+        slug:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateOrganizationRequest:
+      type: object
+      description: Request body for organization creation. Mirrors `models.CreateOrganizationRequest`.
+      required: [name, slug]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    OrganizationRole:
+      x-go-type: models.OrganizationRole
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [member, admin, owner]
+
+    OrganizationMember:
+      x-go-type: models.OrganizationMember
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: Membership of an actor in an organization. Mirrors `models.OrganizationMember`.
+      required: [organization_id, member_id, role, joined_at]
+      properties:
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        member_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Actor ID of the member.
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        joined_at:
+          type: string
+          format: date-time
+
+    AddOrganizationMemberRequest:
+      type: object
+      description: Request body for adding an organization member. Mirrors `models.AddOrganizationMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/OrganizationRole'
+
+    RemoveOrganizationMemberRequest:
+      type: object
+      description: Request body for removing an organization member. Mirrors `models.RemoveOrganizationMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+
+    # organization membership
+    AddSelfToOrg:
+      x-problem:
+        slug: add-self-to-org
+        status: 400
+        title: Add Self To Org
+        description: "Users can't add themselves to organizations."
+
+    AddOwnerToOrg:
+      x-problem:
+        slug: add-owner-to-org
+        status: 400
+        title: Add Owner To Org
+        description: "Owners can't be added to organizations they own."
+
+    AlreadyOrgMember:
+      x-problem:
+        slug: already-org-member
+        status: 400
+        title: Already Org Member
+        description: "User is already a member of the organization."
+
+    RemoveSelfFromOrg:
+      x-problem:
+        slug: remove-self-from-org
+        status: 400
+        title: Remove Self From Org
+        description: "Cannot remove yourself from the organization."
+
+    RemoveOrgOwner:
+      x-problem:
+        slug: remove-org-owner
+        status: 400
+        title: Remove Org Owner
+        description: "Cannot remove the owner of the organization."
+
+    NotOrgMember:
+      x-problem:
+        slug: not-org-member
+        status: 400
+        title: Not Org Member
+        description: "User is not a member of the organization."

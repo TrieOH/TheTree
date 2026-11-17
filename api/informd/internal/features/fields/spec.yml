@@ -1,0 +1,330 @@
+# The fields feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /forms/{form_id}/steps/{step_id}/fields:
+    get:
+      tags: [fields]
+      operationId: listFields
+      summary: List a step's fields
+      description: |
+        Lists the fields (questions) of a step in positional order. The
+        actor must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Step fields
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Field'
+    post:
+      tags: [fields]
+      operationId: createField
+      summary: Create a field
+      description: |
+        Adds a field (question) to a step. When `type` is `select`,
+        `select_config` is required. The actor must be an admin or owner
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldRequest'
+            example:
+              key: full_name
+              title: Full name
+              description: As on your ID.
+              position_hint: 1
+              required: true
+              type: string
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Field created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Field'
+    put:
+      tags: [fields]
+      operationId: bulkEditFields
+      summary: Bulk-edit a step's fields
+      description: |
+        Replaces the full field list of a step in one call — each entry
+        carries its `id` (existing fields are updated) plus all field
+        attributes. The actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateFieldRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Fields updated
+
+  /forms/{form_id}/steps/{step_id}/fields/{field_id}/select:
+    get:
+      tags: [fields]
+      operationId: getSelectConfig
+      summary: Get a field's select configuration
+      description: |
+        Fetches the select configuration (behaviour, value type,
+        options) of a `select` field. The actor must be a member of the
+        form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Select configuration
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/FieldSelectConfig'
+    put:
+      tags: [fields]
+      operationId: editSelectConfig
+      summary: Edit a field's select configuration
+      description: |
+        Updates the select configuration of a `select` field. The actor
+        must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSelectConfigRequest'
+            example:
+              behaviour: dropdown-radio
+              value_type: string
+              options:
+                - label: Option A
+                  value: a
+                - label: Option B
+                  value: b
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Select configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/FieldSelectConfig'
+
+  /forms/{form_id}/steps/{step_id}/fields/{field_id}:
+    delete:
+      tags: [fields]
+      operationId: deleteField
+      summary: Delete a field
+      description: |
+        Deletes a field from a step. The actor must be an admin or owner
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Field deleted
+
+components:
+  schemas:
+    CreateFieldRequest:
+      type: object
+      description: Request body for field creation. Mirrors `models.CreateFieldRequest`.
+      required: [key, title, position_hint, required, type]
+      properties:
+        key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+        required:
+          type: boolean
+        type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/FieldType'
+        placeholder:
+          type: [ object, "null" ]
+        default_value:
+          type: [ object, "null" ]
+        config:
+          type: [ object, "null" ]
+        select_config:
+          allOf:
+            - $ref: '#/components/schemas/CreateFieldSelectConfigRequest'
+          description: Required when `type` is `select`.
+
+    CreateFieldSelectConfigRequest:
+      type: object
+      description: Select configuration to attach to a new field. Mirrors `models.CreateFieldSelectConfigRequest`.
+      required: [behaviour, value_type, options]
+      properties:
+        behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/SelectBehaviour'
+        value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/SelectValueType'
+        options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          description: |
+            The selectable options. Opaque per the API contract (the Go
+            model stores them as JSON); conventionally objects with
+            `label` and `value`, where `value` is a string or number
+            matching `value_type`.
+          items:
+            type: object
+            additionalProperties: true
+
+    EditSelectConfigRequest:
+      type: object
+      description: Request body for editing a select configuration (same shape as `CreateFieldSelectConfigRequest`).
+      required: [behaviour, value_type, options]
+      properties:
+        behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/SelectBehaviour'
+        value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/SelectValueType'
+        options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          description: |
+            The selectable options. Opaque per the API contract (the Go
+            model stores them as JSON); conventionally objects with
+            `label` and `value`, where `value` is a string or number
+            matching `value_type`.
+          items:
+            type: object
+            additionalProperties: true
+
+    UpdateFieldRequest:
+      type: object
+      description: Entry for bulk field editing. Mirrors `models.UpdateFieldRequest`.
+      required: [id, key, title, position_hint, required, type]
+      properties:
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+        required:
+          type: boolean
+        type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/FieldType'
+        placeholder:
+          type: [ object, "null" ]
+        default_value:
+          type: [ object, "null" ]
+        config:
+          type: [ object, "null" ]
+        select_config:
+          allOf:
+            - $ref: '#/components/schemas/CreateFieldSelectConfigRequest'
+
+    FieldsAcrossSteps:
+      x-problem:
+        slug: fields-across-steps
+        status: 400
+        title: Fields Across Steps
+        description: "All fields must belong to the same step."
+
+    InvalidSelectOptions:
+      x-problem:
+        slug: invalid-select-options
+        status: 400
+        title: Invalid Select Options
+        description: "Invalid options."
+
+  parameters:
+    StepID:
+      name: step_id
+      in: path
+      required: true
+      description: Step ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    FieldID:
+      name: field_id
+      in: path
+      required: true
+      description: Field ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'

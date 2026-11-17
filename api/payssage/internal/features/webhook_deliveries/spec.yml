@@ -1,0 +1,105 @@
+# The webhook_deliveries feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /webhooks/endpoints/{endpoint_id}/deliveries:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookDeliveries
+      summary: List an endpoint's deliveries
+      description: |
+        Lists the delivery attempts made to a webhook endpoint. Each
+        delivery tracks retries: up to 5 attempts before it is marked
+        `failed`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EndpointID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: Endpoint deliveries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookDelivery'
+
+  /webhooks/deliveries/{delivery_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookDelivery
+      summary: Get a webhook delivery
+      description: |
+        Fetches a single delivery attempt, including its current status,
+        attempt count, and the last response received from the endpoint.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: delivery_id
+          in: path
+          required: true
+          description: Webhook delivery ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 404, 500]
+      responses:
+        '200':
+          description: The requested delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookDelivery'
+
+components:
+  schemas:
+    WebhookDeliveryStatus:
+      x-go-type: models.WebhookDeliveryStatus
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [pending, delivered, failed]
+
+    WebhookDelivery:
+      x-go-type: models.WebhookDelivery
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        One delivery attempt chain for a webhook event to an endpoint.
+        Retried up to 5 attempts; `attempts` counts them, `response_status`
+        / `response_body` record the last response received from the
+        endpoint. Mirrors `models.WebhookDelivery`.
+      required: [id, endpoint_id, event_id, status, attempts, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        endpoint_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        event_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/WebhookDeliveryStatus'
+        attempts:
+          type: integer
+          description: Number of attempts made so far (max 5).
+        last_attempted_at:
+          type: [ string, "null" ]
+          format: date-time
+        response_status:
+          type: [ integer, "null" ]
+          description: HTTP status received from the endpoint on the last attempt.
+        response_body:
+          type: [ string, "null" ]
+          description: Response body received from the endpoint on the last attempt (truncated at 10 KB).
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time

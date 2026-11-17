@@ -1,0 +1,111 @@
+# The webhooks feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /webhooks/payssage:
+    post:
+      tags: [webhooks]
+      operationId: receivePayssageWebhook
+      summary: Receive a Payssage webhook delivery
+      description: |
+        Ingestion endpoint called by Payssage when a payment event occurs on
+        an intent. The body is the Payssage delivery envelope (D2) — the
+        correlation key is `intent_id`, never a provider-specific id:
+
+        ```json
+        {
+          "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
+          "external_id": "<provider_payment_id>",
+          "event_type": "payment.succeeded",
+          "status_detail": "high_risk",
+          "payload": { "...": "raw provider payload" }
+        }
+        ```
+
+        Authenticated by the `X-Payssage-Signature` header — hex
+        (HMAC-SHA256(raw body, `PAYSSAGE_WEBHOOK_SECRET`)). A signature
+        mismatch is rejected with 400 (Payssage does not retry). Returns 200
+        after successful processing so Payssage stops retrying; returns
+        non-2xx when the purchase cannot be correlated yet (card race, D3)
+        so Payssage retries. This is the only component that confirms
+        payment — checkout never self-approves (D3). Public: Payssage
+        cannot send an Authorization header.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceivePayssageWebhookRequest'
+      x-problems: [400, 500]
+      responses:
+        '204':
+          description: Webhook acknowledged (processed or expected-ignored)
+
+components:
+  schemas:
+    ReceivePayssageWebhookRequest:
+      type: object
+      description: |
+        The Payssage webhook delivery envelope (D2). Correlation is by
+        `intent_id` — the receiver loads the purchase on it, never on a
+        provider-specific id. Every field is required: a malformed body is
+        rejected with 400 and payssage does not retry.
+      required: [intent_id, wallet_id, provider, external_id, event_type, payload]
+      properties:
+        intent_id:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: uuid
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+        wallet_id:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: uuid
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+        provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        external_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        event_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        status_detail:
+          type: string
+          nullable: true
+          description: |
+            Normalized failure/outcome detail from the payssage intent
+            (models.IntentStatusDetail, e.g. `high_risk`, `insufficient_funds`),
+            present when the payment failed/rejected. Persisted as the
+            purchase's `status_reason`.
+        payload:
+          type: object
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          description: Raw provider event payload.
+
+    # request shapes
+    InvalidRequest:
+      x-problem:
+        slug: invalid-request
+        status: 400
+        title: Invalid Request
+        description: "Invalid request."
+
+    InvalidPayssageWebhookSignature:
+      x-problem:
+        slug: invalid-payssage-webhook-signature
+        status: 400
+        title: Invalid Payssage Webhook Signature
+        description: "Invalid webhook signature."

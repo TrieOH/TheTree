@@ -1,0 +1,206 @@
+# The projects feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      x-scope: platform-only
+      summary: List your projects
+      description: |
+        Lists the projects the authenticated actor is a member of.
+        Platform-level actors see all projects they own or belong to.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      x-problems: [401, 500, 503]
+      responses:
+        '200':
+          description: Projects the actor belongs to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Project'
+    post:
+      tags: [projects]
+      operationId: createProject
+      x-scope: platform-only
+      summary: Create a project
+      description: |
+        Creates a project owned by the authenticated platform-level
+        actor. Use `/organizations/{organization_id}/projects` to create
+        an organization-scoped project instead.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+            example:
+              name: My Project
+              domain: https://my-project.example.com
+              brand_slug: my-project
+      x-problems: [400, 401, 500, 503]
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Project'
+
+  /projects/{project_id}/members:
+    get:
+      tags: [projects]
+      operationId: listProjectMembers
+      x-scope: platform-only
+      summary: List project members
+      description: |
+        Lists the members of a project. The authenticated actor must be a
+        member of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Project members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/ProjectMember'
+    post:
+      tags: [projects]
+      operationId: addProjectMember
+      x-scope: platform-only
+      summary: Add a project member
+      description: |
+        Adds an existing actor (by email) to the project with the given
+        role. The authenticated actor must be an admin or owner of the
+        project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
+      responses:
+        '201':
+          description: Project member added
+    delete:
+      tags: [projects]
+      operationId: removeProjectMember
+      x-scope: platform-only
+      summary: Remove a project member
+      description: |
+        Removes an actor (by email) from the project. The authenticated
+        actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '204':
+          description: Project member removed
+
+components:
+  schemas:
+    CreateProjectRequest:
+      type: object
+      description: Request body for project creation. Mirrors `models.CreateProjectRequest`.
+      required: [name, brand_slug]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
+          type: string
+          minLength: 3
+        domain:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,url"
+          type: [ string, "null" ]
+          format: uri
+        brand_slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          description: Unique slug used in branding and URLs.
+
+    AddProjectMemberRequest:
+      type: object
+      description: Request body for adding a project member. Mirrors `models.AddProjectMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '../../../api-spec.yml#/components/schemas/ProjectRole'
+
+    RemoveProjectMemberRequest:
+      type: object
+      description: Request body for removing a project member. Mirrors `models.RemoveProjectMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+
+    AddOwnerToProject:
+      x-problem:
+        slug: add-owner-to-project
+        status: 400
+        title: Add Owner To Project
+        description: "Owners can't be added to projects they own."
+
+    RemoveProjectOwner:
+      x-problem:
+        slug: remove-project-owner
+        status: 400
+        title: Remove Project Owner
+        description: "Cannot remove the owner of the project."

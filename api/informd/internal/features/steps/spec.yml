@@ -1,0 +1,141 @@
+# The steps feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /forms/{form_id}/steps:
+    get:
+      tags: [steps]
+      operationId: listSteps
+      summary: List a form's steps
+      description: |
+        Lists the steps (sections) of a form in positional order. The
+        actor must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Form steps
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Step'
+    post:
+      tags: [steps]
+      operationId: createStep
+      summary: Create a step
+      description: |
+        Adds a step (section) to the form. The actor must be an admin or
+        owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStepRequest'
+            example:
+              title: Personal Info
+              description: Tell us about yourself.
+              position_hint: 1
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Step created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Step'
+    put:
+      tags: [steps]
+      operationId: bulkEditSteps
+      summary: Bulk-edit a form's steps
+      description: |
+        Replaces the full step list of the form in one call — each entry
+        carries its `id` (existing steps are updated) plus title,
+        description, and position hint. The actor must be an admin or
+        owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateStepRequest'
+            example:
+              - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                title: Personal Info
+                description: Tell us about yourself.
+                position_hint: 1
+              - id: 3fa85f64-5717-4562-b3fc-2c963f66afa7
+                title: Preferences
+                description: Tell us what you like.
+                position_hint: 2
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Steps updated
+
+components:
+  schemas:
+    CreateStepRequest:
+      type: object
+      description: Request body for step creation. Mirrors `models.CreateStepRequest`.
+      required: [title, position_hint]
+      properties:
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+
+    UpdateStepRequest:
+      type: object
+      description: Entry for bulk step editing. Mirrors `models.UpdateStepRequest`.
+      required: [id, title, position_hint]
+      properties:
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+
+    # form contents
+    StepsAcrossForms:
+      x-problem:
+        slug: steps-across-forms
+        status: 400
+        title: Steps Across Forms
+        description: "All steps must belong to the same form."

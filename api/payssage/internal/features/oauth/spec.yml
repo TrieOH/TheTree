@@ -1,0 +1,178 @@
+# The oauth feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /providers/{provider}/connect:
+    post:
+      tags: [oauth]
+      operationId: connectProvider
+      summary: Start a payment-provider OAuth connection
+      description: |
+        Starts an OAuth connection to the given payment provider
+        (`mercadopago`). Callers must pass the flow (`collector` or
+        `seller`) and the final redirect URL (where the user lands after
+        the provider's consent screen). The provider redirect URI is
+        Payssage's own callback (`/providers/{provider}/callback`),
+        configured on the server (`MP_REDIRECT_URI`) — callers never
+        supply one. The response carries the URL to send the user to.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/Provider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectRequest'
+            example:
+              flow: collector
+              final_redirect_url: https://app.trieoh.com/settings/payments
+              wallet_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 500]
+      responses:
+        '200':
+          description: Redirect URL for the provider consent screen
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uri
+
+  /providers/{provider}/callback:
+    get:
+      tags: [oauth]
+      operationId: providerCallback
+      summary: Payment-provider OAuth callback
+      description: |
+        Browser redirect target: the provider lands here after the user
+        authorizes. Payssage exchanges the code, stores the provider
+        credential, and redirects the browser to the `final_redirect_url`
+        captured at connect time. Public — the provider's OAuth flow
+        cannot send an Authorization header.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/Provider'
+        - name: code
+          in: query
+          required: true
+          description: Authorization code issued by the provider.
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: CSRF state issued at connect time.
+          schema:
+            type: string
+      x-problems: [400]
+      responses:
+        '200':
+          description: |
+            The final redirect URL the browser should be sent to after
+            the OAuth flow completes (returned as a JSON string body;
+            the browser client performs the redirect).
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uri
+
+  /providers/{provider}/revoke:
+    post:
+      tags: [oauth]
+      operationId: revokeProvider
+      summary: Revoke a payment-provider connection
+      description: |
+        Revokes a connected provider credential (collector or seller).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/Provider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            example:
+              flow: collector
+              id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 404, 500]
+      responses:
+        '204':
+          description: Connection revoked
+
+components:
+  schemas:
+    OAuthFlow:
+      x-go-type: models.OAuthFlow
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [collector, seller]
+
+    ConnectRequest:
+      type: object
+      description: Request body for starting a provider OAuth connection. Mirrors `models.ConnectRequest`.
+      required: [flow, final_redirect_url]
+      properties:
+        flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/OAuthFlow'
+        final_redirect_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri
+          description: Where the user lands after the OAuth flow completes.
+        wallet_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+
+    RevokeRequest:
+      type: object
+      description: Request body for revoking a provider connection. Mirrors `models.RevokeRequest`.
+      required: [flow, id]
+      properties:
+        flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/OAuthFlow'
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Collector or seller ID to revoke.
+
+    # oauth
+    InvalidFlow:
+      x-problem:
+        slug: invalid-flow
+        status: 400
+        title: Invalid Flow
+        description: "Invalid flow."
+
+    InvalidProvider:
+      x-problem:
+        slug: invalid-provider
+        status: 400
+        title: Invalid Provider
+        description: "Invalid provider."
+
+    ProviderMismatch:
+      x-problem:
+        slug: provider-mismatch
+        status: 400
+        title: Provider Mismatch
+        description: "Provider mismatch."
+
+    SellerFlowNeedsWallet:
+      x-problem:
+        slug: seller-flow-needs-wallet
+        status: 400
+        title: Seller Flow Needs Wallet
+        description: "Wallet_id is required for seller flow."

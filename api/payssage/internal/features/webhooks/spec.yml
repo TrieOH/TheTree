@@ -1,0 +1,58 @@
+# The webhooks feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /webhooks/{provider}:
+    post:
+      tags: [webhooks]
+      operationId: receiveWebhook
+      summary: Receive a provider webhook
+      description: |
+        Ingestion endpoint called by the payment provider (e.g.
+        MercadoPago) when a payment event occurs. Payssage verifies the
+        provider signature, normalizes the event, stores it, and
+        dispatches deliveries to every webhook endpoint on the event's
+        wallet. Returns 200 even for expected-and-ignored cases
+        (unknown event types, duplicate deliveries) so the provider does
+        not retry; bad signatures return an error. Public — providers
+        cannot send an Authorization header.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/Provider'
+      requestBody:
+        required: true
+        description: Raw provider event payload.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      x-problems: [400, 404]
+      responses:
+        '204':
+          description: Webhook acknowledged (processed or expected-ignored)
+
+components:
+  schemas:
+    # request shapes
+    InvalidRequest:
+      x-problem:
+        slug: invalid-request
+        status: 400
+        title: Invalid Request
+        description: "Invalid request."
+
+    # incoming webhooks
+    UnknownWebhookProvider:
+      x-problem:
+        slug: unknown-webhook-provider
+        status: 404
+        title: Unknown Webhook Provider
+        description: "Unknown webhook provider."
+
+    WebhookNotImplemented:
+      x-problem:
+        slug: webhook-not-implemented
+        status: 400
+        title: Webhook Not Implemented
+        description: "Webhook handling not implemented for this provider."

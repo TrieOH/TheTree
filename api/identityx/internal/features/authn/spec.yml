@@ -1,0 +1,526 @@
+# The authn feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /auth/setup:
+    get:
+      tags: [authn]
+      operationId: getSetup
+      summary: Check if IdentityX is set up
+      description: |
+        Returns 204 while setup is still pending (no first account yet)
+        and 409 once the system has been set up — used by installers to
+        decide whether to show the setup form. Public.
+      security: []
+      x-problems: [409, 500, 503]
+      responses:
+        '204':
+          description: Setup still pending — the setup form should be shown
+    post:
+      tags: [authn]
+      operationId: postSetup
+      summary: Set up IdentityX
+      description: |
+        Creates the first account in the system as a super admin and
+        enables authn. Succeeds only once — subsequent calls return 409
+        ("setup already complete"). Returns the freshly issued token pair
+        (201).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+            example:
+              email: admin@trieoh.com
+              password: S3curePassw0rd!
+      x-problems: [400, 409, 500]
+      responses:
+        '201':
+          description: First account created; token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/UserTokensOutput'
+
+  /auth/register:
+    post:
+      tags: [authn]
+      operationId: postRegister
+      summary: Register a user
+      description: |
+        Registers the credential pair, either as an IdentityX client
+        (no `project_id`) or as a client of a project that consumes
+        IdentityX for authn (pass `project_id`). Returns 201 with an empty
+        body — the caller then logs in via `/auth/login`.
+
+        When the target project has terms of service, the registration is
+        rejected unless `accepted_tos` is true — consent under LGPD art. 8
+        must be express. Projects without terms ignore the flag. The
+        acceptance is recorded against the current version.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectIDQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: S3curePassw0rd!
+              accepted_tos: true
+      x-problems: [400, 409, 500, 503]
+      responses:
+        '201':
+          description: User registered successfully
+
+  /auth/verify-email:
+    post:
+      tags: [authn]
+      operationId: postVerifyEmail
+      summary: Verify an email address
+      description: |
+        Redeems the single-use JWT carried by a verification email and
+        marks the actor's email as verified. The token is HMAC-signed,
+        purpose-scoped, expires after a short TTL, and is consumed on
+        first use (jti anti-replay). Re-clicking a consumed link on an
+        already-verified account succeeds (idempotent).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...  # gitleaks:allow — a truncated JWT header, not a token
+      x-problems: [400, 500, 503]
+      responses:
+        '204':
+          description: Email verified
+
+  /auth/resend-verification:
+    post:
+      tags: [authn]
+      operationId: postResendVerification
+      summary: Resend the verification email
+      description: |
+        Mints a fresh verification link and emails it to the given
+        address. Always returns 200 — unknown emails and already-verified
+        accounts are silent no-ops, so the endpoint does not leak which
+        emails are registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+            example:
+              email: user@example.com
+      x-problems: [400, 500, 503]
+      responses:
+        '204':
+          description: Verification email sent (or silently skipped)
+
+  /auth/forgot-password:
+    post:
+      tags: [authn]
+      operationId: postForgotPassword
+      summary: Request a password reset link
+      description: |
+        Mints a single-use password-reset link and emails it to the given
+        address. Always returns 200 — unknown emails and passwordless
+        (OAuth-only) accounts are silent no-ops, so the endpoint does not
+        leak which emails are registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            example:
+              email: user@example.com
+      x-problems: [400, 500, 503]
+      responses:
+        '204':
+          description: Reset link emailed (or silently skipped)
+
+  /auth/reset-password:
+    post:
+      tags: [authn]
+      operationId: postResetPassword
+      summary: Set a new password with a reset link
+      description: |
+        Redeems the single-use JWT carried by a password-reset email and
+        replaces the actor's password. The token is HMAC-signed,
+        purpose-scoped, expires after a short TTL, and is consumed on
+        first use — a consumed token is dead and a new link must be
+        requested.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...  # gitleaks:allow — a truncated JWT header, not a token
+              password: S3curePassw0rd!
+      x-problems: [400, 500, 503]
+      responses:
+        '204':
+          description: Password reset
+
+  /auth/login:
+    post:
+      tags: [authn]
+      operationId: postLogin
+      summary: Log in a user
+      description: |
+        Logs in the specified credentials if they exist on the requested
+        target (IdentityX itself, or the project identified by
+        `project_id`). Returns an access/refresh token pair. The access
+        token is an Ed25519-signed JWT; verify it against
+        `/.well-known/jwks.json`.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectIDQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+            example:
+              email: user@example.com
+              password: S3curePassw0rd!
+      x-problems: [400, 401, 500, 503]
+      responses:
+        '200':
+          description: Login succeeded; token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/UserTokensOutput'
+              example:
+                access_token: <access token, a JWT>
+                refresh_token: <refresh token, a JWT>
+                access_expires_at: '2026-01-01T13:00:00Z'
+                refresh_expires_at: '2026-01-08T12:00:00Z'
+                domain: example.com
+
+  /auth/logout:
+    post:
+      tags: [authn]
+      operationId: postLogout
+      summary: Log out a user
+      description: |
+        Logs out the current session, blacklisting the presented access
+        and refresh tokens. Requires a valid bearer token; the tokens to
+        blacklist are read from the request headers.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: The access token to blacklist, as `Bearer <token>`.
+          schema:
+            type: string
+        - name: Refresh-Token
+          in: header
+          required: true
+          description: The refresh token to blacklist.
+          schema:
+            type: string
+      x-problems: [401, 500, 503]
+      responses:
+        '204':
+          description: Logged out successfully
+
+  /auth/refresh:
+    post:
+      tags: [authn]
+      operationId: postRefresh
+      summary: Refresh a user session
+      description: |
+        Exchanges a refresh token (sent in the `Refresh-Token` header) for
+        a fresh access/refresh token pair. Use when the access token is
+        about to expire or has expired.
+      security: []
+      parameters:
+        - name: Refresh-Token
+          in: header
+          required: true
+          description: The refresh token to exchange.
+          schema:
+            type: string
+      x-problems: [401, 500, 503]
+      responses:
+        '200':
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/UserTokensOutput'
+
+  /auth/introspect:
+    get:
+      tags: [authn]
+      operationId: getIntrospect
+      summary: Introspect the current identity
+      description: |
+        Returns the identity resolved from the current credential — the
+        actor (subject) plus the credential type used (JWT token or API
+        key). API keys authenticate with their full raw key; the subject
+        carries the key's capability grants.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      x-problems: [401, 500, 503]
+      responses:
+        '200':
+          description: Identity resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+
+  /.well-known/jwks.json:
+    get:
+      tags: [authn]
+      operationId: getJWKS
+      summary: Get a JWKS
+      description: |
+        Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by
+        the authentication service. Omit `project_id` for the platform
+        keyset, or pass a project id for that project's keyset. Response
+        is a raw JWKS document (RFC 7517), and is
+        cached for 2 hours by the server.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectIDQuery'
+      x-problems: [500, 503]
+      responses:
+        '200':
+          description: JWKS document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    description: Public keys used to verify tokens.
+                    items:
+                      type: object
+                      additionalProperties: true
+              example:
+                keys:
+                  - kty: OKP
+                    crv: Ed25519
+                    kid: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    x: 11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo
+
+components:
+  schemas:
+    CredentialRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
+          x-go-type: string
+          type: string
+          format: email
+          description: User's email address.
+          minLength: 3
+          maxLength: 254
+        password:
+          x-oapi-codegen-extra-tags:
+            validate: "required,passwd,min=8,max=72"
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: User's password.
+      description: |
+        Request body for `/auth/setup`, `/auth/register`, and
+        `/auth/login`. Mirrors `models.IDXRegisterRequest` /
+        `models.IDXLoginRequest`.
+
+    RegisterRequest:
+      allOf:
+        - $ref: '#/components/schemas/CredentialRequest'
+        - type: object
+          properties:
+            accepted_tos:
+              type: boolean
+              description: |
+                Explicit consent to the project's current terms of service
+                (clickwrap). Required when the target project has terms —
+                LGPD art. 8 requires express consent; a missing flag is a
+                400. Ignored for platform registrations and projects
+                without terms.
+      description: Request body for `/auth/register`.
+
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: The HMAC JWT from the verification link.
+      description: Request body for `POST /auth/verify-email`.
+
+    ResendVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
+          x-go-type: string
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: Email address to (re)send the verification link to.
+        project_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Project the actor belongs to. Omit for IdentityX itself.
+      description: Request body for `POST /auth/resend-verification`.
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
+          x-go-type: string
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: Email address to send the reset link to.
+        project_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Project the actor belongs to. Omit for IdentityX itself.
+      description: Request body for `POST /auth/forgot-password`.
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: The HMAC JWT from the reset link.
+        password:
+          x-oapi-codegen-extra-tags:
+            validate: "required,passwd,min=8,max=72"
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: New password.
+      description: Request body for `POST /auth/reset-password`.
+
+    Identity:
+      x-go-type: models.Identity
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: |
+        Identity resolved from the current credential (session JWT or API
+        key), returned by `/auth/introspect`. Mirrors `models.Identity`.
+      required: [subject, cred]
+      properties:
+        subject:
+          $ref: '#/components/schemas/Subject'
+        cred:
+          $ref: '#/components/schemas/Credential'
+
+    Subject:
+      x-go-type: models.Subject
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: The actor this identity resolves to. Mirrors `models.Subject`.
+      required: [id, type, capabilities]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Unique identifier of the actor.
+        project_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Project this actor is scoped to, if any.
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Actor's email address, if applicable for this actor type.
+        type:
+          $ref: '../../../api-spec.yml#/components/schemas/ActorType'
+        verified_at:
+          type: [ string, "null" ]
+          format: date-time
+          description: |
+            When the actor's email was verified (via the verification link
+            or an OAuth provider). Null means unverified; downstream
+            applications decide what to do with it.
+        capabilities:
+          type: [ object, "null" ]
+          description: |
+            Actor's capability grants as a JSON array of `resource:action`
+            strings (JSON-encoded array carried in a JSON field). Shape is
+            opaque to the API contract.
+        metadata:
+          type: [ object, "null" ]
+          description: Arbitrary actor metadata, opaque to the API contract.
+          additionalProperties: true
+
+    Credential:
+      x-go-type: models.Credential
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: The credential used to authenticate this request. Mirrors `models.Credential`.
+      required: [type]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: |
+            Identifier of the credential, present for stateful credentials
+            (e.g. API keys). Null for stateless credentials (e.g. JWTs).
+        type:
+          $ref: '#/components/schemas/CredentialType'
+
+    CredentialType:
+      x-go-type: models.CredentialType
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      description: The mechanism used to authenticate this identity.
+      enum: [ token, api_key ]
+
+    # login, registration and setup
+    InvalidCredentials:
+      x-problem:
+        slug: invalid-credentials
+        status: 401
+        title: Invalid Credentials
+        description: "Invalid email or password."
+
+    SetupComplete:
+      x-problem:
+        slug: setup-complete
+        status: 409
+        title: Setup Complete
+        description: "Setup already complete."

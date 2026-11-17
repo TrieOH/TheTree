@@ -1,0 +1,276 @@
+# The wallets feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /wallets:
+    get:
+      tags: [wallets]
+      operationId: listWallets
+      summary: List your wallets
+      description: |
+        Lists the wallets owned by the authenticated actor. NOTE: this
+        endpoint currently returns 201 (a known quirk of the current
+        implementation) — documented as-is.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '201':
+          description: Wallets owned by the actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Wallet'
+    post:
+      tags: [wallets]
+      operationId: createWallet
+      summary: Create a wallet
+      description: |
+        Creates a wallet owned by the authenticated actor, optionally
+        scoped to an organization. Wallets are the ownership unit for
+        webhook endpoints, sellers, and payment intents.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletRequest'
+            example:
+              name: Main Wallet
+              organization_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 500]
+      responses:
+        '201':
+          description: Wallet created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /wallets/{wallet_id}:
+    get:
+      tags: [wallets]
+      operationId: getWallet
+      summary: Get a wallet by ID
+      description: |
+        Fetches a single wallet. NOTE: this endpoint currently returns
+        201 (a known quirk of the current implementation) — documented
+        as-is.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 404, 500]
+      responses:
+        '201':
+          description: The requested wallet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /wallets/{wallet_id}/fee:
+    patch:
+      tags: [wallets]
+      operationId: setWalletFee
+      summary: Set a wallet's fee
+      description: |
+        Sets the wallet's marketplace fee in basis points (bps; 100 bps =
+        1%). The authenticated actor must own the wallet.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFeeBPSRequest'
+            example:
+              fee_bps: 100
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Fee updated
+
+  /wallets/{wallet_id}/sandbox:
+    patch:
+      tags: [wallets]
+      operationId: setWalletSandbox
+      summary: Set a wallet's sandbox state
+      description: |
+        Toggles the wallet's sandbox mode. Sandbox wallets only accept
+        sandbox intents. The authenticated actor must own the wallet.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSandboxRequest'
+            example:
+              sandbox: true
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Sandbox state updated
+
+  /wallets/{wallet_id}/collector:
+    post:
+      tags: [wallets]
+      operationId: bindCollector
+      summary: Bind a collector to a wallet
+      description: |
+        Binds the wallet's payment collector (the provider account that
+        receives funds) after an OAuth connect. The actor must own the
+        wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindCollectorRequest'
+            example:
+              collector_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Collector bound
+    delete:
+      tags: [wallets]
+      operationId: unbindCollector
+      summary: Unbind a collector from a wallet
+      description: |
+        Unbinds the wallet's payment collector. The actor must own the
+        wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Collector unbound
+
+  /organizations/{organization_id}/wallets:
+    get:
+      tags: [wallets]
+      operationId: listOrganizationWallets
+      summary: List organization wallets
+      description: |
+        Lists the wallets scoped to an organization. The actor must
+        belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '201':
+          description: Organization wallets
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Wallet'
+
+components:
+  schemas:
+    Wallet:
+      x-go-type: models.Wallet
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A Payssage wallet — ownership unit for intents, sellers, and webhooks. Mirrors `models.Wallet`.
+      required: [id, owner_id, name, sandbox, fee_bps, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        owner_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        name:
+          type: string
+        sandbox:
+          type: boolean
+          description: Whether the wallet operates in sandbox mode.
+        fee_bps:
+          type: integer
+          description: Marketplace fee in basis points (100 bps = 1%).
+        collector_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Bound collector, if any.
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWalletRequest:
+      type: object
+      description: Request body for wallet creation. Mirrors `models.CreateWalletRequest`.
+      required: [name]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+
+    SetFeeBPSRequest:
+      type: object
+      description: Request body for setting a wallet fee. Mirrors `models.SetFeeBPSRequest`.
+      required: [fee_bps]
+      properties:
+        fee_bps:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          description: Fee in basis points (100 bps = 1%).
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+
+    BindCollectorRequest:
+      type: object
+      description: Request body for binding a collector to a wallet. Mirrors the handler's `bindCollectorRequest`.
+      required: [collector_id]
+      properties:
+        collector_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+
+    SetSandboxRequest:
+      type: object
+      description: Request body for setting sandbox state. Mirrors `models.SetSandboxRequest`.
+      required: [sandbox]
+      properties:
+        sandbox:
+          type: boolean
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'

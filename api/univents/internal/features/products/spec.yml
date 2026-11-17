@@ -1,0 +1,497 @@
+# The products feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /editions/{edition_id}/products:
+    get:
+      tags: [products]
+      operationId: listEditionProducts
+      x-cache: shared
+      summary: List an edition's products
+      description: |
+        Lists the products (merchandise, add-ons) available for the
+        edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition products
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+    post:
+      tags: [products]
+      operationId: createInitialProduct
+      summary: Create a product with its first variant
+      description: |
+        Creates a product and its first variant in one call. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInitialProductRequest'
+            example:
+              requires_registration: false
+              vendor_code: TEE-2026
+              variant_vendor_code: TEE-2026-BLACK-M
+              name: Conference T-Shirt
+              description: Black, size M.
+              price: 8900
+              stock: 100
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /editions/{edition_id}/products/{vendor_code}:by-code:
+    get:
+      tags: [products]
+      operationId: getProductByVendorCode
+      summary: Get an edition product by vendor code
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a product
+        by its vendor code within the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+        - name: vendor_code
+          in: path
+          required: true
+          description: Product vendor code.
+          schema:
+            type: string
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /editions/{edition_id}/variants/{vendor_code}:by-code:
+    get:
+      tags: [products]
+      operationId: getVariantByVendorCode
+      summary: Get an edition variant by vendor code
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a product
+        variant by its vendor code within the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+        - name: vendor_code
+          in: path
+          required: true
+          description: Variant vendor code.
+          schema:
+            type: string
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested variant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
+
+  /products/{product_id}:
+    get:
+      tags: [products]
+      operationId: getProduct
+      summary: Get a product
+      description: Fetches a single product. Public.
+      security: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+    patch:
+      tags: [products]
+      operationId: patchProduct
+      summary: Update a product
+      description: |
+        Updates product details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+    delete:
+      tags: [products]
+      operationId: deleteProduct
+      summary: Delete a product
+      description: |
+        Soft-deletes a product (and its variants). The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Product deleted
+
+  /products/{product_id}/variants:
+    get:
+      tags: [products]
+      operationId: listProductVariants
+      summary: List a product's variants
+      description: Lists the variants of a product. Public.
+      security: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Product variants
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductVariant'
+    post:
+      tags: [products]
+      operationId: createProductVariant
+      summary: Create a product variant
+      description: |
+        Adds a variant to an existing product. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductVariantRequest'
+            example:
+              vendor_code: TEE-2026-WHITE-L
+              name: Conference T-Shirt (White, L)
+              description: White, size L.
+              price: 8900
+              stock: 50
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Variant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
+
+  /variants/{variant_id}:
+    patch:
+      tags: [products]
+      operationId: patchProductVariant
+      summary: Update a product variant
+      description: |
+        Updates variant details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: variant_id
+          in: path
+          required: true
+          description: Variant ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductVariantRequest'
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '200':
+          description: Variant updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
+    delete:
+      tags: [products]
+      operationId: deleteProductVariant
+      summary: Delete a product variant
+      description: |
+        Soft-deletes a variant. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: variant_id
+          in: path
+          required: true
+          description: Variant ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Variant deleted
+
+components:
+  schemas:
+    Product:
+      x-go-type: models.Product
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A purchasable product for an edition. Mirrors `models.Product`.
+      required: [id, edition_id, vendor_code, requires_registration, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        vendor_code:
+          type: string
+          description: Caller-defined unique product code within the edition.
+        requires_registration:
+          type: boolean
+          description: Whether buying this product requires an event registration.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProductVariant:
+      x-go-type: models.ProductVariant
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A variant (size/color/... ) of a product. `price` is integer cents. Mirrors `models.ProductVariant`.
+      required: [id, edition_id, product_id, vendor_code, name, price, gallery_urls, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        product_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        vendor_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        price:
+          type: integer
+          format: int64
+          description: Price in integer cents.
+        stock:
+          type: [ integer, "null" ]
+          description: Remaining stock; null = unlimited.
+        gallery_urls:
+          type: array
+          description: Gallery image URLs (JSON array).
+          items:
+            type: string
+            format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateInitialProductRequest:
+      type: object
+      description: Request body for creating a product with its first variant. Mirrors `models.CreateInitialProductRequest`.
+      required: [vendor_code, variant_vendor_code, name, price]
+      properties:
+        requires_registration:
+          type: boolean
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        variant_vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+          description: Price in integer cents.
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+
+    CreateProductVariantRequest:
+      type: object
+      description: Request body for variant creation. Mirrors `models.CreateProductVariantRequest`.
+      required: [vendor_code, name, price]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+
+    PatchProductRequest:
+      type: object
+      description: Request body for product updates. Mirrors `models.PatchProductRequest`.
+      required: [vendor_code, requires_registration]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        requires_registration:
+          type: boolean
+
+    PatchProductVariantRequest:
+      type: object
+      description: Request body for variant updates. Mirrors `models.PatchProductVariantRequest`.
+      required: [vendor_code, name, price]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+        gallery_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    InvalidGalleryURLs:
+      x-problem:
+        slug: invalid-gallery-urls
+        status: 400
+        title: Invalid Gallery URLs
+        description: "Invalid gallery_urls."

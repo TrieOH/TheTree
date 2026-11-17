@@ -1,0 +1,597 @@
+# The organizations feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /organizations:
+    get:
+      tags: [organizations]
+      operationId: listOrganizations
+      x-scope: platform-only
+      summary: List your organizations
+      description: |
+        Lists the organizations the authenticated platform-level actor
+        belongs to. Requires a JWT or API key bound to a platform-level
+        (non-project-scoped) actor.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500, 503]
+      responses:
+        '200':
+          description: Organizations the actor belongs to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+    post:
+      tags: [organizations]
+      operationId: createOrganization
+      x-scope: platform-only
+      summary: Create an organization
+      description: |
+        Creates an organization owned by the authenticated platform-level
+        actor. The actor becomes the organization owner.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+            example:
+              name: TrieOH Labs
+              slug: trieoh-labs
+      x-problems: [400, 401, 409, 500, 503]
+      responses:
+        '201':
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+  /organizations/{organization_id}/members:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationMembers
+      x-scope: platform-only
+      summary: List organization members
+      description: |
+        Lists the members of an organization. Requires a platform-level
+        actor that is a member of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Organization members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationMember'
+    post:
+      tags: [organizations]
+      operationId: addOrganizationMember
+      x-scope: platform-only
+      summary: Add an organization member
+      description: |
+        Adds an existing actor (by email) to the organization with the
+        given role. The authenticated actor must be an admin or owner of
+        the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
+      responses:
+        '201':
+          description: Member added
+    delete:
+      tags: [organizations]
+      operationId: removeOrganizationMember
+      x-scope: platform-only
+      summary: Remove an organization member
+      description: |
+        Removes an actor (by email) from the organization. The
+        authenticated actor must be an admin or owner of the
+        organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '204':
+          description: Member removed
+
+  /organizations/{organization_id}/projects:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjects
+      x-scope: platform-only
+      summary: List organization projects
+      description: |
+        Lists the projects scoped to an organization. Requires a
+        platform-level actor that is a member of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Organization projects
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Project'
+    post:
+      tags: [organizations]
+      operationId: createOrganizationProject
+      x-scope: platform-only
+      summary: Create an organization project
+      description: |
+        Creates a project inside an organization. Requires an
+        organization member with admin or owner role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrgProjectRequest'
+            example:
+              name: Checkout Service
+              domain: https://checkout.trieoh.com
+              brand_slug: trieoh-checkout
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
+      responses:
+        '201':
+          description: Organization project created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Project'
+
+  /organizations/{org_id}/projects/{project_id}/actors:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjectActors
+      x-scope: platform-only
+      summary: List project actors
+      description: |
+        Lists the actors scoped to an organization-owned project. The
+        actor must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrgID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Project actors
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Actor'
+    post:
+      tags: [organizations]
+      operationId: createOrganizationProjectActor
+      x-scope: platform-only
+      summary: Create a project actor
+      description: |
+        Creates an actor scoped to an organization-owned project. The
+        actor must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrgID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../api-spec.yml#/components/schemas/CreateActorRequest'
+            example:
+              auth_method: password
+              type: human
+              email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '201':
+          description: Project actor created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Actor'
+
+  /organizations/{organization_id}/projects/{project_id}/members:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjectMembers
+      x-scope: platform-only
+      summary: List project members
+      description: |
+        Lists the members of an organization-owned project. The actor
+        must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Project members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/ProjectMember'
+    post:
+      tags: [organizations]
+      operationId: addOrganizationProjectMember
+      x-scope: platform-only
+      summary: Add a project member
+      description: |
+        Adds an existing actor (by email) to an organization-owned
+        project with the given role. The actor must be an admin or owner
+        of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrgProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: admin
+      x-problems: [400, 401, 403, 404, 409, 500, 503]
+      responses:
+        '201':
+          description: Project member added
+    delete:
+      tags: [organizations]
+      operationId: removeOrganizationProjectMember
+      x-scope: platform-only
+      summary: Remove a project member
+      description: |
+        Removes an actor (by email) from an organization-owned project.
+        The actor must be an admin or owner of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrgProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '204':
+          description: Project member removed
+
+  /organizations/{organization_id}/projects/{project_id}/actors/{actor_id}:
+    get:
+      tags: [organizations]
+      operationId: getOrganizationProjectActor
+      x-scope: platform-only
+      summary: Get a project actor by ID
+      description: |
+        Fetches a single actor scoped to an organization-owned project.
+        The actor must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Actor'
+
+components:
+  schemas:
+    Organization:
+      x-go-type: models.Organization
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A top-level tenant. Mirrors `models.Organization`.
+      required: [id, owner_id, name, slug, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        owner_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Actor that owns the organization.
+        name:
+          type: string
+          minLength: 3
+        slug:
+          type: string
+          minLength: 2
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateOrganizationRequest:
+      type: object
+      description: Request body for organization creation. Mirrors `models.CreateOrganizationRequest`.
+      required: [name, slug]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
+          type: string
+          minLength: 3
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+
+    OrganizationRole:
+      x-go-type: models.OrganizationRole
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      enum: [member, admin, owner]
+
+    OrganizationMember:
+      x-go-type: models.OrganizationMember
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: Membership of an actor in an organization. Mirrors `models.OrganizationMember`.
+      required: [organization_id, actor_id, role, joined_at]
+      properties:
+        organization_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        actor_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        joined_at:
+          type: string
+          format: date-time
+
+    AddOrganizationMemberRequest:
+      type: object
+      description: Request body for adding an organization member. Mirrors `models.AddOrganizationMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/OrganizationRole'
+
+    RemoveOrganizationMemberRequest:
+      type: object
+      description: Request body for removing an organization member. Mirrors `models.RemoveOrganizationMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+
+    CreateOrgProjectRequest:
+      type: object
+      description: Request body for organization project creation. Mirrors `models.CreateOrgProjectRequest`.
+      required: [name, brand_slug]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
+          type: string
+          minLength: 3
+        domain:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,url"
+          type: [ string, "null" ]
+          format: uri
+        brand_slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    AddOrgProjectMemberRequest:
+      type: object
+      description: Request body for adding an org project member. Mirrors `models.AddOrgProjectMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '../../../api-spec.yml#/components/schemas/ProjectRole'
+
+    RemoveOrgProjectMemberRequest:
+      type: object
+      description: Request body for removing an org project member. Mirrors `models.RemoveOrgProjectMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+
+    OrgOwnerAlreadyInProject:
+      x-problem:
+        slug: org-owner-already-in-project
+        status: 400
+        title: Org Owner Already In Project
+        description: "Owner of the organization is already a member of the project."
+
+    OrgMemberAlreadyInProject:
+      x-problem:
+        slug: org-member-already-in-project
+        status: 400
+        title: Org Member Already In Project
+        description: "Organization member is already a member of the project."
+
+    RemoveOrgOwnerFromProject:
+      x-problem:
+        slug: remove-org-owner-from-project
+        status: 400
+        title: Remove Org Owner From Project
+        description: "Cannot remove the owner of the organization from the project."
+
+    RemoveOrgMemberFromProject:
+      x-problem:
+        slug: remove-org-member-from-project
+        status: 400
+        title: Remove Org Member From Project
+        description: "Cannot remove organization member from project."
+
+    AddSelfToOrg:
+      x-problem:
+        slug: add-self-to-org
+        status: 400
+        title: Add Self To Org
+        description: "Users can't add themselves to organizations."
+
+    AddOwnerToOrg:
+      x-problem:
+        slug: add-owner-to-org
+        status: 400
+        title: Add Owner To Org
+        description: "Owners can't be added to organizations they own."
+
+    AlreadyOrgMember:
+      x-problem:
+        slug: already-org-member
+        status: 400
+        title: Already Org Member
+        description: "User is already a member of the organization."
+
+    RemoveSelfFromOrg:
+      x-problem:
+        slug: remove-self-from-org
+        status: 400
+        title: Remove Self From Org
+        description: "Cannot remove yourself from the organization."
+
+    RemoveOrgOwner:
+      x-problem:
+        slug: remove-org-owner
+        status: 400
+        title: Remove Org Owner
+        description: "Cannot remove the owner of the organization."
+
+    NotOrgMember:
+      x-problem:
+        slug: not-org-member
+        status: 400
+        title: Not Org Member
+        description: "User is not a member of the organization."
+
+  parameters:
+    OrganizationID:
+      name: organization_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    OrgID:
+      name: org_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'

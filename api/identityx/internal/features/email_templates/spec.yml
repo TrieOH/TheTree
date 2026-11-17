@@ -1,0 +1,170 @@
+# The email_templates feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /projects/{project_id}/email-templates:
+    get:
+      tags: [projects]
+      operationId: listEmailTemplates
+      summary: List a project's effective email templates
+      description: |
+        Lists the effective templates for every kind — the project's
+        override when one exists, otherwise the baked-in default — each
+        tagged with its source (`default` or `override`). The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Effective email templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EffectiveEmailTemplate'
+
+  /projects/{project_id}/email-templates/{kind}:
+    get:
+      tags: [projects]
+      operationId: getEmailTemplate
+      summary: Get a project's effective email template
+      description: |
+        Returns the effective template for one kind — the project's
+        override when one exists, otherwise the baked-in default. The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Effective email template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveEmailTemplate'
+    put:
+      tags: [projects]
+      operationId: putEmailTemplate
+      summary: Upsert a project's email template override
+      description: |
+        Saves the project's override for one kind. The body is a Go
+        template rendered with the same variables as the built-in
+        defaults: `ActionURL`, `ProjectName`, `Expiry`, `ProjectDomain`,
+        `Email`. The body must reference `{{.ActionURL}}` at least once
+        (the actionable link always comes from IdentityX) and must render;
+        violations are rejected with 422-style validation errors. The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTemplateBody'
+            example:
+              subject: Welcome to Acme — confirm your email
+              body: |
+                <p>Hi there!</p>
+                <p><a href="{{.ActionURL}}">Confirm my email</a></p>
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: Email template override saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveEmailTemplate'
+    delete:
+      tags: [projects]
+      operationId: deleteEmailTemplate
+      summary: Delete a project's email template override
+      description: |
+        Removes the project's override for one kind, restoring the
+        built-in default. Deleting a kind that has no override is a
+        no-op. The authenticated actor must be an admin or owner of the
+        project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      x-problems: [401, 403, 404, 500, 503]
+      responses:
+        '204':
+          description: Email template override removed (default restored)
+
+components:
+  schemas:
+    EmailTemplateKind:
+      type: string
+      enum: [verify, reset, tos]
+      description: The kind of auth email. `verify`, `reset`, and the ToS-change notice `tos`.
+
+    EmailTemplateBody:
+      type: object
+      required: [subject, body]
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            Email subject. A Go template rendered with the same variables
+            as the body (`ActionURL`, `ProjectName`, `Expiry`,
+            `ProjectDomain`, `Email`).
+        body:
+          type: string
+          minLength: 1
+          description: |
+            HTML email body. A Go template rendered with the same
+            variables; must include `{{.ActionURL}}` at least once — the
+            actionable link always comes from IdentityX.
+      description: Request body for `PUT /projects/{project_id}/email-templates/{kind}`.
+
+    EffectiveEmailTemplate:
+      type: object
+      required: [kind, subject, body, source]
+      properties:
+        kind:
+          $ref: '#/components/schemas/EmailTemplateKind'
+        subject:
+          type: string
+          description: Effective subject (override or default).
+        body:
+          type: string
+          description: Effective body (override or default).
+        source:
+          type: string
+          enum: [default, override]
+          description: Whether this is the project's override or the built-in default.
+      description: |
+        The effective template for one kind, as served by the email
+        template endpoints.
+
+  parameters:
+    EmailTemplateKind:
+      name: kind
+      in: path
+      required: true
+      description: Email template kind.
+      schema:
+        $ref: '#/components/schemas/EmailTemplateKind'

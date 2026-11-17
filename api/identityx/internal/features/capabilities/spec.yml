@@ -1,0 +1,102 @@
+# The capabilities feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /projects/{project_id}/capabilities:
+    get:
+      tags: [capabilities]
+      operationId: listCapabilities
+      summary: List project capabilities
+      description: |
+        Lists the capability grants defined for the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      x-problems: [401, 404, 500, 503]
+      responses:
+        '200':
+          description: Project capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Capability'
+    post:
+      tags: [capabilities]
+      operationId: createCapability
+      x-scope: platform-only
+      summary: Create a capability
+      description: |
+        Defines a new capability grant (`resource:action`) for the
+        project. The authenticated actor must be a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCapabilityRequest'
+            example:
+              resource: intents
+              action: checkout
+      x-problems: [400, 401, 404, 409, 500, 503]
+      responses:
+        '201':
+          description: Capability created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capability'
+
+components:
+  schemas:
+    Capability:
+      x-go-type: models.Capability
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A permission grant (`resource:action`). Mirrors `models.Capability`.
+      required: [id, resource, action, created_by, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        project_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        resource:
+          type: string
+          minLength: 3
+        action:
+          type: string
+          minLength: 3
+        created_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CreateCapabilityRequest:
+      type: object
+      description: Request body for capability creation. Mirrors `models.CreateCapabilityRequest`.
+      required: [resource, action]
+      properties:
+        resource:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
+          type: string
+          minLength: 3
+        action:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
+          type: string
+          minLength: 3

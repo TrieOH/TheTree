@@ -1,0 +1,134 @@
+# The api_keys feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /projects/{project_id}/api_keys:
+    post:
+      tags: [apikeys]
+      operationId: createAPIKey
+      x-scope: platform-only
+      summary: Create an API key
+      description: |
+        Creates an API key bound to a subject (actor) in the project,
+        optionally scoped to a set of capability IDs and an expiry. The
+        full raw key is returned exactly once in `data.raw_key` — store
+        it, it cannot be retrieved again. The authenticated actor must be
+        a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+            example:
+              subject_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              capabilities:
+                - 3fa85f64-5717-4562-b3fc-2c963f66afa7
+              name: checkout-prod
+              env: production
+              expires_at: '2027-01-01T00:00:00Z'
+      x-problems: [400, 401, 404, 500, 503]
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAPIKeyResponse'
+
+components:
+  schemas:
+    APIKey:
+      x-go-type: models.APIKey
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A static API key record. Mirrors `models.APIKey`.
+      required: [id, subject_id, name, display_prefix, metadata, created_by, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        subject_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Actor the key is bound to.
+        name:
+          type: string
+        display_prefix:
+          type: string
+          description: Short prefix for identifying the key (e.g. `idx_abc123`).
+        metadata:
+          type: object
+          additionalProperties: true
+        expires_at:
+          type: [ string, "null" ]
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time
+        last_used_at:
+          type: [ string, "null" ]
+          format: date-time
+        created_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAPIKeyRequest:
+      type: object
+      description: Request body for API key creation. Mirrors `models.CreateAPIKeyRequest`.
+      properties:
+        subject_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Actor the key is bound to. Defaults to the authenticated actor.
+        capabilities:
+          type: array
+          description: Capability IDs the key is restricted to.
+          items:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        name:
+          type: string
+          description: Human-friendly key name.
+        env:
+          type: string
+          description: Environment tag (e.g. `production`, `sandbox`).
+        expires_at:
+          type: [ string, "null" ]
+          format: date-time
+          description: Optional expiry; null = does not expire.
+
+    CreateAPIKeyResponse:
+      x-go-type: models.CreateAPIKeyResponse
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: Result of API key creation. Mirrors `models.CreateAPIKeyResponse`.
+      required: [key, raw_key]
+      properties:
+        key:
+          $ref: '#/components/schemas/APIKey'
+        raw_key:
+          type: string
+          description: |
+            The full key, returned exactly once. Store it securely; it
+            cannot be retrieved again.
+
+    # api keys
+    APIKeyExpired:
+      x-problem:
+        slug: api-key-expired
+        status: 401
+        title: API Key Expired
+        description: "Api key expired."
+
+    InvalidCapabilities:
+      x-problem:
+        slug: invalid-capabilities
+        status: 400
+        title: Invalid Capabilities
+        description: "Invalid capabilities."

@@ -1,0 +1,505 @@
+# The signatures feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /editions/{edition_id}/signatures:
+    get:
+      tags: [signatures]
+      operationId: listEditionSignatures
+      summary: List an edition's signatures
+      description: |
+        Lists the signatures (approved signatory images) of the edition.
+        Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signature'
+    post:
+      tags: [signatures]
+      operationId: createSignature
+      summary: Create a signature
+      description: |
+        Registers a signature (signatory name, title, and signature
+        image URL) for the edition, for use on certificates. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSignatureRequest'
+            example:
+              signatory_name: Jane Doe
+              signatory_title: Head of Education
+              signatory_email: jane@trieoh.com
+              image_url: https://cdn.trieoh.com/signatures/jane.png
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Signature created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signature'
+
+  /signatures/{signature_id}:
+    get:
+      tags: [signatures]
+      operationId: getSignature
+      summary: Get a signature
+      description: Fetches a single signature. Public.
+      security: []
+      parameters:
+        - name: signature_id
+          in: path
+          required: true
+          description: Signature ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signature'
+    delete:
+      tags: [signatures]
+      operationId: deleteSignature
+      summary: Delete a signature
+      description: |
+        Deletes a signature. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: signature_id
+          in: path
+          required: true
+          description: Signature ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '204':
+          description: Signature deleted
+
+  /editions/{edition_id}/signature-requests:
+    get:
+      tags: [signatures]
+      operationId: listEditionSignatureRequests
+      summary: List an edition's signature requests
+      description: |
+        Lists the signature requests issued for the edition. Public.
+      security: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: Edition signature requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignatureRequest'
+    post:
+      tags: [signatures]
+      operationId: createSignatureRequest
+      summary: Create a signature request
+      description: |
+        Issues a signature request to a signatory (by email). The
+        request carries a token the signatory uses to fulfill or deny
+        via the public fulfill/deny endpoints; it expires after
+        `expires_in_days` (default 7, max 365). The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSignatureRequestRequest'
+            example:
+              signatory_name: Jane Doe
+              signatory_title: Head of Education
+              signatory_email: jane@example.com
+              expires_in_days: 14
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Signature request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+
+  /signature-requests/{request_id}:
+    get:
+      tags: [signatures]
+      operationId: getSignatureRequest
+      summary: Get a signature request
+      description: Fetches a single signature request. Public.
+      security: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Signature request ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      x-problems: [404, 500]
+      responses:
+        '200':
+          description: The requested signature request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+
+  /signature-requests/{request_id}/cancel:
+    post:
+      tags: [signatures]
+      operationId: cancelSignatureRequest
+      summary: Cancel a signature request
+      description: |
+        Cancels a pending signature request, optionally with a reason.
+        The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Signature request ID.
+          schema:
+            $ref: '../../../api-spec.yml#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: [ string, "null" ]
+                  description: Why the request was cancelled.
+      x-problems: [401, 403, 404, 409, 500]
+      responses:
+        '204':
+          description: Signature request cancelled
+
+  /signature-requests/fulfill:
+    post:
+      tags: [signatures]
+      operationId: fulfillSignatureRequest
+      summary: Fulfill a signature request
+      description: |
+        Completes a pending signature request by uploading the signatory's
+        signature image. Authenticated by the signature-request token
+        passed as the `token` query parameter (NOT a JWT). The token
+        binds this call to a single request/edition.
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature-request token.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image_url]
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                  description: URL of the uploaded signature image.
+            example:
+              image_url: https://cdn.trieoh.com/signatures/jane.png
+      x-problems: [400, 401, 404, 409, 500]
+      responses:
+        '201':
+          description: Signature created from the fulfilled request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signature'
+
+  /signature-requests/deny:
+    post:
+      tags: [signatures]
+      operationId: denySignatureRequest
+      summary: Deny a signature request
+      description: |
+        Denies a pending signature request. Authenticated by the
+        signature-request token passed as the `token` query parameter
+        (NOT a JWT).
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature-request token.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: [ string, "null" ]
+                  description: Why the request was denied.
+            example:
+              reason: Signature image no longer available
+      x-problems: [400, 401, 404, 409, 500]
+      responses:
+        '204':
+          description: Signature request denied
+
+  /signatures/revoke:
+    post:
+      tags: [signatures]
+      operationId: revokeSignature
+      summary: Revoke a signature
+      description: |
+        Revokes a previously fulfilled signature. Authenticated by the
+        signature token passed as the `token` query parameter (NOT a
+        JWT).
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature token.
+          schema:
+            type: string
+      x-problems: [400, 401, 404, 500]
+      responses:
+        '204':
+          description: Signature revoked
+
+components:
+  schemas:
+    Signature:
+      x-go-type: models.Signature
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An approved signatory image used on certificates. Mirrors `models.Signature`.
+      required: [id, edition_id, created_by, signatory_name, image_url, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        signatory_name:
+          type: string
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        image_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    AddSignatureRequest:
+      type: object
+      description: Request body for signature creation. Mirrors `models.AddSignatureRequest`.
+      required: [signatory_name, image_url]
+      properties:
+        signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        image_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          description: Storage object key or legacy absolute image URL.
+
+    SignatureRequestStatus:
+      x-go-type: models.SignatureRequestStatus
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [pending, completed, expired, cancelled]
+
+    SignatureRequest:
+      x-go-type: models.SignatureRequest
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: |
+        A request for a signatory to approve a signature. Fulfillment and
+        denial are authenticated by the request's token (see top-level
+        docs). Mirrors `models.SignatureRequest`.
+      required: [id, edition_id, created_by, signatory_name, idempotency_key, status, expires_at, created_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        edition_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        created_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        signatory_name:
+          type: string
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        idempotency_key:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+          description: Key guaranteeing the request is only processed once.
+        status:
+          $ref: '#/components/schemas/SignatureRequestStatus'
+        status_reason:
+          type: [ string, "null" ]
+          description: Reason for denial, when denied.
+        expires_at:
+          type: string
+          format: date-time
+        signature_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+          description: Signature produced by fulfillment, once completed.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateSignatureRequestRequest:
+      type: object
+      description: Request body for signature request creation. Mirrors `models.CreateSignatureRequestRequest`.
+      required: [signatory_name, signatory_email]
+      properties:
+        signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        signatory_user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/NullableUUID'
+        expires_in_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Token lifetime in days. Defaults to 7 when omitted.
+
+    # signatures
+    InvalidSignatureToken:
+      x-problem:
+        slug: invalid-signature-token
+        status: 403
+        title: Invalid Signature Token
+        description: "Invalid or expired token."
+
+    SignatureRequestNotPending:
+      x-problem:
+        slug: signature-request-not-pending
+        status: 409
+        title: Signature Request Not Pending
+        description: "Signature request is no longer pending."
+
+    TokenRequestEditionMismatch:
+      x-problem:
+        slug: token-request-edition-mismatch
+        status: 403
+        title: Token Request Edition Mismatch
+        description: "Token does not match request edition."
+
+    TokenSignatureEditionMismatch:
+      x-problem:
+        slug: token-signature-edition-mismatch
+        status: 403
+        title: Token Signature Edition Mismatch
+        description: "Token does not match signature edition."
+
+    SignatureRequestHandled:
+      x-problem:
+        slug: signature-request-handled
+        status: 404
+        title: Signature Request Handled
+        description: "Signature request not found or already handled."
+
+    SignatureRequestCompleted:
+      x-problem:
+        slug: signature-request-completed
+        status: 404
+        title: Signature Request Completed
+        description: "Signature request not found or already completed."

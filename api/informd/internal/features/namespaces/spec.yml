@@ -1,0 +1,329 @@
+# The namespaces feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /namespaces:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaces
+      summary: List your namespaces
+      description: |
+        Lists the namespaces the authenticated actor is a member of.
+        Requires a JWT.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: Namespaces the actor belongs to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Namespace'
+    post:
+      tags: [namespaces]
+      operationId: createNamespace
+      summary: Create a namespace
+      description: |
+        Creates a namespace owned by the authenticated actor. The
+        creator becomes the namespace owner.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNamespaceRequest'
+            example:
+              name: My Workspace
+      x-problems: [400, 401, 500]
+      responses:
+        '201':
+          description: Namespace created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Namespace'
+
+  /namespaces/{namespace_id}/members:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceMembers
+      summary: List namespace members
+      description: |
+        Lists the members of a namespace. The actor must be a member of
+        the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Namespace members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NamespaceMember'
+    post:
+      tags: [namespaces]
+      operationId: addNamespaceMember
+      summary: Add a namespace member
+      description: |
+        Adds an actor (by user ID) to the namespace with the given role.
+        The actor must be an admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNamespaceMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              role: member
+      x-problems: [400, 401, 403, 404, 409, 500]
+      responses:
+        '201':
+          description: Member added
+    delete:
+      tags: [namespaces]
+      operationId: removeNamespaceMember
+      summary: Remove a namespace member
+      description: |
+        Removes an actor (by user ID) from the namespace. The actor must
+        be an admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveNamespaceMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '204':
+          description: Member removed
+
+  /namespaces/{namespace_id}/forms:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceForms
+      summary: List a namespace's forms
+      description: |
+        Lists the forms in the namespace (excluding archived). The actor
+        must be a member of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Namespace forms
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Form'
+    post:
+      tags: [namespaces]
+      operationId: createNamespaceForm
+      summary: Create a form in a namespace
+      description: |
+        Creates a draft form inside the namespace. The actor must be an
+        admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../api-spec.yml#/components/schemas/CreateFormRequest'
+            example:
+              title: Registration Form
+      x-problems: [400, 401, 403, 404, 500]
+      responses:
+        '201':
+          description: Form created
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+  /namespaces/{namespace_id}/forms/archived:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceArchivedForms
+      summary: List a namespace's archived forms
+      description: |
+        Lists the archived forms in the namespace. The actor must be a
+        member of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      x-problems: [401, 403, 404, 500]
+      responses:
+        '200':
+          description: Archived namespace forms
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../../../api-spec.yml#/components/schemas/Form'
+
+components:
+  schemas:
+    Namespace:
+      x-go-type: models.Namespace
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A tenant grouping for forms. Mirrors `models.Namespace`.
+      required: [id, owner_id, name, created_at, updated_at]
+      properties:
+        id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        owner_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateNamespaceRequest:
+      type: object
+      description: Request body for namespace creation. Mirrors `models.CreateNamespaceRequest`.
+      required: [name]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    NamespaceMemberRole:
+      x-go-type: models.NamespaceMemberRole
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [member, admin, owner]
+
+    NamespaceMember:
+      x-go-type: models.NamespaceMember
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: Membership of a user in a namespace. Mirrors `models.NamespaceMember`.
+      required: [user_id, namespace_id, role, added_at, added_by]
+      properties:
+        user_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        namespace_id:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/NamespaceMemberRole'
+        added_at:
+          type: string
+          format: date-time
+        added_by:
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    AddNamespaceMemberRequest:
+      type: object
+      description: Request body for adding a namespace member. Mirrors `models.AddNamespaceMemberRequest`.
+      required: [user_id, role]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/NamespaceMemberRole'
+
+    RemoveNamespaceMemberRequest:
+      type: object
+      description: Request body for removing a namespace member. Mirrors `models.RemoveNamespaceMemberRequest`.
+      required: [user_id]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '../../../api-spec.yml#/components/schemas/UUID'
+
+    AddSelfToNamespace:
+      x-problem:
+        slug: add-self-to-namespace
+        status: 400
+        title: Add Self To Namespace
+        description: "Users can't add themselves to namespaces."
+
+    AddOwnerToNamespace:
+      x-problem:
+        slug: add-owner-to-namespace
+        status: 400
+        title: Add Owner To Namespace
+        description: "Owners can't be added to namespaces they own."
+
+    AlreadyNamespaceMember:
+      x-problem:
+        slug: already-namespace-member
+        status: 400
+        title: Already Namespace Member
+        description: "User is already a member of the namespace."
+
+    NotNamespaceMember:
+      x-problem:
+        slug: not-namespace-member
+        status: 400
+        title: Not Namespace Member
+        description: "User is not a member of the namespace."
+
+  parameters:
+    NamespaceID:
+      name: namespace_id
+      in: path
+      required: true
+      description: Namespace ID.
+      schema:
+        $ref: '../../../api-spec.yml#/components/schemas/UUID'

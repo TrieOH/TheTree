@@ -1,0 +1,36 @@
+# The purchases feature's operations, and the components and problems only
+# they use. api-spec.yml imports the paths; tools/problemgen bundles
+# everything into api-spec.gen.yml.
+paths:
+  /purchases:
+    get:
+      tags: [purchases]
+      operationId: listMyPurchases
+      summary: List my purchases
+      description: |
+        Lists the authenticated user's purchases with their items, newest
+        first. The purchases table is the record of truth (issue #61); items
+        come from `purchase_items` — the availability ledger (D4). Read-only;
+        no state transitions.
+      security:
+        - bearerAuth: []
+      x-problems: [401, 500]
+      responses:
+        '200':
+          description: The caller's purchases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyPurchases'
+
+components:
+  schemas:
+    MyPurchases:
+      type: object
+      description: The caller's purchases, newest first.
+      required: [purchases]
+      properties:
+        purchases:
+          type: array
+          items:
+            $ref: '../../../api-spec.yml#/components/schemas/Purchase'
