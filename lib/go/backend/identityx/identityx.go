@@ -34,12 +34,12 @@ const introspectTimeout = 15 * time.Second
 // Backend's mapper like any other error.
 var (
 	ErrEmailNotVerified   = errors.New("verified email required")
-	ErrAPIKeysNotAccepted = errors.New("this service does not accept api keys")
-	ErrInvalidAPIKey      = errors.New("invalid api key")
+	ErrAPIKeysNotAccepted = errors.New("this service doesn't accept API keys; send a bearer token from IdentityX instead")
+	ErrInvalidAPIKey      = errors.New("IdentityX doesn't recognize this API key: it is unknown, revoked or malformed; check the key, or create a new one")
 	// ErrIntrospectionFailed is an API key IdentityX could not be asked
 	// about (unreachable, or an unreadable answer); the cause is wrapped
 	// for the logs.
-	ErrIntrospectionFailed = errors.New("could not check the api key with IdentityX")
+	ErrIntrospectionFailed = errors.New("IdentityX couldn't be reached to check the API key; retry in a moment")
 )
 
 // Option tunes the module per Backend.

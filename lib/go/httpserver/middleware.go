@@ -273,7 +273,7 @@ func maxBodySize(limit int64) func(http.Handler) http.Handler {
 }
 
 // ErrRateLimited is a client over its rate limit.
-var ErrRateLimited = errors.New("rate limit exceeded")
+var ErrRateLimited = errors.New("too many requests from this client in a short time; wait a moment, then retry")
 
 // limiterIdleTTL is how long a client's bucket outlives its last request.
 // A bucket idle that long has refilled, so dropping it changes nothing.
