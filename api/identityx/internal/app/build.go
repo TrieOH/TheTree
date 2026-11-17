@@ -32,6 +32,7 @@ import (
 	"IdentityX/internal/tokens"
 	"lib/backend"
 	carrier "lib/backend/jobs"
+	"lib/crypto"
 	"lib/oauth"
 	"lib/telemetry"
 
@@ -62,6 +63,12 @@ func Build(cfg config.Config) backend.BuildFunc {
 		projectsRepo := projects.NewRepo(q)
 		tosRepo := tos.NewRepo(q)
 
+		// The master key seals every private key and OAuth secret at rest.
+		vault, err := crypto.NewVault(cfg.EncryptionKey)
+		if err != nil {
+			return fmt.Errorf("ENCRYPTION_KEY: %w", err)
+		}
+
 		actionTokens := tokens.NewActionTokenManager(actionTokensRepo, []byte(cfg.HmacSecret), tokens.ActionTokenConfig{
 			VerifyTTL: cfg.EmailVerifyTokenTTL,
 			ResetTTL:  cfg.EmailResetTokenTTL,
@@ -75,10 +82,11 @@ func Build(cfg config.Config) backend.BuildFunc {
 			KeyLifetime:    cfg.KeyLifetime,
 			RefreshTTL:     cfg.RefreshTokenLifetime,
 			RotateInterval: cfg.RotateKeysJobDuration,
+			Vault:          vault,
 		}, keys.WithOnChange(announceJWKSChange(d.Jobs)))
 		// Every scope has keys before the router accepts traffic; the
 		// periodic RotateKeys job keeps them fresh afterwards.
-		err := keysMgr.EnsureAll(ctx)
+		err = keysMgr.EnsureAll(ctx)
 		if err != nil {
 			return fmt.Errorf("ensure crypto keys: %w", err)
 		}
@@ -87,6 +95,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 			Issuer:     cfg.Issuer,
 			AccessTTL:  cfg.AccessTokenLifetime,
 			RefreshTTL: cfg.RefreshTokenLifetime,
+			Vault:      vault,
 		})
 
 		// Setup is complete once any actor exists.
@@ -122,7 +131,15 @@ func Build(cfg config.Config) backend.BuildFunc {
 			oauthProviders: oauth_providers.New(oauth_providers.Deps{
 				Providers: oauthProvidersRepo, LoginStates: oauthProvidersRepo, Projects: projectsRepo,
 				External: authnRepo, Actors: actorsRepo, Authz: authzSvc, Tokens: tokensMgr, Tos: tosOps,
-				Client: resty.New().SetTimeout(15 * time.Second), Meta: oauth.Registry, Tx: d.Tx,
+				Client: resty.New().SetTimeout(15 * time.Second), Tx: d.Tx, Vault: vault,
+				Meta: oauth.NewRegistry(map[string]string{
+					"google": cfg.GoogleRedirectURI,
+					"github": cfg.GithubRedirectURI,
+				}),
+				PlatformCreds: map[string]oauth.Credentials{
+					"google": {ClientID: cfg.GoogleClientID, ClientSecret: cfg.GoogleClientSecret},
+					"github": {ClientID: cfg.GithubClientID, ClientSecret: cfg.GithubClientSecret},
+				},
 			}),
 			organizations: organizations.New(organizations.Deps{
 				Projects: projectsRepo, Actors: actorsRepo, Orgs: organizationsRepo, Keys: keysMgr, Authz: authzSvc, Tx: d.Tx,

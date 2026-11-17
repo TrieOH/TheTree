@@ -33,6 +33,8 @@ type grantCertsDeps struct {
 	events   ports.EventRepo
 	email    *email.Client
 	appURL   string
+	// hmacSecret keys the public verification hashes.
+	hmacSecret []byte
 }
 
 type GrantCertsWorker struct {
@@ -45,9 +47,10 @@ func NewGrantCertsWorker(
 	events ports.EventRepo,
 	email *email.Client,
 	appURL string,
+	hmacSecret string,
 ) *GrantCertsWorker {
 	return &GrantCertsWorker{
-		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
+		certs: certs, editions: editions, events: events, email: email, appURL: appURL, hmacSecret: []byte(hmacSecret),
 	}
 }
 
@@ -75,9 +78,10 @@ func NewGrantCertsForOccurrenceWorker(
 	events ports.EventRepo,
 	email *email.Client,
 	appURL string,
+	hmacSecret string,
 ) *GrantCertsForOccurrenceWorker {
 	return &GrantCertsForOccurrenceWorker{
-		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
+		certs: certs, editions: editions, events: events, email: email, appURL: appURL, hmacSecret: []byte(hmacSecret),
 	}
 }
 
@@ -214,7 +218,7 @@ func (w *grantCertsDeps) emitCerts(ctx context.Context, editionID uuid.UUID, tem
 			RegistrationID:   a.RegistrationID,
 			UserID:           a.UserID,
 			ProgramID:        programID,
-			VerificationHash: crypto.HashHMACSHA256(uuid.New().String()),
+			VerificationHash: crypto.HashHMACSHA256(uuid.New().String(), w.hmacSecret),
 		})
 		if err != nil {
 			errors = append(errors, grantCertsError{UserID: a.UserID, Error: fmt.Sprintf("failed to emit cert: %v", err)})

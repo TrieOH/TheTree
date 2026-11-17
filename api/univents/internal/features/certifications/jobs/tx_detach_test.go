@@ -68,7 +68,7 @@ func TestEmitCerts_EmailGoroutineMustNotShareTheTx(t *testing.T) {
 	// only needs to reach the DB reads for the assertion.
 	emailClient := email.NewClient(email.Config{Host: "127.0.0.1", Port: 1, From: "certs@test.local"})
 
-	w := NewGrantCertsWorker(certs, editions, events, emailClient, "https://events.test")
+	w := NewGrantCertsWorker(certs, editions, events, emailClient, "https://events.test", "test-secret")
 
 	txCtx := context.WithValue(context.Background(), database.TxKeyValue, fakeTx{})
 	errs := w.emitCerts(txCtx, editionID, nil, []models.CertEligibleAttendee{attendee}, nil)

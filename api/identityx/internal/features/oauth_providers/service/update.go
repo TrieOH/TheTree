@@ -3,7 +3,6 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/crypto"
 	"lib/telemetry"
 )
 
@@ -24,7 +23,7 @@ func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProvi
 		}
 	}
 	if payload.ClientSecret != nil {
-		encryptedSecret, err := crypto.EncryptPrivateKey([]byte(*payload.ClientSecret))
+		encryptedSecret, err := o.Vault.EncryptPrivateKey([]byte(*payload.ClientSecret))
 		if err != nil {
 			telemetry.Log().Error("encrypt oauth client secret", telemetry.Err(err))
 			return nil, err

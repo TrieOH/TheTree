@@ -30,6 +30,7 @@ type Config struct {
 	Issuer     string
 	AccessTTL  time.Duration
 	RefreshTTL time.Duration
+	Vault      *crypto.Vault // opens the signing keys
 }
 
 // Option configures a Manager at construction.
@@ -119,11 +120,11 @@ func (m *Manager) Mint(ctx context.Context, actor *models.Actor) (*models.UserTo
 	}
 
 	kp := activeKeyPair.ToKeyPair()
-	accessToken, err := crypto.SignToken(accessPayload, kp)
+	accessToken, err := m.cfg.Vault.SignToken(accessPayload, kp)
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := crypto.SignToken(refreshPayload, kp)
+	refreshToken, err := m.cfg.Vault.SignToken(refreshPayload, kp)
 	if err != nil {
 		return nil, err
 	}

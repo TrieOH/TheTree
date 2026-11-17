@@ -36,6 +36,7 @@ type Config struct {
 	KeyLifetime    time.Duration
 	RefreshTTL     time.Duration
 	RotateInterval time.Duration
+	Vault          *crypto.Vault // seals each generated private key with the master key
 }
 
 // Manager owns key provisioning and rotation for every scope.
@@ -76,7 +77,7 @@ func NewManager(keys ports.CryptoKeysRepo, projects ports.ProjectRepo, cfg Confi
 		keys:     keys,
 		projects: projects,
 		cfg:      cfg,
-		gen:      func(t models.CryptoKeyType) (*crypto.KeyPair, error) { return crypto.GenerateKeyPair(string(t)) },
+		gen:      func(t models.CryptoKeyType) (*crypto.KeyPair, error) { return cfg.Vault.GenerateKeyPair(string(t)) },
 		now:      time.Now,
 	}
 	for _, o := range opts {

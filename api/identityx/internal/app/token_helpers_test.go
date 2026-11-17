@@ -1,7 +1,6 @@
 package app
 
 import (
-	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -12,11 +11,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func testEnv(t *testing.T) {
-	t.Helper()
-	t.Setenv("ENCRYPTION_KEY", strings.Repeat("ab", 32))
-}
-
 func testActor() models.Actor {
 	email := "actor@trieoh.com"
 	return models.Actor{ID: uuid.New(), Email: &email, Type: models.HumanActorType}
@@ -25,8 +19,7 @@ func testActor() models.Actor {
 // newSigningKey mints a fresh signing key pair and returns it plus its ID.
 func newSigningKey(t *testing.T) (*crypto.KeyPair, uuid.UUID) {
 	t.Helper()
-	testEnv(t)
-	kp, err := crypto.GenerateKeyPair("signing")
+	kp, err := testVault.GenerateKeyPair("signing")
 	if err != nil {
 		t.Fatalf("GenerateKeyPair: %v", err)
 	}
@@ -48,7 +41,7 @@ func mintAccessToken(t *testing.T, kp *crypto.KeyPair, keyID, jti uuid.UUID, act
 	if err != nil {
 		t.Fatalf("SigningString: %v", err)
 	}
-	signed, err := crypto.SignToken([]byte(payload), kp)
+	signed, err := testVault.SignToken([]byte(payload), kp)
 	if err != nil {
 		t.Fatalf("SignToken: %v", err)
 	}
@@ -68,7 +61,7 @@ func mintRefreshToken(t *testing.T, kp *crypto.KeyPair, keyID, jti uuid.UUID, cl
 	if err != nil {
 		t.Fatalf("SigningString: %v", err)
 	}
-	signed, err := crypto.SignToken([]byte(payload), kp)
+	signed, err := testVault.SignToken([]byte(payload), kp)
 	if err != nil {
 		t.Fatalf("SignToken: %v", err)
 	}

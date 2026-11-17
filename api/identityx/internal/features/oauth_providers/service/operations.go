@@ -12,6 +12,7 @@ import (
 	tos "IdentityX/internal/features/tos/service"
 	"IdentityX/internal/tokens"
 	"IdentityX/ports"
+	"lib/crypto"
 	"lib/database"
 	"lib/oauth"
 
@@ -39,8 +40,20 @@ type Deps struct {
 	// Tx opens the transactions multi-step writes run in; threaded
 	// from boot, no package-level runner.
 	Tx database.TxRunner
+	// Vault seals the project client secrets and provider tokens at rest.
+	Vault *crypto.Vault
+	// PlatformCreds are IdentityX's own client credentials per provider,
+	// used for logins with no project scope.
+	PlatformCreds map[string]oauth.Credentials
 }
 
 type Operations struct{ Deps }
 
 func New(d Deps) *Operations { return &Operations{Deps: d} }
+
+// platformCreds returns IdentityX's own credentials for a provider,
+// ok=false when the provider is not configured.
+func (o *Operations) platformCreds(provider string) (oauth.Credentials, bool) {
+	creds := o.PlatformCreds[provider]
+	return creds, creds.ClientID != "" && creds.ClientSecret != ""
+}
