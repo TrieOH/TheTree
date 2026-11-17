@@ -108,8 +108,6 @@
 			"OBJECT_STORAGE_SECRET_KEY",
 			"SMTP_USERNAME",
 			"SMTP_PASSWORD",
-			"SIMPLE_AUTH_USER",
-			"SIMPLE_AUTH_PASS",
 			// Authorization=Basic%20<base64(instanceID:token)>, from the stack's OpenTelemetry page.
 			"OTEL_EXPORTER_OTLP_HEADERS",
 		],
