@@ -37,7 +37,6 @@ import FormAdminHeader from "#/features/forms/ui/form-admin-header";
 import {
   allNamespacesArchivedFormsQueryOptions,
   allNamespacesFormsQueryOptions,
-  formResponseCountOnNamespaceQueryOptions,
 } from "#/features/namespaces/api";
 import {
   allFormsStepsQueryOptions,
@@ -82,9 +81,7 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const { formID } = Route.useParams();
   const { namespaceID } = Route.useSearch();
-  const { data: steps = [] } = useQuery(
-    allFormsStepsQueryOptions(formID, namespaceID),
-  );
+  const { data: steps = [] } = useQuery(allFormsStepsQueryOptions(formID));
 
   const formsQueryKey = useMemo(
     () =>
@@ -122,11 +119,7 @@ function RouteComponent() {
     [formsQuery.data, archivedFormsQuery.data, formID],
   );
 
-  const countQuery = useQuery(
-    namespaceID
-      ? formResponseCountOnNamespaceQueryOptions(namespaceID, formID)
-      : formResponseCountQueryOptions(formID),
-  );
+  const countQuery = useQuery(formResponseCountQueryOptions(formID));
 
   const responseCount = countQuery.data?.count ?? 0;
 
@@ -160,7 +153,6 @@ function RouteComponent() {
       editingField?.id ?? "",
       formID,
       editingField?.step_id ?? "",
-      namespaceID,
     ),
     enabled: !!editingField && editingField.type === "select",
   });
@@ -192,7 +184,7 @@ function RouteComponent() {
   // Fetch fields for ALL steps so any step the carousel shows has its fields ready
   const fieldQueries = useQueries({
     queries: steps.map((step) => ({
-      ...allStepsFieldsQueryOptions(formID, step.id, namespaceID),
+      ...allStepsFieldsQueryOptions(formID, step.id),
       enabled: steps.length > 0,
     })),
   });
@@ -241,11 +233,11 @@ function RouteComponent() {
   useLayoutHeader(header);
 
   const { mutate: addStepToForm, isPending: isCreating } = useMutation({
-    mutationFn: (data: StepCreateI) => createStepFn(data, formID, namespaceID),
+    mutationFn: (data: StepCreateI) => createStepFn(data, formID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allFormsStepsQueryOptions(formID, namespaceID).queryKey,
+          allFormsStepsQueryOptions(formID).queryKey,
           (oldData: StepI[] = []) => {
             const newData = [...oldData, response.data];
             return newData.sort((a, b) => a.position_hint - b.position_hint);
@@ -259,12 +251,11 @@ function RouteComponent() {
   });
 
   const { mutate: editStep, isPending: isEditing } = useMutation({
-    mutationFn: (data: StepUpdateI) =>
-      bulkEditStepsFn([data], formID, namespaceID),
+    mutationFn: (data: StepUpdateI) => bulkEditStepsFn([data], formID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({
-          queryKey: allFormsStepsQueryOptions(formID, namespaceID).queryKey,
+          queryKey: allFormsStepsQueryOptions(formID).queryKey,
         });
         setIsEditOpen(false);
         setEditingStep(null);
@@ -310,12 +301,12 @@ function RouteComponent() {
         },
       ];
 
-      return bulkEditStepsFn(updatedSteps, formID, namespaceID);
+      return bulkEditStepsFn(updatedSteps, formID);
     },
     onSuccess: (response, variables) => {
       if (response.success) {
         queryClient.setQueryData(
-          allFormsStepsQueryOptions(formID, namespaceID).queryKey,
+          allFormsStepsQueryOptions(formID).queryKey,
           (oldData: StepI[] = []) => {
             const currentStep = oldData.find((s) => s.id === variables.stepId);
             if (!currentStep) return oldData;
@@ -347,14 +338,13 @@ function RouteComponent() {
 
   const { mutate: addField, isPending: isFieldCreating } = useMutation({
     mutationFn: ({ data, step }: { data: CreateFieldRequestI; step: StepI }) =>
-      createFieldFn(data, formID, step.id, namespaceID),
+      createFieldFn(data, formID, step.id),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({
           queryKey: allStepsFieldsQueryOptions(
             formID,
             fieldStepContext?.id ?? "",
-            namespaceID,
           ).queryKey,
         });
         setIsFieldCreateOpen(false);
@@ -369,7 +359,7 @@ function RouteComponent() {
     mutationFn: ({ data, step }: { data: FieldUpdateI; step: StepI }) => {
       // Separate select_config - it goes through its own endpoint
       const { select_config: _, ...fieldData } = data;
-      return bulkEditFieldsFn([fieldData], formID, step.id, namespaceID);
+      return bulkEditFieldsFn([fieldData], formID, step.id);
     },
     onSuccess: (response) => {
       if (response.success) {
@@ -377,7 +367,6 @@ function RouteComponent() {
           queryKey: allStepsFieldsQueryOptions(
             formID,
             editingField?.step_id ?? "",
-            namespaceID,
           ).queryKey,
         });
         setIsFieldEditOpen(false);
@@ -400,7 +389,7 @@ function RouteComponent() {
       config: CreateFieldSelectConfigRequestI;
       fieldId: string;
       stepId: string;
-    }) => editFieldSelectConfigFn(config, fieldId, formID, stepId, namespaceID),
+    }) => editFieldSelectConfigFn(config, fieldId, formID, stepId),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({
@@ -408,7 +397,6 @@ function RouteComponent() {
             editingField?.id ?? "",
             formID,
             editingField?.step_id ?? "",
-            namespaceID,
           ).queryKey,
         });
         toast.success(response.message || "Select config updated");
@@ -420,14 +408,13 @@ function RouteComponent() {
   const { mutate: deleteFieldMutation, isPending: isFieldDeleting } =
     useMutation({
       mutationFn: ({ fieldId, stepId }: { fieldId: string; stepId: string }) =>
-        deleteFieldFn(fieldId, formID, stepId, namespaceID),
+        deleteFieldFn(fieldId, formID, stepId),
       onSuccess: (response) => {
         if (response.success) {
           queryClient.invalidateQueries({
             queryKey: allStepsFieldsQueryOptions(
               formID,
               deletingField?.step_id ?? "",
-              namespaceID,
             ).queryKey,
           });
           setIsFieldDeleteOpen(false);
@@ -540,12 +527,11 @@ function RouteComponent() {
         };
       });
 
-      bulkEditFieldsFn(updatedFields, formID, step.id, namespaceID)
+      bulkEditFieldsFn(updatedFields, formID, step.id)
         .then((response) => {
           if (response.success) {
             queryClient.invalidateQueries({
-              queryKey: allStepsFieldsQueryOptions(formID, step.id, namespaceID)
-                .queryKey,
+              queryKey: allStepsFieldsQueryOptions(formID, step.id).queryKey,
             });
           } else {
             toast.error(response.message || "Failed to reorder fields");

@@ -18,12 +18,6 @@ import {
   redraftFormFn,
 } from "#/features/forms/api";
 import type { FormI } from "#/features/forms/model";
-import {
-  archiveFormOnNamespaceFn,
-  closeFormOnNamespaceFn,
-  openFormOnNamespaceFn,
-  redraftFormOnNamespaceFn,
-} from "#/features/namespaces/api";
 import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
 import { ConfirmModal } from "#/widgets/modal/modal";
@@ -56,10 +50,7 @@ export default function FormAdminHeader({
   const currentStatus = statusConfig[form.status];
 
   const { mutate: openForm, isPending: isOpenPending } = useMutation({
-    mutationFn: () =>
-      namespaceID
-        ? openFormOnNamespaceFn(namespaceID, form.id)
-        : openFormFn(form.id),
+    mutationFn: () => openFormFn(form.id),
     onSuccess: (response) => {
       if (response.success) {
         onUpdate(response.data);
@@ -70,10 +61,7 @@ export default function FormAdminHeader({
   });
 
   const { mutate: closeForm, isPending: isClosePending } = useMutation({
-    mutationFn: () =>
-      namespaceID
-        ? closeFormOnNamespaceFn(namespaceID, form.id)
-        : closeFormFn(form.id),
+    mutationFn: () => closeFormFn(form.id),
     onSuccess: (response) => {
       if (response.success) {
         onUpdate(response.data);
@@ -84,10 +72,7 @@ export default function FormAdminHeader({
   });
 
   const { mutate: archiveForm, isPending: isArchivePending } = useMutation({
-    mutationFn: () =>
-      namespaceID
-        ? archiveFormOnNamespaceFn(namespaceID, form.id)
-        : archiveFormFn(form.id),
+    mutationFn: () => archiveFormFn(form.id),
     onSuccess: (response) => {
       if (response.success) {
         onUpdate(response.data);
@@ -99,10 +84,7 @@ export default function FormAdminHeader({
   });
 
   const { mutate: redraftForm, isPending: isRedraftPending } = useMutation({
-    mutationFn: () =>
-      namespaceID
-        ? redraftFormOnNamespaceFn(namespaceID, form.id)
-        : redraftFormFn(form.id),
+    mutationFn: () => redraftFormFn(form.id),
     onSuccess: (response) => {
       if (response.success) {
         onUpdate(response.data);

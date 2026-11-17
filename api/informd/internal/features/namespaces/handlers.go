@@ -14,19 +14,6 @@ type Handlers struct {
 
 func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) AddFormMemberNamespaced(ctx context.Context, req openapi.AddFormMemberNamespacedRequestObject) (openapi.AddFormMemberNamespacedResponseObject, error) {
-	err := h.ops.AddFormMember(ctx, models.AddNamespaceFormMemberInput{
-		UserID:      req.Body.UserId,
-		NamespaceID: req.NamespaceId,
-		FormID:      req.FormId,
-		Role:        req.Body.Role,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return openapi.AddFormMemberNamespaced201Response{}, nil
-}
-
 func (h *Handlers) AddNamespaceMember(ctx context.Context, req openapi.AddNamespaceMemberRequestObject) (openapi.AddNamespaceMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddNamespaceMemberInput{
 		UserID:      req.Body.UserId,
@@ -37,22 +24,6 @@ func (h *Handlers) AddNamespaceMember(ctx context.Context, req openapi.AddNamesp
 		return nil, err
 	}
 	return openapi.AddNamespaceMember201Response{}, nil
-}
-
-func (h *Handlers) ArchiveFormNamespaced(ctx context.Context, req openapi.ArchiveFormNamespacedRequestObject) (openapi.ArchiveFormNamespacedResponseObject, error) {
-	form, err := h.ops.ArchiveForm(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.ArchiveFormNamespaced200JSONResponse(*form), nil
-}
-
-func (h *Handlers) CloseFormNamespaced(ctx context.Context, req openapi.CloseFormNamespacedRequestObject) (openapi.CloseFormNamespacedResponseObject, error) {
-	form, err := h.ops.CloseForm(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.CloseFormNamespaced200JSONResponse(*form), nil
 }
 
 func (h *Handlers) CreateNamespace(ctx context.Context, req openapi.CreateNamespaceRequestObject) (openapi.CreateNamespaceResponseObject, error) {
@@ -69,30 +40,6 @@ func (h *Handlers) CreateNamespaceForm(ctx context.Context, req openapi.CreateNa
 		return nil, err
 	}
 	return openapi.CreateNamespaceForm201JSONResponse(*form), nil
-}
-
-func (h *Handlers) GetFormResponseCountNamespaced(ctx context.Context, req openapi.GetFormResponseCountNamespacedRequestObject) (openapi.GetFormResponseCountNamespacedResponseObject, error) {
-	count, err := h.ops.GetFormResponseCount(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.GetFormResponseCountNamespaced200JSONResponse{Count: count}, nil
-}
-
-func (h *Handlers) GetFullFormNamespaced(ctx context.Context, req openapi.GetFullFormNamespacedRequestObject) (openapi.GetFullFormNamespacedResponseObject, error) {
-	form, err := h.ops.GetFullForm(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.GetFullFormNamespaced200JSONResponse(*form), nil
-}
-
-func (h *Handlers) ListFormMembersNamespaced(ctx context.Context, req openapi.ListFormMembersNamespacedRequestObject) (openapi.ListFormMembersNamespacedResponseObject, error) {
-	members, err := h.ops.ListFormMembers(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.ListFormMembersNamespaced200JSONResponse{Items: members}, nil
 }
 
 func (h *Handlers) ListNamespaceArchivedForms(ctx context.Context, req openapi.ListNamespaceArchivedFormsRequestObject) (openapi.ListNamespaceArchivedFormsResponseObject, error) {
@@ -125,34 +72,6 @@ func (h *Handlers) ListNamespaces(ctx context.Context, _ openapi.ListNamespacesR
 		return nil, err
 	}
 	return openapi.ListNamespaces200JSONResponse{Items: namespaces}, nil
-}
-
-func (h *Handlers) OpenFormNamespaced(ctx context.Context, req openapi.OpenFormNamespacedRequestObject) (openapi.OpenFormNamespacedResponseObject, error) {
-	form, err := h.ops.OpenForm(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.OpenFormNamespaced200JSONResponse(*form), nil
-}
-
-func (h *Handlers) RedraftFormNamespaced(ctx context.Context, req openapi.RedraftFormNamespacedRequestObject) (openapi.RedraftFormNamespacedResponseObject, error) {
-	form, err := h.ops.ReDraftForm(ctx, req.NamespaceId, req.FormId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.RedraftFormNamespaced200JSONResponse(*form), nil
-}
-
-func (h *Handlers) RemoveFormMemberNamespaced(ctx context.Context, req openapi.RemoveFormMemberNamespacedRequestObject) (openapi.RemoveFormMemberNamespacedResponseObject, error) {
-	err := h.ops.RemoveFormMember(ctx, models.RemoveNamespaceFormMemberInput{
-		UserID:      req.Body.UserId,
-		NamespaceID: req.NamespaceId,
-		FormID:      req.FormId,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return openapi.RemoveFormMemberNamespaced204Response{}, nil
 }
 
 func (h *Handlers) RemoveNamespaceMember(ctx context.Context, req openapi.RemoveNamespaceMemberRequestObject) (openapi.RemoveNamespaceMemberResponseObject, error) {

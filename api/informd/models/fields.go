@@ -142,23 +142,6 @@ type CreateStepFieldInput struct {
 	SelectConfig *CreateFieldSelectConfigInput
 }
 
-type CreateNamespacedStepFieldInput struct {
-	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
-	NamespaceID  uuid.UUID
-	FormID       uuid.UUID
-	StepID       uuid.UUID
-	Key          string
-	Title        string
-	Description  *string
-	PositionHint int
-	Required     bool
-	Type         FieldType
-	Placeholder  *json.RawMessage
-	DefaultValue *json.RawMessage
-	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigInput
-}
-
 type UpdateStepFieldInput struct {
 	StepID       uuid.UUID
 	ID           uuid.UUID
@@ -174,41 +157,7 @@ type UpdateStepFieldInput struct {
 	SelectConfig *CreateFieldSelectConfigInput
 }
 
-type UpdateNamespacedStepFieldInput struct {
-	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
-	NamespaceID  uuid.UUID
-	FormID       uuid.UUID
-	StepID       uuid.UUID
-	ID           uuid.UUID
-	Key          string
-	Title        string
-	Description  *string
-	PositionHint int
-	Required     bool
-	Type         FieldType
-	Placeholder  *json.RawMessage
-	DefaultValue *json.RawMessage
-	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigInput
-}
-
 func UpdateStepFieldInputToField(i UpdateStepFieldInput) Field {
-	return Field{
-		ID:           i.ID,
-		StepID:       i.StepID,
-		Key:          i.Key,
-		Title:        i.Title,
-		Description:  i.Description,
-		PositionHint: i.PositionHint,
-		Required:     i.Required,
-		Type:         i.Type,
-		Placeholder:  i.Placeholder,
-		DefaultValue: i.DefaultValue,
-		Config:       i.Config,
-	}
-}
-
-func UpdateNamespacedStepFieldInputToField(i UpdateNamespacedStepFieldInput) Field {
 	return Field{
 		ID:           i.ID,
 		StepID:       i.StepID,

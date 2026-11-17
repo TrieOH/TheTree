@@ -15,21 +15,10 @@ import type {
  * @param formData - The data for the new field.
  * @param form_id - The ID of the Form to which the Field belongs.
  * @param step_id - The ID of the Step to which the Field belongs.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves to the API response containing the newly created Field.
  */
 export const createFieldFn = createClientOnlyFn(
-  (
-    formData: CreateFieldRequestI,
-    form_id: string,
-    step_id: string,
-    namespace_id?: string,
-  ) => {
-    if (namespace_id)
-      return authFetcher.post<FieldI>(
-        `namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields`,
-        formData,
-      );
+  (formData: CreateFieldRequestI, form_id: string, step_id: string) => {
     return authFetcher.post<FieldI>(
       `/forms/${form_id}/steps/${step_id}/fields`,
       formData,
@@ -42,21 +31,10 @@ export const createFieldFn = createClientOnlyFn(
  * @param formData - The data for the updated fields.
  * @param form_id - The ID of the Form to which the Fields belong.
  * @param step_id - The ID of the Step to which the Fields belong.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves to the API response containing the updated Fields.
  */
 export const bulkEditFieldsFn = createClientOnlyFn(
-  (
-    formData: FieldUpdateI[],
-    form_id: string,
-    step_id: string,
-    namespace_id?: string,
-  ) => {
-    if (namespace_id)
-      return authFetcher.put<FieldI>(
-        `namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields`,
-        formData,
-      );
+  (formData: FieldUpdateI[], form_id: string, step_id: string) => {
     return authFetcher.put<FieldI>(
       `/forms/${form_id}/steps/${step_id}/fields`,
       formData,
@@ -69,20 +47,10 @@ export const bulkEditFieldsFn = createClientOnlyFn(
  * @param field_id - The ID of the Field to delete.
  * @param form_id - The ID of the Form to which the Field belongs.
  * @param step_id - The ID of the Step to which the Field belongs.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves when the Field is deleted.
  */
 export const deleteFieldFn = createClientOnlyFn(
-  (
-    field_id: string,
-    form_id: string,
-    step_id: string,
-    namespace_id?: string,
-  ) => {
-    if (namespace_id)
-      return authFetcher.delete<void>(
-        `namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields/${field_id}`,
-      );
+  (field_id: string, form_id: string, step_id: string) => {
     return authFetcher.delete<void>(
       `/forms/${form_id}/steps/${step_id}/fields/${field_id}`,
     );
@@ -93,17 +61,10 @@ export const deleteFieldFn = createClientOnlyFn(
  * Fetches all Fields for a specific Step from the server.
  * @param form_id - The ID of the Form for which to fetch fields.
  * @param step_id - The ID of the Step for which to fetch fields.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves to an array of Field objects.
  */
 export const getAllUserFieldsFn = createClientOnlyFn(
-  async (form_id: string, step_id: string, namespace_id?: string) => {
-    if (namespace_id)
-      return itemsOf<FieldI>(
-        await tanstackQueryFetcher<unknown>(
-          `/namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields`,
-        ),
-      );
+  async (form_id: string, step_id: string) => {
     return itemsOf<FieldI>(
       await tanstackQueryFetcher<unknown>(
         `/forms/${form_id}/steps/${step_id}/fields`,
@@ -116,17 +77,15 @@ export const getAllUserFieldsFn = createClientOnlyFn(
  * Query options for fetching all fields of a specific Step.
  * @param form_id - The ID of the Form for which to fetch fields.
  * @param step_id - The ID of the Step for which to fetch fields.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns An object containing the query key and query function for fetching all fields of the specified Step.
  */
 export const allStepsFieldsQueryOptions = (
   form_id: string,
   step_id: string,
-  namespace_id?: string,
 ) => {
   return queryOptions({
-    queryKey: ["forms", form_id, "steps", step_id, "fields", namespace_id],
-    queryFn: () => getAllUserFieldsFn(form_id, step_id, namespace_id),
+    queryKey: ["forms", form_id, "steps", step_id, "fields"],
+    queryFn: () => getAllUserFieldsFn(form_id, step_id),
   });
 };
 
@@ -138,7 +97,6 @@ export const allStepsFieldsQueryOptions = (
  * @param field_id - The ID of the Field.
  * @param form_id - The ID of the Form to which the Field belongs.
  * @param step_id - The ID of the Step to which the Field belongs.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves to the updated select configuration.
  */
 export const editFieldSelectConfigFn = createClientOnlyFn(
@@ -147,13 +105,7 @@ export const editFieldSelectConfigFn = createClientOnlyFn(
     field_id: string,
     form_id: string,
     step_id: string,
-    namespace_id?: string,
   ) => {
-    if (namespace_id)
-      return authFetcher.put<FieldSelectConfigI>(
-        `namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields/${field_id}/select`,
-        formData,
-      );
     return authFetcher.put<FieldSelectConfigI>(
       `/forms/${form_id}/steps/${step_id}/fields/${field_id}/select`,
       formData,
@@ -166,20 +118,10 @@ export const editFieldSelectConfigFn = createClientOnlyFn(
  * @param field_id - The ID of the Field.
  * @param form_id - The ID of the Form to which the Field belongs.
  * @param step_id - The ID of the Step to which the Field belongs.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns A promise that resolves to the select configuration.
  */
 export const getFieldSelectConfigFn = createClientOnlyFn(
-  async (
-    field_id: string,
-    form_id: string,
-    step_id: string,
-    namespace_id?: string,
-  ) => {
-    if (namespace_id)
-      return tanstackQueryFetcher<FieldSelectConfigI>(
-        `/namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields/${field_id}/select`,
-      );
+  async (field_id: string, form_id: string, step_id: string) => {
     return tanstackQueryFetcher<FieldSelectConfigI>(
       `/forms/${form_id}/steps/${step_id}/fields/${field_id}/select`,
     );
@@ -191,14 +133,12 @@ export const getFieldSelectConfigFn = createClientOnlyFn(
  * @param field_id - The ID of the Field.
  * @param form_id - The ID of the Form to which the Field belongs.
  * @param step_id - The ID of the Step to which the Field belongs.
- * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to.
  * @returns An object containing the query key and query function for fetching the select configuration of the specified Field.
  */
 export const allSelectConfigsQueryOptions = (
   field_id: string,
   form_id: string,
   step_id: string,
-  namespace_id?: string,
 ) => {
   return queryOptions({
     queryKey: [
@@ -209,9 +149,7 @@ export const allSelectConfigsQueryOptions = (
       "fields",
       field_id,
       "select_config",
-      namespace_id,
     ],
-    queryFn: () =>
-      getFieldSelectConfigFn(field_id, form_id, step_id, namespace_id),
+    queryFn: () => getFieldSelectConfigFn(field_id, form_id, step_id),
   });
 };
