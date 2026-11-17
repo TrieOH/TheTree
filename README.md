@@ -20,7 +20,7 @@ tag here (see [Releases & deploys](#releases--deploys)).
 ## Repo layout
 
 ```
-api/<svc>/       # one Go service per dir (cmd/, internal/, db/, api-spec.yml)
+api/<svc>/       # one Go service per dir (cmd/, internal/, db/, api-spec.yml + each feature's spec.yml)
 front/<svc>/     # one React SPA per dir
 lib/go/          # shared Go library
 lib/ts/          # shared TS packages: orval clients, ui-react/ui-solid,
@@ -174,7 +174,8 @@ the orval TS clients under `lib/ts/<svc>/client/` and every
 `worker-configuration.d.ts` are gitignored and regenerated in CI/builds. The
 Workers types come only from `wrangler.jsonc` and the pinned wrangler, never
 from a local `.env`. The pre-commit hook regenerates the TS clients when they
-are missing or an `api-spec.yml` is staged (and type-checks the fronts that
+are missing or a spec (`api-spec.yml`, `problems.yml` or a feature's `spec.yml`)
+is staged (and type-checks the fronts that
 import them), and a Worker's types (fronts and `api/<svc>/cloudflare`) when missing or its
 `wrangler.jsonc` is staged. Pages sites (a `wrangler.jsonc` with
 `pages_build_output_dir`) are static and skipped.
