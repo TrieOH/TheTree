@@ -19,6 +19,10 @@ func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*m
 	if err != nil {
 		return nil, err
 	}
+	_, err = o.Authz.Wallet(ctx, intent.WalletID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return nil, err
+	}
 	if intent.Status == models.IntentStatusRefunded {
 		return intent, nil // idempotent
 	}
