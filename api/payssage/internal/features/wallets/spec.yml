@@ -8,14 +8,12 @@ paths:
       operationId: listWallets
       summary: List your wallets
       description: |
-        Lists the wallets owned by the authenticated actor. NOTE: this
-        endpoint currently returns 201 (a known quirk of the current
-        implementation) — documented as-is.
+        Lists the wallets owned by the authenticated actor.
       security:
         - bearerAuth: []
       x-problems: [401, 500]
       responses:
-        '201':
+        '200':
           description: Wallets owned by the actor
           content:
             application/json:
@@ -62,9 +60,7 @@ paths:
       operationId: getWallet
       summary: Get a wallet by ID
       description: |
-        Fetches a single wallet. NOTE: this endpoint currently returns
-        201 (a known quirk of the current implementation) — documented
-        as-is.
+        Fetches a single wallet.
       security:
         - bearerAuth: []
         - apiKeyAuth: []
@@ -72,7 +68,7 @@ paths:
         - $ref: '../../../api-spec.yml#/components/parameters/WalletID'
       x-problems: [401, 404, 500]
       responses:
-        '201':
+        '200':
           description: The requested wallet
           content:
             application/json:
@@ -186,7 +182,7 @@ paths:
         - $ref: '../../../api-spec.yml#/components/parameters/OrganizationID'
       x-problems: [401, 403, 404, 500]
       responses:
-        '201':
+        '200':
           description: Organization wallets
           content:
             application/json:
