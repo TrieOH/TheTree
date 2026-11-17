@@ -248,6 +248,31 @@ func TestRejects(t *testing.T) {
 			spec: spec,
 			want: "slug not-found is declared by both",
 		},
+		"message without error": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., message: why }\n"),
+			spec: spec,
+			want: "a message belongs to a problem's error",
+		},
+		"error without message": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad }\n"),
+			spec: spec,
+			want: "needs a message",
+		},
+		"message repeats the title": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad Thing, description: Bad., error: ErrBad, message: bad thing. }\n"),
+			spec: spec,
+			want: "repeats the title",
+		},
+		"error on a problem with members": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: why it failed }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
+			spec: spec,
+			want: "answered from a typed error",
+		},
+		"error not a Go name": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: badError, message: why it failed }\n"),
+			spec: spec,
+			want: "must be an exported Go identifier starting with Err",
+		},
 		"untyped ref": {
 			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad. }\n      required: [p]\n      properties:\n        p: { $ref: '../problems.yml#/components/schemas/Problem' }\n"),
 			spec: spec,
@@ -401,5 +426,61 @@ func TestFeatureSpecRejects(t *testing.T) {
 				t.Fatalf("err = %v, want it to mention %q", err, c.want)
 			}
 		})
+	}
+}
+
+const namedProblems = `
+components:
+  schemas:
+    AddSelf:
+      x-problem:
+        slug: add-self
+        status: 400
+        title: Add Self
+        description: The caller tried to add themselves.
+        error: ErrAddSelf
+        message: You can't add yourself to the project; ask an admin to add you.
+`
+
+func TestNamedErrors(t *testing.T) {
+	specPath := fixture(t, namedProblems, "openapi: 3.1.0\npaths:\n  /x:\n    post:\n      x-problems: [add-self]\n")
+	dir := filepath.Dir(specPath)
+	err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module svc\n\ngo 1.27\n"), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundled, src := generate(t, specPath)
+
+	for _, want := range []string{`"svc/errs"`, "{errs.ErrAddSelf, AddSelf}"} {
+		if !strings.Contains(src, want) {
+			t.Errorf("package lacks %s", want)
+		}
+	}
+	x := dig(t, bundled, "components", "schemas", "AddSelfProblem", "x-problem").(map[string]any)
+	if _, ok := x["error"]; ok {
+		t.Error("the bundle shows the Go error's name")
+	}
+	errsSrc, err := os.ReadFile(filepath.Join(dir, errsFile)) //nolint:gosec // test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `ErrAddSelf = errors.New("You can't add yourself to the project; ask an admin to add you.")`
+	if !strings.Contains(string(errsSrc), want) {
+		t.Errorf("errs lacks %s:\n%s", want, errsSrc)
+	}
+}
+
+func TestSharedProblemNamesNoError(t *testing.T) {
+	specPath := fixture(t, ownProblems, spec)
+	root := filepath.Dir(filepath.Dir(specPath))
+	shared := strings.Replace(sharedProblems, "description: Missing. }", "description: Missing., error: ErrGone, message: it is gone for good }", 1)
+	err := os.WriteFile(filepath.Join(root, "problems.yml"), []byte(shared), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Dir(specPath)
+	err = run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
+	if err == nil || !strings.Contains(err.Error(), "names no error") {
+		t.Fatalf("err = %v", err)
 	}
 }
