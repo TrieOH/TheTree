@@ -36,15 +36,6 @@ type CreateFormStepInput struct {
 	PositionHint int       `json:"position_hint"`
 }
 
-type CreateNamespacedFormStepInput struct {
-	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
-	NamespaceID  uuid.UUID `json:"namespace_id"`
-	FormID       uuid.UUID `json:"form_id"`
-	Title        string    `json:"title"`
-	Description  *string   `json:"description"`
-	PositionHint int       `json:"position_hint"`
-}
-
 func ToBulkEditStepsParams(s Step) sqlc.BulkEditStepsParams {
 	return sqlc.BulkEditStepsParams{
 		ID:           s.ID,
@@ -63,27 +54,7 @@ type UpdateFormStepInput struct {
 	PositionHint int
 }
 
-type UpdateNamespacedFormStepInput struct {
-	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
-	NamespaceID  uuid.UUID
-	FormID       uuid.UUID
-	ID           uuid.UUID
-	Title        string
-	Description  *string
-	PositionHint int
-}
-
 func UpdateFormStepInputToStep(i UpdateFormStepInput) Step {
-	return Step{
-		ID:           i.ID,
-		FormID:       i.FormID,
-		Title:        i.Title,
-		Description:  i.Description,
-		PositionHint: i.PositionHint,
-	}
-}
-
-func UpdateNamespacedFormStepInputToStep(i UpdateNamespacedFormStepInput) Step {
 	return Step{
 		ID:           i.ID,
 		FormID:       i.FormID,
