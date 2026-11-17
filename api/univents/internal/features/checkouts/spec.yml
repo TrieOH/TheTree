@@ -459,6 +459,8 @@ components:
         status: 400
         title: Edition Not Published
         description: "Edition is not published."
+        error: ErrEditionNotPublished
+        message: "This edition isn't published yet, so it can't be bought from or registered for. Publish it first."
 
     NoPaymentConfig:
       x-problem:
@@ -466,6 +468,8 @@ components:
         status: 400
         title: No Payment Config
         description: "Event has no payment config."
+        error: ErrNoPaymentConfig
+        message: "This event hasn't connected a payment account, so it can't sell paid items. Ask its organizer to connect one."
 
     NoItems:
       x-problem:
@@ -473,6 +477,8 @@ components:
         status: 400
         title: No Items
         description: "Checkout requires at least one item."
+        error: ErrNoItems
+        message: "The cart is empty. Add at least one item to check out."
 
     QuantityBelowOne:
       x-problem:
@@ -480,6 +486,8 @@ components:
         status: 400
         title: Quantity Below One
         description: "Item quantity must be at least 1."
+        error: ErrQuantityBelowOne
+        message: "Every item's quantity must be at least 1."
 
     TicketQuantity:
       x-problem:
@@ -487,6 +495,8 @@ components:
         status: 400
         title: Ticket Quantity
         description: "Ticket lines are one per person (quantity must be 1)."
+        error: ErrTicketQuantity
+        message: "A ticket line is one person's ticket, so its quantity must be 1. Add one line per attendee."
 
     TicketNeedsAttendee:
       x-problem:
@@ -494,6 +504,8 @@ components:
         status: 400
         title: Ticket Needs Attendee
         description: "Ticket lines require an attendee."
+        error: ErrTicketNeedsAttendee
+        message: "Every ticket line needs the attendee it is for."
 
     TicketNeedsAttendeeEmail:
       x-problem:
@@ -501,6 +513,8 @@ components:
         status: 400
         title: Ticket Needs Attendee Email
         description: "Ticket lines require an attendee email."
+        error: ErrTicketNeedsAttendeeEmail
+        message: "Every ticket line needs its attendee's email."
 
     OneTicketPerPerson:
       x-problem:
@@ -508,6 +522,8 @@ components:
         status: 400
         title: One Ticket Per Person
         description: "Only one ticket per person."
+        error: ErrOneTicketPerPerson
+        message: "The cart has more than one ticket for the same person, and each person holds one ticket per edition."
 
     DuplicateProductLine:
       x-problem:
@@ -515,6 +531,8 @@ components:
         status: 400
         title: Duplicate Product Line
         description: "Duplicate product line."
+        error: ErrDuplicateProductLine
+        message: "The cart has the same product twice. Merge them into one line with the combined quantity."
 
     ProgramQuantity:
       x-problem:
@@ -522,6 +540,8 @@ components:
         status: 400
         title: Program Quantity
         description: "Program lines are one session per purchase (quantity must be 1)."
+        error: ErrProgramQuantity
+        message: "An activity line is one seat in one session, so its quantity must be 1."
 
     DuplicateProgramLine:
       x-problem:
@@ -529,6 +549,8 @@ components:
         status: 400
         title: Duplicate Program Line
         description: "Duplicate program line."
+        error: ErrDuplicateProgramLine
+        message: "The cart has the same activity session twice. Keep one line."
 
     InvalidItemType:
       x-problem:
@@ -536,6 +558,8 @@ components:
         status: 400
         title: Invalid Item Type
         description: "Invalid item_type."
+        error: ErrInvalidItemType
+        message: "item_type must be ticket, product or program_occurrence."
 
     ProgramNeedsTicket:
       x-problem:
@@ -543,6 +567,8 @@ components:
         status: 400
         title: Program Needs Ticket
         description: "Program items require a ticket item."
+        error: ErrProgramNeedsTicket
+        message: "Activities can only be bought together with a ticket in the same cart. Add a ticket."
 
     ProgramNeedsTicketInCart:
       x-problem:
@@ -550,6 +576,8 @@ components:
         status: 400
         title: Program Needs Ticket In Cart
         description: "Program items require a ticket item in the same cart."
+        error: ErrProgramNeedsTicketInCart
+        message: "Activities attach to a ticket's registration, and the cart has no ticket. Add a ticket to the same cart."
 
     AttendeeEmailUnknown:
       x-problem:
@@ -557,6 +585,8 @@ components:
         status: 400
         title: Attendee Email Unknown
         description: "Attendee email does not match an account."
+        error: ErrAttendeeEmailUnknown
+        message: "No account uses this attendee email. Ask the attendee to sign up first, or check the address."
 
     AttendeeUserMismatch:
       x-problem:
@@ -564,6 +594,8 @@ components:
         status: 400
         title: Attendee User Mismatch
         description: "Attendee user_id does not match the email."
+        error: ErrAttendeeUserMismatch
+        message: "The attendee's user_id and email belong to different accounts. Send one of them, or both for the same account."
 
     CardTokenRequired:
       x-problem:
@@ -571,6 +603,8 @@ components:
         status: 400
         title: Card Token Required
         description: "Card_token is required for card payments."
+        error: ErrCardTokenRequired
+        message: "Card payments need card_token, the token the payment form creates for the card."
 
     PaymentMethodIDRequired:
       x-problem:
@@ -578,6 +612,8 @@ components:
         status: 400
         title: Payment Method ID Required
         description: "Payment_method_id is required for card payments."
+        error: ErrPaymentMethodIDRequired
+        message: "Card payments need payment_method_id, the card brand the payment form detected."
 
     InstallmentsBelowOne:
       x-problem:
@@ -585,6 +621,8 @@ components:
         status: 400
         title: Installments Below One
         description: "Installments must be at least 1."
+        error: ErrInstallmentsBelowOne
+        message: "installments must be at least 1."
 
     InvalidPaymentMethod:
       x-problem:
@@ -592,6 +630,8 @@ components:
         status: 400
         title: Invalid Payment Method
         description: "Invalid payment_method."
+        error: ErrInvalidPaymentMethod
+        message: "payment_method must be pix, credit_card or debit_card."
 
     UnknownItem:
       x-problem:
@@ -599,6 +639,8 @@ components:
         status: 400
         title: Unknown Item
         description: "Unknown item."
+        error: ErrUnknownItem
+        message: "The cart has an item that doesn't exist. Reload the store and add it again."
 
     ItemNotInEdition:
       x-problem:
@@ -606,6 +648,8 @@ components:
         status: 400
         title: Item Not In Edition
         description: "Item does not belong to this edition."
+        error: ErrItemNotInEdition
+        message: "The cart has an item from another edition. Check out each edition's items separately."
 
     PersonHasTicket:
       x-problem:
@@ -613,6 +657,8 @@ components:
         status: 409
         title: Person Has Ticket
         description: "This person already has a ticket for this edition."
+        error: ErrPersonHasTicket
+        message: "This person already holds a ticket for this edition, so another can't be bought for them."
 
     ItemsUnavailable:
       x-problem:
@@ -620,6 +666,8 @@ components:
         status: 409
         title: Items Unavailable
         description: "Some items are no longer available."
+        error: ErrItemsUnavailable
+        message: "Some items sold out or no longer have enough stock while you checked out. Update the cart and try again."
 
     PaymentRejected:
       x-problem:
@@ -639,6 +687,8 @@ components:
         status: 409
         title: Already Refunded
         description: "Purchase already refunded."
+        error: ErrAlreadyRefunded
+        message: "This purchase was already refunded; there's nothing more to refund."
 
     FreeOrderRefund:
       x-problem:
@@ -646,6 +696,8 @@ components:
         status: 400
         title: Free Order Refund
         description: "Purchase has no payment intent (free order) and cannot be refunded."
+        error: ErrFreeOrderRefund
+        message: "This purchase was free, so there is no payment to refund. Cancel the registration instead."
 
     PurchaseStatus:
       x-problem:

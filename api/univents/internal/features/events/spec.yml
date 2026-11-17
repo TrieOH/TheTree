@@ -398,6 +398,8 @@ components:
         status: 400
         title: Event Not Draft
         description: "Cannot publish non draft event."
+        error: ErrEventNotDraft
+        message: "Only a draft event can be published, and this one isn't a draft."
 
     EventNotActive:
       x-problem:
@@ -405,3 +407,5 @@ components:
         status: 400
         title: Event Not Active
         description: "Cannot discontinue non active event."
+        error: ErrEventNotActive
+        message: "Only an active event can be discontinued, and this one isn't active."

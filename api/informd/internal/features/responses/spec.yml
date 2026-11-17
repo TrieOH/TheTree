@@ -69,3 +69,5 @@ components:
         status: 400
         title: Form Not Open For Responses
         description: "Form is not open for responses."
+        error: ErrFormNotOpenForResponses
+        message: "This form isn't open, so it doesn't accept responses. Ask its owner to open it."

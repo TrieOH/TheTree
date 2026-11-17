@@ -367,6 +367,8 @@ components:
         status: 400
         title: Missing OAuth Code
         description: "Missing code."
+        error: ErrMissingOAuthCode
+        message: "The provider's redirect has no code. Start the login again from the beginning."
 
     MissingOAuthState:
       x-problem:
@@ -374,6 +376,8 @@ components:
         status: 400
         title: Missing OAuth State
         description: "Missing state."
+        error: ErrMissingOAuthState
+        message: "The provider's redirect has no state. Start the login again from the beginning."
 
     OAuthStateNotFound:
       x-problem:
@@ -381,6 +385,8 @@ components:
         status: 400
         title: OAuth State Not Found
         description: "Invalid or expired OAuth state; start a new login."
+        error: ErrOAuthStateNotFound
+        message: "This login's state is unknown or has expired. Start a new login."
 
     OAuthStateMismatch:
       x-problem:
@@ -388,6 +394,8 @@ components:
         status: 400
         title: OAuth State Mismatch
         description: "Invalid OAuth state."
+        error: ErrOAuthStateMismatch
+        message: "The redirect's state doesn't match the login that was started, so it was rejected to prevent a forged login. Start a new login."
 
     OAuthStateExpired:
       x-problem:
@@ -395,6 +403,8 @@ components:
         status: 400
         title: OAuth State Expired
         description: "OAuth state expired; start a new login."
+        error: ErrOAuthStateExpired
+        message: "This login took too long and its state expired. Start a new login."
 
     OAuthCodeExchange:
       x-problem:
@@ -402,6 +412,8 @@ components:
         status: 401
         title: OAuth Code Exchange
         description: "Failed to exchange code."
+        error: ErrOAuthCodeExchange
+        message: "The OAuth provider refused to exchange the login code for a token, most often because the code was already used or expired. Start a new login."
 
     OAuthEmptyToken:
       x-problem:
@@ -409,6 +421,8 @@ components:
         status: 401
         title: OAuth Empty Token
         description: "Empty token from provider."
+        error: ErrOAuthEmptyToken
+        message: "The OAuth provider answered without an access token. Start a new login; if it keeps happening, check the provider's app configuration."
 
     OAuthUserinfo:
       x-problem:
@@ -416,6 +430,8 @@ components:
         status: 401
         title: OAuth Userinfo
         description: "Userinfo request failed."
+        error: ErrOAuthUserinfo
+        message: "The OAuth provider didn't return the account's profile. Start a new login; if it keeps happening, the provider may be down."
 
     OAuthIncompleteUserinfo:
       x-problem:
@@ -423,6 +439,8 @@ components:
         status: 401
         title: OAuth Incomplete Userinfo
         description: "Incomplete userinfo from provider."
+        error: ErrOAuthIncompleteUserinfo
+        message: "The OAuth provider's profile lacks an account id or an email, which IdentityX needs to sign you in. Add an email to that account and try again."
 
     OAuthGitHubEmail:
       x-problem:
@@ -430,6 +448,8 @@ components:
         status: 401
         title: OAuth GitHub Email
         description: "Could not fetch github email."
+        error: ErrOAuthGitHubEmail
+        message: "GitHub didn't share a verified email for this account. Verify an email on GitHub and allow the app to read it, then try again."
 
     UnsupportedProvider:
       x-problem:

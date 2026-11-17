@@ -304,6 +304,8 @@ components:
         status: 400
         title: Fields Across Steps
         description: "All fields must belong to the same step."
+        error: ErrFieldsAcrossSteps
+        message: "A bulk edit changes the fields of one step, and the request mixes fields from several. Send one request per step."
 
     InvalidSelectOptions:
       x-problem:
@@ -311,6 +313,8 @@ components:
         status: 400
         title: Invalid Select Options
         description: "Invalid options."
+        error: ErrInvalidSelectOptions
+        message: "The select options couldn't be read. Send options as a list of objects shaped like the field's select config."
 
   parameters:
     StepID:

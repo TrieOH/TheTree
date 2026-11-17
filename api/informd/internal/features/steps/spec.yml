@@ -139,3 +139,5 @@ components:
         status: 400
         title: Steps Across Forms
         description: "All steps must belong to the same form."
+        error: ErrStepsAcrossForms
+        message: "A bulk edit changes the steps of one form, and the request mixes steps from several. Send one request per form."

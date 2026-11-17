@@ -155,6 +155,8 @@ components:
         status: 400
         title: Invalid Flow
         description: "Invalid flow."
+        error: ErrInvalidFlow
+        message: "The OAuth flow must be collector or seller."
 
     InvalidProvider:
       x-problem:
@@ -162,6 +164,8 @@ components:
         status: 400
         title: Invalid Provider
         description: "Invalid provider."
+        error: ErrInvalidProvider
+        message: "The callback names a payment provider Payssage doesn't support. Start the connection again from Payssage."
 
     ProviderMismatch:
       x-problem:
@@ -169,6 +173,8 @@ components:
         status: 400
         title: Provider Mismatch
         description: "Provider mismatch."
+        error: ErrProviderMismatch
+        message: "The resource was connected through a different provider than the one in the request. Use the provider it was connected with."
 
     SellerFlowNeedsWallet:
       x-problem:
@@ -176,3 +182,5 @@ components:
         status: 400
         title: Seller Flow Needs Wallet
         description: "Wallet_id is required for seller flow."
+        error: ErrSellerFlowNeedsWallet
+        message: "Connecting a seller needs the wallet to connect it to. Send wallet_id."

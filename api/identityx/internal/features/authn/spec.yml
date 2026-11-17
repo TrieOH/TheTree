@@ -517,6 +517,8 @@ components:
         status: 401
         title: Invalid Credentials
         description: "Invalid email or password."
+        error: ErrInvalidCredentials
+        message: "The email or password is wrong. Check both and try again, or reset your password."
 
     SetupComplete:
       x-problem:
@@ -524,3 +526,5 @@ components:
         status: 409
         title: Setup Complete
         description: "Setup already complete."
+        error: ErrSetupComplete
+        message: "IdentityX is already set up, so setup can't run again. Sign in with an existing platform admin instead."

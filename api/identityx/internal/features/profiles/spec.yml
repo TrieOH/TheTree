@@ -253,6 +253,8 @@ components:
         status: 403
         title: Not Profile Owner
         description: "Insufficient permissions."
+        error: ErrNotProfileOwner
+        message: "This is someone else's platform profile, and only its owner may change it."
 
     ProfileSchemaViolation:
       x-problem:

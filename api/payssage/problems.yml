@@ -9,6 +9,8 @@ components:
         status: 403
         title: Not Resource Owner
         description: "Insufficient permissions."
+        error: ErrNotResourceOwner
+        message: "This resource belongs to someone else's personal account, and only its owner may change it."
 
     ProviderRequestFailed:
       x-problem:
@@ -16,6 +18,10 @@ components:
         status: 502
         title: Provider Request Failed
         description: "Payment provider request failed."
+        # ErrProviderRequestFailed is a provider call that never got an answer
+        # (network, timeout); the transport error is wrapped for the logs.
+        error: ErrProviderRequestFailed
+        message: "The payment provider didn't answer (a network error or a timeout), so nothing changed on its side. Retry in a moment."
     UnsupportedProvider:
       x-problem:
         slug: unsupported-provider
@@ -98,12 +104,16 @@ components:
         status: 409
         title: No Transaction To Refund
         description: "Intent has no mercadopago transaction to refund."
+        error: ErrNoTransactionToRefund
+        message: "This intent never reached the payment provider, so there is no payment to refund."
     NoTransactionToCancel:
       x-problem:
         slug: no-transaction-to-cancel
         status: 409
         title: No Transaction To Cancel
         description: "Intent has no mercadopago transaction to cancel."
+        error: ErrNoTransactionToCancel
+        message: "This intent never reached the payment provider, so there is no payment to cancel."
     IntentStatus:
       x-problem:
         slug: intent-status
@@ -153,24 +163,32 @@ components:
         status: 400
         title: Webhook Payload Invalid
         description: "Mercadopago webhook: invalid payload."
+        error: ErrWebhookPayloadInvalid
+        message: "The MercadoPago webhook's body isn't the JSON MercadoPago sends, so it was ignored."
     WebhookMissingDataID:
       x-problem:
         slug: webhook-missing-data-id
         status: 400
         title: Webhook Missing Data ID
         description: "Mercadopago webhook: missing data.id."
+        error: ErrWebhookMissingDataID
+        message: "The MercadoPago webhook has no data.id, so Payssage can't tell which payment it is about."
     WebhookSignatureMissing:
       x-problem:
         slug: webhook-signature-missing
         status: 401
         title: Webhook Signature Missing
         description: "Mercadopago webhook: missing ts or v1 in x-signature header."
+        error: ErrWebhookSignatureMissing
+        message: "The MercadoPago webhook's x-signature header lacks its ts or v1 part, so it can't be verified and was rejected."
     WebhookSignatureMismatch:
       x-problem:
         slug: webhook-signature-mismatch
         status: 401
         title: Webhook Signature Mismatch
         description: "Mercadopago webhook: signature mismatch."
+        error: ErrWebhookSignatureMismatch
+        message: "The MercadoPago webhook's signature doesn't match its content and Payssage's secret, so it was rejected as forged or altered."
     UnhandledWebhookEvent:
       x-problem:
         slug: unhandled-webhook-event
@@ -212,54 +230,72 @@ components:
         status: 409
         title: Org Wallet Name Taken
         description: "A wallet with this name already exists in this organization."
+        error: ErrOrgWalletNameTaken
+        message: "This organization already has a wallet with this name. Choose a different name."
     PersonalWalletTaken:
       x-problem:
         slug: personal-wallet-taken
         status: 409
         title: Personal Wallet Taken
         description: "A wallet with this name already exists."
+        error: ErrPersonalWalletTaken
+        message: "You already have a personal wallet with this name. Choose a different name."
     DeliveryExists:
       x-problem:
         slug: delivery-exists
         status: 409
         title: Delivery Exists
         description: "A delivery for this event and endpoint already exists."
+        error: ErrDeliveryExists
+        message: "This event was already queued for delivery to this endpoint; it is delivered once."
     WebhookEventExists:
       x-problem:
         slug: webhook-event-exists
         status: 409
         title: Webhook Event Exists
         description: "A webhook event for this external id and type already exists for this provider."
+        error: ErrWebhookEventExists
+        message: "This provider event was already received, so the duplicate was ignored."
     OrgSlugTaken:
       x-problem:
         slug: org-slug-taken
         status: 409
         title: Org Slug Taken
         description: "An organization with this slug already exists."
+        error: ErrOrgSlugTaken
+        message: "Another organization already uses this slug, and slugs are unique. Choose a different slug."
     CredentialsConnected:
       x-problem:
         slug: credentials-connected
         status: 409
         title: Credentials Connected
         description: "Credentials for this provider are already connected to this wallet."
+        error: ErrCredentialsConnected
+        message: "This wallet already has credentials connected for this provider. Revoke them before connecting new ones."
     OrgCollectorConnected:
       x-problem:
         slug: org-collector-connected
         status: 409
         title: Org Collector Connected
         description: "This collector is already connected to this organization."
+        error: ErrOrgCollectorConnected
+        message: "This provider account is already connected to the organization as a collector. Use the existing collector."
     PersonalCollectorConnected:
       x-problem:
         slug: personal-collector-connected
         status: 409
         title: Personal Collector Connected
         description: "This collector is already connected to your account."
+        error: ErrPersonalCollectorConnected
+        message: "This provider account is already connected to your account as a collector. Use the existing collector."
     SellerConnected:
       x-problem:
         slug: seller-connected
         status: 409
         title: Seller Connected
         description: "This seller is already connected to this wallet."
+        error: ErrSellerConnected
+        message: "This provider account is already connected to the wallet as a seller. Use the existing seller."
 
     # providerStatus answers a provider's own error by what the provider said:
 

@@ -468,6 +468,8 @@ components:
         status: 403
         title: Invalid Signature Token
         description: "Invalid or expired token."
+        error: ErrInvalidSignatureToken
+        message: "This signing link is invalid or has expired. Ask the organizer for a new link."
 
     SignatureRequestNotPending:
       x-problem:
@@ -475,6 +477,8 @@ components:
         status: 409
         title: Signature Request Not Pending
         description: "Signature request is no longer pending."
+        error: ErrSignatureRequestNotPending
+        message: "This signature request was already signed or cancelled."
 
     TokenRequestEditionMismatch:
       x-problem:
@@ -482,6 +486,8 @@ components:
         status: 403
         title: Token Request Edition Mismatch
         description: "Token does not match request edition."
+        error: ErrTokenRequestEditionMismatch
+        message: "This signing link is for another edition's signature request."
 
     TokenSignatureEditionMismatch:
       x-problem:
@@ -489,6 +495,8 @@ components:
         status: 403
         title: Token Signature Edition Mismatch
         description: "Token does not match signature edition."
+        error: ErrTokenSignatureEditionMismatch
+        message: "This signing link is for another edition's signature."
 
     SignatureRequestHandled:
       x-problem:
@@ -496,6 +504,8 @@ components:
         status: 404
         title: Signature Request Handled
         description: "Signature request not found or already handled."
+        error: ErrSignatureRequestHandled
+        message: "There is no pending signature request with this id: it doesn't exist, or it was already signed or cancelled."
 
     SignatureRequestCompleted:
       x-problem:
@@ -503,3 +513,5 @@ components:
         status: 404
         title: Signature Request Completed
         description: "Signature request not found or already completed."
+        error: ErrSignatureRequestCompleted
+        message: "There is no open signature request with this id: it doesn't exist, or it was already completed."

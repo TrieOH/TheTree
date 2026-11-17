@@ -783,6 +783,8 @@ components:
         status: 403
         title: Ticket Required For Activity
         description: "A confirmed ticket is required to register for activities."
+        error: ErrTicketRequiredForActivity
+        message: "Registering for activities needs a confirmed ticket for the edition. Buy a ticket, or finish paying for it, first."
 
     TicketRequiredForCheckpoint:
       x-problem:
@@ -790,6 +792,8 @@ components:
         status: 403
         title: Ticket Required For Checkpoint
         description: "A confirmed ticket is required to pass this checkpoint."
+        error: ErrTicketRequiredForCheckpoint
+        message: "Passing this checkpoint needs a confirmed ticket for the edition."
 
     AccessLevel:
       x-problem:
@@ -808,6 +812,8 @@ components:
         status: 409
         title: Already Registered
         description: "You are already registered for this activity."
+        error: ErrAlreadyRegistered
+        message: "You are already registered for this activity session."
 
     OccurrenceFull:
       x-problem:
@@ -815,6 +821,8 @@ components:
         status: 409
         title: Occurrence Full
         description: "This activity occurrence is full."
+        error: ErrOccurrenceFull
+        message: "This activity session is full. Pick another session."
 
     NotRegistered:
       x-problem:
@@ -822,6 +830,8 @@ components:
         status: 404
         title: Not Registered
         description: "You are not registered for this activity."
+        error: ErrNotRegistered
+        message: "You aren't registered for this activity session, so there's no registration to cancel."
 
     RegistrationLocked:
       x-problem:
@@ -829,6 +839,8 @@ components:
         status: 409
         title: Registration Locked
         description: "Registration is locked: attendance has been marked."
+        error: ErrRegistrationLocked
+        message: "Attendance was already marked for this registration, so it can no longer be changed or cancelled."
 
     CheckInNotCheckpoint:
       x-problem:
@@ -836,6 +848,8 @@ components:
         status: 400
         title: Check In Not Checkpoint
         description: "Check-in is only for checkpoint occurrences."
+        error: ErrCheckInNotCheckpoint
+        message: "Check-in is only for checkpoint sessions; mark attendance for this one instead."
 
     ParticipationCancelled:
       x-problem:
@@ -843,3 +857,5 @@ components:
         status: 409
         title: Participation Cancelled
         description: "Cannot mark attendance: participation was cancelled."
+        error: ErrParticipationCancelled
+        message: "This registration was cancelled, so attendance can't be marked for it."

@@ -366,3 +366,5 @@ components:
         status: 400
         title: Edition Already Published
         description: "Edition is already published."
+        error: ErrEditionAlreadyPublished
+        message: "This edition is already published."

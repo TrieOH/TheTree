@@ -1,22 +1,5 @@
 package errs
 
-import "errors"
-
-// The OAuth login flow.
-var (
-	ErrMissingOAuthCode   = errors.New("missing code")
-	ErrMissingOAuthState  = errors.New("missing state")
-	ErrOAuthStateNotFound = errors.New("invalid or expired OAuth state; start a new login")
-	ErrOAuthStateMismatch = errors.New("invalid OAuth state")
-	ErrOAuthStateExpired  = errors.New("OAuth state expired; start a new login")
-
-	ErrOAuthCodeExchange       = errors.New("failed to exchange code")
-	ErrOAuthEmptyToken         = errors.New("empty token from provider")
-	ErrOAuthUserinfo           = errors.New("userinfo request failed")
-	ErrOAuthIncompleteUserinfo = errors.New("incomplete userinfo from provider")
-	ErrOAuthGitHubEmail        = errors.New("could not fetch github email")
-)
-
 // UnsupportedProviderError is a login provider IdentityX does not know.
 type UnsupportedProviderError struct{ Provider string }
 

@@ -17,19 +17,8 @@ var (
 	ErrInvalidOrgRole       = errors.New("invalid organization member role")
 
 	// wallets
-	ErrNegativeFee         = errors.New("fee (bps) must be non-negative")
-	ErrOrgWalletNameTaken  = errors.New("a wallet with this name already exists in this organization")
-	ErrPersonalWalletTaken = errors.New("a wallet with this name already exists")
+	ErrNegativeFee = errors.New("fee (bps) must be non-negative")
 
 	// webhooks
 	ErrInvalidDeliveryStatus = errors.New("invalid webhook delivery status")
-	ErrDeliveryExists        = errors.New("a delivery for this event and endpoint already exists")
-	ErrWebhookEventExists    = errors.New("a webhook event for this external id and type already exists for this provider")
-
-	// organizations, credentials, collectors, sellers
-	ErrOrgSlugTaken               = errors.New("an organization with this slug already exists")
-	ErrCredentialsConnected       = errors.New("credentials for this provider are already connected to this wallet")
-	ErrOrgCollectorConnected      = errors.New("this collector is already connected to this organization")
-	ErrPersonalCollectorConnected = errors.New("this collector is already connected to your account")
-	ErrSellerConnected            = errors.New("this seller is already connected to this wallet")
 )

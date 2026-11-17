@@ -234,6 +234,8 @@ components:
         status: 403
         title: Actor Not In Project
         description: "Actor does not belong to this project."
+        error: ErrActorNotInProject
+        message: "That actor doesn't belong to this project. Use an actor of the project, or the project the actor belongs to."
 
     TosExists:
       x-problem:
@@ -241,3 +243,5 @@ components:
         status: 409
         title: ToS Exists
         description: "Project already has terms of service; update them instead."
+        error: ErrTosExists
+        message: "This project already has terms of service. Update them instead of creating new ones."

@@ -197,6 +197,8 @@ components:
         status: 400
         title: Add Owner To Project
         description: "Owners can't be added to projects they own."
+        error: ErrAddOwnerToProject
+        message: "The project's owner is already part of it and can't be added as a member."
 
     RemoveProjectOwner:
       x-problem:
@@ -204,3 +206,5 @@ components:
         status: 400
         title: Remove Project Owner
         description: "Cannot remove the owner of the project."
+        error: ErrRemoveProjectOwner
+        message: "The project's owner can't be removed. Transfer ownership first."

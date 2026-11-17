@@ -1,19 +1,8 @@
 package errs
 
 import (
-	"errors"
 	"fmt"
 	"uuid"
-)
-
-// Incoming provider webhooks.
-var (
-	ErrUnknownWebhookProvider   = errors.New("unknown webhook provider")
-	ErrWebhookNotImplemented    = errors.New("webhook handling not implemented for this provider")
-	ErrWebhookPayloadInvalid    = errors.New("mercadopago webhook: invalid payload")
-	ErrWebhookMissingDataID     = errors.New("mercadopago webhook: missing data.id")
-	ErrWebhookSignatureMissing  = errors.New("mercadopago webhook: missing ts or v1 in x-signature header")
-	ErrWebhookSignatureMismatch = errors.New("mercadopago webhook: signature mismatch")
 )
 
 // MissingParamError is a required header or query parameter the request
