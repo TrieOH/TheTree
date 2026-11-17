@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"payssage/errs"
 	"payssage/models"
 	"uuid"
 )
 
 func (o *Operations) HardCreate(ctx context.Context, req models.HardCreateIntentInput) (*models.Intent, error) {
+	if !o.TestMode {
+		return nil, errs.ErrTestModeOnly
+	}
 	_, err := o.Authz.Wallet(ctx, req.WalletID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err

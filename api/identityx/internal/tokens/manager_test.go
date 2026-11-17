@@ -3,7 +3,6 @@ package tokens
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -17,11 +16,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/ovechkin-dm/mockio/mock"
 )
-
-func testEnv(t *testing.T) {
-	t.Helper()
-	t.Setenv("ENCRYPTION_KEY", strings.Repeat("ab", 32))
-}
 
 const (
 	testIssuer     = "test-issuer"
@@ -53,10 +47,9 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	testEnv(t)
 	mock.SetUp(t)
 
-	kp, err := crypto.GenerateKeyPair("signing")
+	kp, err := testVault.GenerateKeyPair("signing")
 	if err != nil {
 		t.Fatalf("GenerateKeyPair: %v", err)
 	}
@@ -107,6 +100,7 @@ func newFixture(t *testing.T) *fixture {
 		Issuer:     testIssuer,
 		AccessTTL:  testAccessTTL,
 		RefreshTTL: testRefreshTTL,
+		Vault:      testVault,
 	}, WithClock(func() time.Time { return f.now }))
 	f.keys = keys
 	f.bl = bl
@@ -150,7 +144,7 @@ func (f *fixture) signAccess(t *testing.T, withoutKid bool) string {
 	if err != nil {
 		t.Fatalf("SigningString: %v", err)
 	}
-	signed, err := crypto.SignToken([]byte(payload), f.kp)
+	signed, err := testVault.SignToken([]byte(payload), f.kp)
 	if err != nil {
 		t.Fatalf("SignToken: %v", err)
 	}
@@ -172,7 +166,7 @@ func (f *fixture) mintExpiredRefresh(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("SigningString: %v", err)
 	}
-	signed, err := crypto.SignToken([]byte(payload), f.kp)
+	signed, err := testVault.SignToken([]byte(payload), f.kp)
 	if err != nil {
 		t.Fatalf("SignToken: %v", err)
 	}

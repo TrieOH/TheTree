@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"payssage/errs"
@@ -58,7 +57,7 @@ func (p *Provider) VerifySignature(_ context.Context, r *http.Request, _ []byte)
 	// dictated by MP and must be reproduced exactly or the HMAC won't match.
 	manifest := fmt.Sprintf("id:%s;request-id:%s;ts:%s;", dataID, requestID, signatureTimestamp)
 
-	mac := hmac.New(sha256.New, []byte(os.Getenv("MP_WEBHOOK_SECRET")))
+	mac := hmac.New(sha256.New, []byte(p.cfg.MpWebhookSecret))
 	mac.Write([]byte(manifest))
 	computedSignature := hex.EncodeToString(mac.Sum(nil))
 

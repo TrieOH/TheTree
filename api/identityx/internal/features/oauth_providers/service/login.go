@@ -6,7 +6,6 @@ import (
 
 	"IdentityX/errs"
 	"IdentityX/models"
-	"lib/crypto"
 	"lib/oauth"
 )
 
@@ -30,7 +29,7 @@ type LoginProvider struct {
 // it. Project existence itself is the caller's concern.
 func (o *Operations) resolveLoginProvider(ctx context.Context, provider string, projectID *uuid.UUID) (LoginProvider, error) {
 	if projectID == nil {
-		creds, ok := oauth.EnvCredentials(provider)
+		creds, ok := o.platformCreds(provider)
 		if !ok {
 			return LoginProvider{}, &errs.ProviderNotConfiguredError{Provider: provider}
 		}
@@ -42,7 +41,7 @@ func (o *Operations) resolveLoginProvider(ctx context.Context, provider string, 
 		return LoginProvider{}, err
 	}
 
-	secret, err := crypto.DecryptPrivateKey(row.EncryptedClientSecret)
+	secret, err := o.Vault.DecryptPrivateKey(row.EncryptedClientSecret)
 	if err != nil {
 		return LoginProvider{}, err
 	}

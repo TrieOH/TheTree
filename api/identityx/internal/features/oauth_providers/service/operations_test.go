@@ -13,7 +13,6 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	libauthz "lib/authz"
-	"lib/crypto"
 	"lib/database"
 	"lib/oauth"
 
@@ -33,7 +32,6 @@ type testOps struct {
 // operations over them, with the project role resolved by authz.
 func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 	t.Helper()
-	testEnv(t)
 	mock.SetUp(t)
 	o := &testOps{
 		providers: mock.Mock[ports.ProjectOAuthProvidersRepo](),
@@ -49,18 +47,14 @@ func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 		External:    mock.Mock[ports.ExternalIdentitiesRepo](),
 		Actors:      mock.Mock[ports.ActorRepo](),
 		Authz:       authz.New(o.orgs, o.projects, mock.Mock[ports.PlatformRolesRepo]()),
-		Tokens:      tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
+		Tokens:      tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{Vault: testVault}),
 		Tos:         newTosOps(),
 		Client:      resty.New(),
-		Meta:        oauth.Registry,
+		Meta:        oauth.NewRegistry(nil),
 		Tx:          nopTxRunner{},
+		Vault:       testVault,
 	})
 	return o
-}
-
-func testEnv(t *testing.T) {
-	t.Helper()
-	t.Setenv("ENCRYPTION_KEY", "abababababababababababababababab")
 }
 
 func ctxWithMember() context.Context {
@@ -112,7 +106,7 @@ func TestCreateEncryptsSecret(t *testing.T) {
 	if stored.EncryptedClientSecret == "super-secret" {
 		t.Fatal("secret must not be stored in plaintext")
 	}
-	decrypted, err := crypto.DecryptPrivateKey(stored.EncryptedClientSecret)
+	decrypted, err := testVault.DecryptPrivateKey(stored.EncryptedClientSecret)
 	if err != nil {
 		t.Fatalf("decrypt stored secret: %v", err)
 	}
@@ -202,7 +196,7 @@ func TestUpdateClientSecretEncrypts(t *testing.T) {
 	if encrypted == "new-secret" {
 		t.Fatal("secret must be encrypted before storage")
 	}
-	decrypted, err := crypto.DecryptPrivateKey(encrypted)
+	decrypted, err := testVault.DecryptPrivateKey(encrypted)
 	if err != nil {
 		t.Fatalf("decrypt: %v", err)
 	}
@@ -313,11 +307,8 @@ func TestListEnabledProvidersUnknownProject(t *testing.T) {
 }
 
 func TestListEnabledProvidersPlatform(t *testing.T) {
-	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
-	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
-	t.Setenv("GITHUB_CLIENT_ID", "")
-	t.Setenv("GITHUB_CLIENT_SECRET", "")
 	o := newTestOps(t, models.ProjectRoleMember)
+	o.ops.PlatformCreds = platformGoogle
 
 	out, err := o.ops.ListEnabledProviders(ctxWithMember(), nil)
 	if err != nil {
@@ -332,7 +323,7 @@ func TestListEnabledProvidersPlatform(t *testing.T) {
 
 func encryptedSecret(t *testing.T) string {
 	t.Helper()
-	enc, err := crypto.EncryptPrivateKey([]byte("proj-secret"))
+	enc, err := testVault.EncryptPrivateKey([]byte("proj-secret"))
 	if err != nil {
 		t.Fatalf("encrypt: %v", err)
 	}
@@ -340,9 +331,8 @@ func encryptedSecret(t *testing.T) string {
 }
 
 func TestResolveLoginProviderPlatformUsesEnvCredentials(t *testing.T) {
-	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
-	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
 	o := newTestOps(t, models.ProjectRoleMember)
+	o.ops.PlatformCreds = platformGoogle
 
 	out, err := o.ops.resolveLoginProvider(context.Background(), "google", nil)
 	if err != nil {

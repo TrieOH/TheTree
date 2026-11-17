@@ -7,7 +7,6 @@ import (
 
 	"IdentityX/errs"
 	"IdentityX/models"
-	"lib/crypto"
 	"lib/database"
 	"lib/telemetry"
 	"time"
@@ -52,13 +51,13 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 		return nil, err
 	}
 
-	encryptedAccess, err := crypto.EncryptPrivateKey([]byte(providerToken.AccessToken))
+	encryptedAccess, err := o.Vault.EncryptPrivateKey([]byte(providerToken.AccessToken))
 	if err != nil {
 		return nil, err
 	}
 	var encryptedRefresh *string
 	if providerToken.RefreshToken != "" {
-		e, err := crypto.EncryptPrivateKey([]byte(providerToken.RefreshToken))
+		e, err := o.Vault.EncryptPrivateKey([]byte(providerToken.RefreshToken))
 		if err != nil {
 			return nil, err
 		}

@@ -3,7 +3,6 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/oauth"
 	"uuid"
 )
 
@@ -19,7 +18,7 @@ func (o *Operations) ListEnabledProviders(ctx context.Context, projectID *uuid.U
 	if projectID == nil {
 		var out []models.OAuthProvider
 		for _, name := range providerOrder {
-			if _, ok := oauth.EnvCredentials(name); ok {
+			if _, ok := o.platformCreds(name); ok {
 				out = append(out, models.OAuthProvider(name))
 			}
 		}

@@ -26,18 +26,18 @@ type KeyPair struct {
 	Algorithm        string
 }
 
-func GenerateKeyPair(keyType string) (*KeyPair, error) {
+func (v *Vault) GenerateKeyPair(keyType string) (*KeyPair, error) {
 	switch keyType {
 	case "signing":
-		return generateEd25519()
+		return v.generateEd25519()
 	case "encryption":
-		return generateRSA()
+		return v.generateRSA()
 	default:
 		return nil, fmt.Errorf("unknown key type: %s", keyType)
 	}
 }
 
-func generateEd25519() (*KeyPair, error) {
+func (v *Vault) generateEd25519() (*KeyPair, error) {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func generateEd25519() (*KeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	encryptedPriv, err := EncryptPrivateKey(privBytes)
+	encryptedPriv, err := v.EncryptPrivateKey(privBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func generateEd25519() (*KeyPair, error) {
 	}, nil
 }
 
-func generateRSA() (*KeyPair, error) {
+func (v *Vault) generateRSA() (*KeyPair, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func generateRSA() (*KeyPair, error) {
 		return nil, err
 	}
 
-	encryptedPriv, err := EncryptPrivateKey(privBytes)
+	encryptedPriv, err := v.EncryptPrivateKey(privBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +98,10 @@ func generateRSA() (*KeyPair, error) {
 	}, nil
 }
 
-// EncryptPrivateKey encrypts raw key bytes using AES-256-GCM with the master key from env.
+// EncryptPrivateKey encrypts raw key bytes using AES-256-GCM with the master key.
 // Output format: hex(nonce) + ":" + hex(ciphertext)
-func EncryptPrivateKey(privBytes []byte) (string, error) {
-	block, err := aes.NewCipher(MasterKey())
+func (v *Vault) EncryptPrivateKey(privBytes []byte) (string, error) {
+	block, err := aes.NewCipher(v.key)
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +122,7 @@ func EncryptPrivateKey(privBytes []byte) (string, error) {
 	return hex.EncodeToString(nonce) + ":" + hex.EncodeToString(ciphertext), nil
 }
 
-func DecryptPrivateKey(encrypted string) ([]byte, error) {
+func (v *Vault) DecryptPrivateKey(encrypted string) ([]byte, error) {
 	parts := strings.SplitN(encrypted, ":", 2)
 	if len(parts) != 2 {
 		return nil, errors.New("invalid encrypted key format")
@@ -135,7 +135,7 @@ func DecryptPrivateKey(encrypted string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	block, err := aes.NewCipher(MasterKey())
+	block, err := aes.NewCipher(v.key)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +146,8 @@ func DecryptPrivateKey(encrypted string) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
-func Sign(kp *KeyPair, payload []byte) ([]byte, error) {
-	privBytes, err := DecryptPrivateKey(kp.EncryptedPrivate)
+func (v *Vault) Sign(kp *KeyPair, payload []byte) ([]byte, error) {
+	privBytes, err := v.DecryptPrivateKey(kp.EncryptedPrivate)
 	if err != nil {
 		return nil, err
 	}

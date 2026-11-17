@@ -83,6 +83,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 			Notifier:         notifier,
 			Tx:               d.Tx,
 			AppURL:           cfg.AppURL,
+			HmacSecret:       cfg.HmacSecret,
 		}))
 
 		// Badges and the WS hub are used by other features, so they are

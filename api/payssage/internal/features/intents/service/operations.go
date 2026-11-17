@@ -15,6 +15,7 @@ type Deps struct {
 	Sellers    ports.SellerRepo
 	Authz      *authz.Service
 	Registry   providers.PaymentProviders
+	TestMode   bool // allows the /testmode routes
 }
 
 type Operations struct{ Deps }

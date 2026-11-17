@@ -103,8 +103,6 @@
 			"MP_WEBHOOK_SECRET",
 			"MP_TEST_ACCESS_TOKEN",
 			"MP_TEST_PUBLIC_KEY",
-			"SIMPLE_AUTH_USER",
-			"SIMPLE_AUTH_PASS",
 			// Authorization=Basic%20<base64(instanceID:token)>, from the stack's OpenTelemetry page.
 			"OTEL_EXPORTER_OTLP_HEADERS",
 		],

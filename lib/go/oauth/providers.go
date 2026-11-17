@@ -1,11 +1,7 @@
 package oauth
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"net/http"
-	"os"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -15,7 +11,7 @@ import (
 
 // Credentials are the per-deployment client credentials for a provider.
 // For IdentityX these come from a project's configured provider row or,
-// for platform-level logins, from the environment.
+// for platform-level logins, from the service config.
 type Credentials struct {
 	ClientID     string
 	ClientSecret string
@@ -50,29 +46,6 @@ func (p Provider) Config(creds Credentials) *oauth2.Config {
 	}
 }
 
-// redirectFromEnv resolves a provider's redirect URI from the environment.
-// The redirect URI is registered in the provider console as an exact URL and
-// is the same for every scope (the callback path never carries the project).
-func redirectFromEnv(key string) string {
-	return os.Getenv(key)
-}
-
-// EnvCredentials returns the platform-level credentials for a provider,
-// ok=false when they are not configured in the environment. Used for
-// IdentityX itself (no project scope).
-func EnvCredentials(provider string) (Credentials, bool) {
-	switch provider {
-	case "google":
-		creds := Credentials{ClientID: os.Getenv("GOOGLE_CLIENT_ID"), ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET")}
-		return creds, creds.ClientID != "" && creds.ClientSecret != ""
-	case "github":
-		creds := Credentials{ClientID: os.Getenv("GITHUB_CLIENT_ID"), ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET")}
-		return creds, creds.ClientID != "" && creds.ClientSecret != ""
-	default:
-		return Credentials{}, false
-	}
-}
-
 type UserInfo struct {
 	Sub   json.RawMessage `json:"id"`
 	Email string          `json:"email"`
@@ -83,55 +56,31 @@ func (u UserInfo) SubString() string {
 	return s
 }
 
-// Registry holds the supported providers. Credentials are deliberately not
-// here: callers resolve them per scope (project row or env) and build the
-// config via Provider.Config.
-var Registry = map[string]Provider{
-	"google": {
-		Endpoint:    google.Endpoint,
-		Scopes:      []string{"email", "profile"},
-		Userinfo:    "https://www.googleapis.com/oauth2/v2/userinfo",
-		RedirectURL: redirectFromEnv("GOOGLE_REDIRECT_URI"),
-	},
-	"github": {
-		Endpoint:    github.Endpoint,
-		Scopes:      []string{"user:email"},
-		Userinfo:    "https://api.github.com/user",
-		RedirectURL: redirectFromEnv("GITHUB_REDIRECT_URI"),
-	},
+// NewRegistry returns the supported providers. Credentials are deliberately
+// not here: callers resolve them per scope (project row or platform config)
+// and build the config via Provider.Config. redirects maps a provider name to
+// the redirect URI registered in its console; it is the same for every scope
+// (the callback path never carries the project).
+func NewRegistry(redirects map[string]string) map[string]Provider {
+	return map[string]Provider{
+		"google": {
+			Endpoint:    google.Endpoint,
+			Scopes:      []string{"email", "profile"},
+			Userinfo:    "https://www.googleapis.com/oauth2/v2/userinfo",
+			RedirectURL: redirects["google"],
+		},
+		"github": {
+			Endpoint:    github.Endpoint,
+			Scopes:      []string{"user:email"},
+			Userinfo:    "https://api.github.com/user",
+			RedirectURL: redirects["github"],
+		},
+	}
 }
 
+// GitHubEmail is one entry of GitHub's /user/emails response.
 type GitHubEmail struct {
 	Email    string `json:"email"`
 	Primary  bool   `json:"primary"`
 	Verified bool   `json:"verified"`
-}
-
-func FetchGitHubEmail(ctx context.Context, accessToken string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user/emails", nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/vnd.github+json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	var emails []GitHubEmail
-	err = json.NewDecoder(resp.Body).Decode(&emails)
-	if err != nil {
-		return "", err
-	}
-	for _, e := range emails {
-		if e.Primary && e.Verified {
-			return e.Email, nil
-		}
-	}
-	return "", errors.New("no verified primary email found")
 }

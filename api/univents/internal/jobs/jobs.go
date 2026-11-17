@@ -30,13 +30,14 @@ type Deps struct {
 	Notifier         checkouts.Notifier
 	Tx               database.TxRunner
 	AppURL           string // the Univents front, for the links in emails
+	HmacSecret       string // keys the certificates' public verification hashes
 }
 
 // Registry registers every Univents job kind.
 func Registry(d Deps) *libjobs.Registry {
 	reg := libjobs.NewRegistry()
-	libjobs.Register(reg, certs.NewGrantCertsWorker(d.Certs, d.Editions, d.Events, d.Email, d.AppURL).Work)
-	libjobs.Register(reg, certs.NewGrantCertsForOccurrenceWorker(d.Certs, d.Editions, d.Events, d.Email, d.AppURL).Work)
+	libjobs.Register(reg, certs.NewGrantCertsWorker(d.Certs, d.Editions, d.Events, d.Email, d.AppURL, d.HmacSecret).Work)
+	libjobs.Register(reg, certs.NewGrantCertsForOccurrenceWorker(d.Certs, d.Editions, d.Events, d.Email, d.AppURL, d.HmacSecret).Work)
 	libjobs.Register(reg, checkouts.NewExpirePurchaseWorker(d.Purchases, d.Registrations, d.ProductPurchases, d.Participations, d.Notifier, d.Tx).Work)
 	libjobs.Register(reg, badges.NewSendBadgeEmailWorker(d.Registrations, d.BadgeEmissions, d.Editions, d.Events, d.Email, d.AppURL).Work)
 	libjobs.Register(reg, checkouts.NewSendGiftEmailWorker(d.Registrations, d.Editions, d.Events, d.TicketTypes, d.Email, d.AppURL).Work)

@@ -23,8 +23,8 @@ func ParseHMACJWT(tokenStr string, claims jwt.Claims, secret []byte) (*jwt.Token
 	})
 }
 
-func SignToken(payload []byte, kp *KeyPair) (string, error) {
-	sig, err := Sign(kp, payload)
+func (v *Vault) SignToken(payload []byte, kp *KeyPair) (string, error) {
+	sig, err := v.Sign(kp, payload)
 	if err != nil {
 		return "", err
 	}
