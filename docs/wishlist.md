@@ -1,6 +1,6 @@
 # Wishlist
 
-One table for everything we want to do but haven't started. It replaces the old backend, frontend, infra, libs and simplify wishlists (they're in git history).
+One table for everything we want to do but haven't started. Backend, libs, CI and infra only. It replaces the old backend, frontend, infra, libs and simplify wishlists (they're in git history).
 
 Rules:
 
@@ -18,30 +18,25 @@ Rules:
 | 6 | Informd | Delete the duplicated namespaced routes | S | ~20 handlers marked "kill"; `authz.Form` already anchors via the form's namespace | TRI-17 |
 | 7 | IdentityX, Informd | Delete the model constructors | S | ~8 constructors marked "kill"; build structs directly and validate at use sites | TRI-18 |
 | 8 | Univents | Split `checkouts/service/checkout.go` into operations | M | 1,063 lines; reserve, pricing, payment, revert and notify are separate concerns | — |
-| 9 | Frontend | One framework: move the React apps (identityx, informd, payssage, univents) to Solid, delete the React twins | L | Two copies of univents, `ui-react`/`ui-solid`, `front-core-react`/`front-core-solid` | — |
-| 10 | Backend | Pagination on list endpoints | M | No `limit`/`cursor` in any of the 4 specs; SDK breaks are fine today | TRI-20 |
-| 11 | Backend | Span enrichment, error marking, `ServiceVersion` | M | Traces lack actor/project/provider; business errors don't mark spans | TRI-23 |
-| 12 | Backend | Cache the 80% (ADR-0020) | M | Fewer container wake-ups and DB hits | TRI-10 |
-| 13 | Backend | Performance baselines per endpoint | M | Numbers to beat before optimizing cold starts and caching | TRI-22 |
-| 14 | Infra | Latency alerts in Grafana Cloud | S | Traces already land there; nothing alerts on them | — |
-| 15 | Backend | Circuit breakers on outbound calls | S | A slow MercadoPago or Payssage drags the caller down | TRI-21 |
-| 16 | Libs | Webhook HMAC into `lib/go/crypto` | S | 3 hand-rolled `hmac.New` (payssage MP verify, payssage deliver, univents receive) | — |
-| 17 | Libs | Delete dead `oauth.FetchGitHubEmail` | XS | Zero callers | — |
-| 18 | Libs | `aws-sdk-go-v2` → `minio-go` | M | 18 module lines for the S3 calls in `lib/go/objectstorage` | — |
-| 19 | Libs | Config: print env errors one per line | XS | `env` already collects them all, but they come out as one unreadable line | — |
-| 20 | Backend | Revisit ADR-0006 (per-project encryption keys with no consumer) | M | Could delete a whole module; a decision first | — |
-| 21 | Backend | Audit 30 `nolint` and 36 TODO/FIXME | XS | Dead suppressions and stale comments (many TODOs are rows 1, 6, 7) | — |
-| 22 | CI | `-race`, `go mod tidy` drift check, govulncheck | S | Not in `.github/actions/go/test` today | TRI-25 |
-| 23 | CI | One shared test database instead of testcontainers per run | M | Faster integration tests, fewer deps | TRI-24 |
-| 24 | CI | OpenAPI spec linting | S | The specs are the contract for oapi-codegen and orval | — |
-| 25 | CI | Coverage reporting | S | No coverage signal anywhere | — |
-| 26 | Backend | Evaluate `encoding/json/v2` | L | Not urgent; do it when the harness needs it | — |
-| 27 | Infra | Staging plan for Cloudflare | M | The old plan is VPS-shaped | TRI-26 |
-| 28 | Infra | Decide on DB backups beyond Neon's restore window | S | Nothing lives off Neon today | — |
-| 29 | Dev loop | `just seed` | S | Local testing starts from an empty DB | — |
-| 30 | Dev loop | `just logs <svc>`, `just status`, `just nuke <svc>` | XS | Only host-wide `just ps` and `down -v` today | — |
-| 31 | Dev loop | Hot reload (`docker compose watch`) | M | `just <svc>` rebuilds the container | — |
-| 32 | Frontend | Vitest + component tests | M | Tests only in univents, univents-solid and portal | — |
-| 33 | Frontend | Shared tsconfig base, one biome config | S | No app `extends` a base; biome configs drifted | — |
-| 34 | Frontend | Shared t3-env schema in `front-core` | S | 4 `env.ts` repeat the same vars | — |
-| 35 | Frontend | Pin the `latest` catalog entries, drop unused `msw` | XS | Unpinned `@tanstack/*`; `msw` allowed to build but unused | — |
+| 9 | Backend | Pagination on list endpoints | M | No `limit`/`cursor` in any of the 4 specs; SDK breaks are fine today | TRI-20 |
+| 10 | Backend | Span enrichment, error marking, `ServiceVersion` | M | Traces lack actor/project/provider; business errors don't mark spans | TRI-23 |
+| 11 | Backend | Cache the 80% (ADR-0020) | M | Fewer container wake-ups and DB hits | TRI-10 |
+| 12 | Backend | Performance baselines per endpoint | M | Numbers to beat before optimizing cold starts and caching | TRI-22 |
+| 13 | Infra | Latency alerts in Grafana Cloud | S | Traces already land there; nothing alerts on them | — |
+| 14 | Backend | Circuit breakers on outbound calls | S | A slow MercadoPago or Payssage drags the caller down | TRI-21 |
+| 15 | Libs | Webhook HMAC into `lib/go/crypto` | S | 3 hand-rolled `hmac.New` (payssage MP verify, payssage deliver, univents receive) | — |
+| 16 | Libs | Delete dead `oauth.FetchGitHubEmail` | XS | Zero callers | — |
+| 17 | Libs | `aws-sdk-go-v2` → `minio-go` | M | 18 module lines for the S3 calls in `lib/go/objectstorage` | — |
+| 18 | Libs | Config: print env errors one per line | XS | `env` already collects them all, but they come out as one unreadable line | — |
+| 19 | Backend | Revisit ADR-0006 (per-project encryption keys with no consumer) | M | Could delete a whole module; a decision first | — |
+| 20 | Backend | Audit 30 `nolint` and 36 TODO/FIXME | XS | Dead suppressions and stale comments (many TODOs are rows 1, 6, 7) | — |
+| 21 | CI | `-race`, `go mod tidy` drift check, govulncheck | S | Not in `.github/actions/go/test` today | TRI-25 |
+| 22 | CI | One shared test database instead of testcontainers per run | M | Faster integration tests, fewer deps | TRI-24 |
+| 23 | CI | OpenAPI spec linting | S | The specs are the contract for oapi-codegen and orval | — |
+| 24 | CI | Coverage reporting | S | No coverage signal anywhere | — |
+| 25 | Backend | Evaluate `encoding/json/v2` | L | Not urgent; do it when the harness needs it | — |
+| 26 | Infra | Staging plan for Cloudflare | M | The old plan is VPS-shaped | TRI-26 |
+| 27 | Infra | Decide on DB backups beyond Neon's restore window | S | Nothing lives off Neon today | — |
+| 28 | Dev loop | `just seed` | S | Local testing starts from an empty DB | — |
+| 29 | Dev loop | `just logs <svc>`, `just status`, `just nuke <svc>` | XS | Only host-wide `just ps` and `down -v` today | — |
+| 30 | Dev loop | Hot reload (`docker compose watch`) | M | `just <svc>` rebuilds the container | — |
