@@ -7,6 +7,11 @@ import (
 )
 
 func (o *Operations) HardCreate(ctx context.Context, req models.HardCreateIntentInput) (*models.Intent, error) {
+	_, err := o.Authz.Wallet(ctx, req.WalletID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return nil, err
+	}
+
 	id := uuid.NewV7()
 
 	intent := &models.Intent{
