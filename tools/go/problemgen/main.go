@@ -4,8 +4,16 @@
 //
 //	go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
 //
-// The problems come from two files next to the spec: the shared
-// ../problems.yml (api/problems.yml) and the Backend's own problems.yml. A
+// The spec is split by feature: each path item is a $ref into its feature's
+// internal/features/<name>/spec.yml, which declares the path, the
+// components only that feature uses and the problems only it answers. Refs
+// are ordinary relative OpenAPI refs (a feature reaches the spec's shared
+// components as ../../../api-spec.yml#/components/...). The bundle inlines
+// the paths, merges every file's components under their own names and
+// leaves only local refs; a feature path the spec never imports fails.
+//
+// The problems come from the shared ../problems.yml (api/problems.yml), the
+// Backend's own problems.yml and every feature's spec.yml. A
 // problem is a schema with an x-problem block (slug, status, title,
 // description) and only its extension members. The bundle merges the files'
 // schemas into the spec, expands each problem into a <Name>Problem schema

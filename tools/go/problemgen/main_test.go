@@ -249,7 +249,7 @@ func TestRejects(t *testing.T) {
 			want: "slug not-found is declared by both",
 		},
 		"untyped ref": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad. }\n      required: [p]\n      properties:\n        p: { $ref: '#/components/schemas/Problem' }\n"),
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad. }\n      required: [p]\n      properties:\n        p: { $ref: '../problems.yml#/components/schemas/Problem' }\n"),
 			spec: spec,
 			want: "has no x-problem-go-type",
 		},
@@ -279,5 +279,127 @@ func TestParam(t *testing.T) {
 		if got := param(in); got != want {
 			t.Errorf("param(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// featureSpec is a feature's spec.yml: a path the spec imports, a schema
+// of its own, one of the spec's, and a problem.
+const featureSpec = `paths:
+  /pay:
+    post:
+      operationId: pay
+      x-problems: [card-declined, not-found]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayInput' }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '../../../api-spec.yml#/components/schemas/Receipt' }
+  /unused:
+    get:
+      responses:
+        "200": { description: ok }
+components:
+  parameters:
+    PayID: { name: pay_id, in: path, required: true, schema: { type: string } }
+  schemas:
+    PayInput:
+      type: object
+      properties:
+        amount: { $ref: '#/components/schemas/Cents' }
+    Cents: { type: integer }
+    CardDeclined:
+      x-problem: { slug: card-declined, status: 402, title: Card Declined, description: The card was declined. }
+`
+
+const featureRoot = `openapi: 3.1.0
+paths:
+  /pay:
+    $ref: './internal/features/pay/spec.yml#/paths/~1pay'
+  /unused:
+    $ref: './internal/features/pay/spec.yml#/paths/~1unused'
+components:
+  schemas:
+    Receipt: { type: object }
+`
+
+func writeFeature(t *testing.T, specPath, body string) {
+	t.Helper()
+	path := filepath.Join(filepath.Dir(specPath), "internal", "features", "pay", "spec.yml")
+	err := os.MkdirAll(filepath.Dir(path), 0o750)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(path, []byte(body), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFeatureSpec(t *testing.T) {
+	specPath := fixture(t, ownProblems, featureRoot)
+	writeFeature(t, specPath, featureSpec)
+	bundled, src := generate(t, specPath)
+
+	op := dig(t, bundled, "paths", "/pay", "post")
+	if got := dig(t, op, "requestBody", "content", "application/json", "schema", "$ref"); got != "#/components/schemas/PayInput" {
+		t.Errorf("own schema ref = %v", got)
+	}
+	if got := dig(t, op, "responses", "200", "content", "application/json", "schema", "$ref"); got != "#/components/schemas/Receipt" {
+		t.Errorf("spec schema ref = %v", got)
+	}
+	if got := dig(t, bundled, "components", "schemas", "PayInput", "properties", "amount", "$ref"); got != "#/components/schemas/Cents" {
+		t.Errorf("nested ref = %v", got)
+	}
+	if dig(t, bundled, "components", "parameters", "PayID") == nil {
+		t.Error("the feature's parameters are not merged")
+	}
+	if dig(t, op, "responses", "402", "$ref") != "#/components/responses/CardDeclinedProblem" {
+		t.Error("the feature's problem is not answered")
+	}
+	if !strings.Contains(src, "func CardDeclined(detail string)") {
+		t.Error("the feature's problem has no constructor")
+	}
+}
+
+func TestFeatureSpecRejects(t *testing.T) {
+	cases := map[string]struct {
+		root, feature, want string
+	}{
+		"path never imported": {
+			root:    "openapi: 3.1.0\npaths:\n  /pay:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\ncomponents:\n  schemas:\n    Receipt: { type: object }\n",
+			feature: featureSpec,
+			want:    "paths /unused is never imported",
+		},
+		"imported under another path": {
+			root:    "openapi: 3.1.0\npaths:\n  /other:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\n",
+			feature: "paths:\n  /pay:\n    get: { responses: { \"200\": { description: ok } } }\n",
+			want:    "under another path",
+		},
+		"missing component": {
+			root:    "openapi: 3.1.0\npaths:\n  /pay:\n    $ref: './internal/features/pay/spec.yml#/paths/~1pay'\n",
+			feature: "paths:\n  /pay:\n    get:\n      responses:\n        \"200\":\n          description: ok\n          content: { application/json: { schema: { $ref: '#/components/schemas/Gone' } } }\n",
+			want:    "declares no schemas Gone",
+		},
+		"schema declared twice": {
+			root:    featureRoot,
+			feature: strings.Replace(featureSpec, "    Cents: { type: integer }", "    Cents: { type: integer }\n    Receipt: { type: object }", 1),
+			want:    "Receipt is also declared by the spec",
+		},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			specPath := fixture(t, ownProblems, c.root)
+			writeFeature(t, specPath, c.feature)
+			dir := filepath.Dir(specPath)
+			err := run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, c.want)
+			}
+		})
 	}
 }

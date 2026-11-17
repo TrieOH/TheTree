@@ -65,8 +65,12 @@ type namedNode struct {
 type bundler struct {
 	doc      *yaml.Node // the spec's document node
 	root     *yaml.Node // its top-level mapping
-	schemas  []namedNode
-	problems []*problem
+	specPath string
+	files    map[string]*specFile // every other file read, by clean path
+	// components are the plain components the other files declare, by
+	// kind, merged into the spec as is.
+	components map[string][]namedNode
+	problems   []*problem
 }
 
 func load(specPath string) (*bundler, error) {
@@ -74,13 +78,23 @@ func load(specPath string) (*bundler, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := &bundler{doc: doc, root: doc.Content[0]}
+	b := &bundler{
+		doc:        doc,
+		root:       doc.Content[0],
+		specPath:   filepath.Clean(specPath),
+		files:      map[string]*specFile{},
+		components: map[string][]namedNode{},
+	}
 	dir := filepath.Dir(specPath)
 	for _, f := range problemFiles {
 		err = b.loadFile(filepath.Join(dir, f))
 		if err != nil {
 			return nil, err
 		}
+	}
+	err = b.importPaths(b.specPath)
+	if err != nil {
+		return nil, err
 	}
 	err = b.resolveMembers()
 	if err != nil {
@@ -105,48 +119,79 @@ func readYAML(path string) (*yaml.Node, error) {
 	return &doc, nil
 }
 
+// loadFile reads a problem file or a feature's spec.yml: its problems
+// become the bundle's, its other components are merged in as they are, and
+// its paths wait for the spec to import them. Its $refs are made local
+// first, so a problem's members resolve like the spec's own.
 func (b *bundler) loadFile(path string) error {
+	path = filepath.Clean(path)
 	doc, err := readYAML(path)
 	if err != nil {
 		return err
 	}
-	schemas := get(get(doc.Content[0], "components"), "schemas")
-	if schemas == nil {
-		return nil
-	}
-	for i := 0; i < len(schemas.Content); i += 2 {
-		name, node := schemas.Content[i].Value, schemas.Content[i+1]
-		if b.declared(name) {
-			return fmt.Errorf("%s: schema %s is declared twice", path, name)
+	f := &specFile{path: path, root: doc.Content[0], paths: map[string]bool{}}
+	b.files[path] = f
+	if paths := get(f.root, "paths"); paths != nil {
+		for i := 0; i < len(paths.Content); i += 2 {
+			f.paths[paths.Content[i].Value] = false
 		}
-		x := get(node, "x-problem")
-		if x == nil {
-			b.schemas = append(b.schemas, namedNode{name: name, node: node, file: path})
+	}
+	components := get(f.root, "components")
+	err = b.localize(components, path)
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	for k := 0; components != nil && k < len(components.Content); k += 2 {
+		kind := components.Content[k].Value
+		if !slices.Contains(componentKinds, kind) {
+			return fmt.Errorf("%s: components.%s can't be declared outside the spec", path, kind)
+		}
+	}
+	for _, kind := range componentKinds {
+		entries := get(components, kind)
+		if entries == nil {
 			continue
 		}
-		p, err := parseProblem(name, node, x)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		p.file = path
-		for _, q := range b.problems {
-			if q.Slug == p.Slug {
-				return fmt.Errorf("%s: slug %s is declared by both %s and %s", path, p.Slug, q.Name, p.Name)
+		for i := 0; i < len(entries.Content); i += 2 {
+			name, node := entries.Content[i].Value, entries.Content[i+1]
+			x := get(node, "x-problem")
+			if b.declared(kind, name, kind == "schemas" && x != nil) {
+				return fmt.Errorf("%s: %s %s is declared twice", path, kind, name)
 			}
+			if kind != "schemas" || x == nil {
+				b.components[kind] = append(b.components[kind], namedNode{name: name, node: node, file: path})
+				continue
+			}
+			p, err := parseProblem(name, node, x)
+			if err != nil {
+				return fmt.Errorf("%s: %w", path, err)
+			}
+			p.file = path
+			for _, q := range b.problems {
+				if q.Slug == p.Slug {
+					return fmt.Errorf("%s: slug %s is declared by both %s and %s", path, p.Slug, q.Name, p.Name)
+				}
+			}
+			b.problems = append(b.problems, p)
 		}
-		b.problems = append(b.problems, p)
 	}
 	return nil
 }
 
-func (b *bundler) declared(name string) bool {
-	for _, s := range b.schemas {
-		if s.name == name {
-			return true
+// declared reports whether another file already declares the component,
+// or, for a problem, the problem: a problem's authored name never reaches
+// the bundle, so it may share a plain schema's.
+func (b *bundler) declared(kind, name string, isProblem bool) bool {
+	if isProblem {
+		for _, p := range b.problems {
+			if p.Name == name {
+				return true
+			}
 		}
+		return false
 	}
-	for _, p := range b.problems {
-		if p.Name == name {
+	for _, c := range b.components[kind] {
+		if c.name == name {
 			return true
 		}
 	}
@@ -239,7 +284,7 @@ func parseMembers(node *yaml.Node) ([]member, error) {
 // resolveMembers gives every member its Go type and its example value.
 func (b *bundler) resolveMembers() error {
 	goTypes := map[string]string{}
-	for _, s := range b.schemas {
+	for _, s := range b.components["schemas"] {
 		if t := get(s.node, "x-problem-go-type"); t != nil {
 			goTypes[s.name] = t.Value
 		}
@@ -331,11 +376,14 @@ func (b *bundler) bundle() ([]byte, error) {
 	schemas := ensure(components, "schemas")
 	responses := ensure(components, "responses")
 
-	for _, s := range b.schemas {
-		if get(schemas, s.name) != nil {
-			return nil, fmt.Errorf("%s: schema %s is also declared by the spec", s.file, s.name)
+	for _, kind := range componentKinds {
+		for _, c := range b.components[kind] {
+			into := ensure(components, kind)
+			if get(into, c.name) != nil {
+				return nil, fmt.Errorf("%s: %s %s is also declared by the spec", c.file, kind, c.name)
+			}
+			set(into, c.name, c.node)
 		}
-		set(schemas, s.name, s.node)
 	}
 	for _, p := range b.problems {
 		name := p.Name + problemSuffix
