@@ -36,7 +36,7 @@ function SubmissionsComponent() {
   const [filterText, setFilterText] = useState("");
 
   const { data: fullForm = null, isLoading: isFullFormLoading } = useQuery(
-    allFormsResponsesQueryOptions(formID, namespaceID),
+    allFormsResponsesQueryOptions(formID),
   );
 
   const submissions = useMemo(

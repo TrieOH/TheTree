@@ -25,7 +25,6 @@ import { MemberCard } from "#/features/forms/ui/member-card";
 import {
   allNamespacesArchivedFormsQueryOptions,
   allNamespacesFormsQueryOptions,
-  formResponseCountOnNamespaceQueryOptions,
 } from "#/features/namespaces/api";
 import { useLayoutHeader } from "#/shared/lib/hooks/layout-context";
 import { Button } from "#/shared/ui/shadcn/button";
@@ -42,9 +41,7 @@ function RouteComponent() {
   const { formID } = Route.useParams();
   const { namespaceID } = Route.useSearch();
   const user_id = auth?.profile()?.id || null;
-  const { data: members = [] } = useQuery(
-    allFormsMembersQueryOptions(formID, namespaceID),
-  );
+  const { data: members = [] } = useQuery(allFormsMembersQueryOptions(formID));
 
   const formsQueryKey = useMemo(
     () =>
@@ -82,11 +79,7 @@ function RouteComponent() {
     [formsQuery.data, archivedFormsQuery.data, formID],
   );
 
-  const countQuery = useQuery(
-    namespaceID
-      ? formResponseCountOnNamespaceQueryOptions(namespaceID, formID)
-      : formResponseCountQueryOptions(formID),
-  );
+  const countQuery = useQuery(formResponseCountQueryOptions(formID));
 
   const responseCount = countQuery.data?.count ?? 0;
 
@@ -140,13 +133,12 @@ function RouteComponent() {
   });
 
   const { mutate: addMemberToForm, isPending: isCreating } = useMutation({
-    mutationFn: (data: MemberAddToFormI) =>
-      addMemberToFormFn(data, formID, namespaceID),
+    mutationFn: (data: MemberAddToFormI) => addMemberToFormFn(data, formID),
     onSuccess: (response, variable) => {
       if (response.success) {
         if (user_id) {
           queryClient.setQueryData(
-            allFormsMembersQueryOptions(formID, namespaceID).queryKey,
+            allFormsMembersQueryOptions(formID).queryKey,
             (oldData: FormMemberI[] = []) => [
               ...oldData,
               {
@@ -160,7 +152,7 @@ function RouteComponent() {
           );
         } else {
           queryClient.invalidateQueries({
-            queryKey: allFormsMembersQueryOptions(formID, namespaceID).queryKey,
+            queryKey: allFormsMembersQueryOptions(formID).queryKey,
           });
         }
 
@@ -173,11 +165,11 @@ function RouteComponent() {
 
   const { mutate: removeMemberFromForm, isPending: isRemoving } = useMutation({
     mutationFn: (rm_user_id: string) =>
-      removeMemberFromFormFn(rm_user_id, formID, namespaceID),
+      removeMemberFromFormFn(rm_user_id, formID),
     onSuccess: (response, rm_user_id) => {
       if (response.success) {
         queryClient.setQueryData(
-          allFormsMembersQueryOptions(formID, namespaceID).queryKey,
+          allFormsMembersQueryOptions(formID).queryKey,
           (oldData: FormMemberI[] = []) =>
             oldData.filter((member) => member.user_id !== rm_user_id),
         );
