@@ -13,6 +13,7 @@ type Deps struct {
 	Requests   ports.SignatureRequestRepo
 	Email      *email.Client
 	HmacSecret string
+	AppURL     string // the Univents front, for the links in emails
 	Authz      *authz.Service
 }
 

@@ -17,6 +17,10 @@ type Repo struct {
 }
 
 var _ ports.BadgeTemplateRepo = (*Repo)(nil)
+
+// emissionNotFound names a missing emission (dbe names a missing template).
+var emissionNotFound = database.NewErrorHandler(errs.ErrBadgeEmissionNotFound)
+
 var _ ports.BadgeEmissionRepo = (*Repo)(nil)
 
 func NewRepo(q *sqlc.Queries) *Repo {
@@ -141,6 +145,11 @@ func (repo *Repo) ListViewsByEdition(ctx context.Context, editionID uuid.UUID) (
 func (repo *Repo) ListViewsByUser(ctx context.Context, userID uuid.UUID) ([]models.BadgeEmissionView, error) {
 	rows, err := repo.db(ctx).ListBadgeEmissionViewsByUser(ctx, userID)
 	return database.Many(rows, err, repo.dbe, mapBadgeEmissionView)
+}
+
+func (repo *Repo) GetEmission(ctx context.Context, id uuid.UUID) (*models.BadgeEmission, error) {
+	row, err := repo.db(ctx).GetBadgeEmission(ctx, id)
+	return database.One(row, err, emissionNotFound, mapBadgeEmission)
 }
 
 func (repo *Repo) MarkEmailSent(ctx context.Context, id uuid.UUID) error {

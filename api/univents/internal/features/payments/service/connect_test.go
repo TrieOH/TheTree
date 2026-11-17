@@ -32,6 +32,7 @@ func newOps(repo ports.EventRepo, pc payments.PayssageClient) *payments.Operatio
 		Payssage: pc,
 		Authz:    authz.New(repo),
 		WalletID: platformWalletID(),
+		AppURL:   "https://events.test",
 	})
 }
 
@@ -51,8 +52,6 @@ func TestConnect_OAuthsOntoPlatformWallet(t *testing.T) {
 
 	mock.When(pc.ConnectProvider(mock.AnyContext(), mock.Any[string](), mock.Any[payssage.ConnectProviderRequest]())).
 		ThenReturn("https://auth.mercadopago.com/consent", nil)
-
-	t.Setenv("APP_URL", "https://events.test")
 
 	res, err := newOps(repo, pc).Connect(adminCtx(), eventID, "mercado_pago")
 	if err != nil {

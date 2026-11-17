@@ -22,6 +22,7 @@ type BadgeEmissionRepo interface {
 	Upsert(ctx context.Context, emission *models.BadgeEmission) (*models.BadgeEmission, error)
 	Revoke(ctx context.Context, editionID, userID uuid.UUID, origin models.BadgeEmissionOrigin, reason string) error
 	RevokeByRegistration(ctx context.Context, registrationID uuid.UUID, reason string) error
+	GetEmission(ctx context.Context, id uuid.UUID) (*models.BadgeEmission, error)
 	MarkEmailSent(ctx context.Context, id uuid.UUID) error
 	ListViewsByUser(ctx context.Context, userID uuid.UUID) ([]models.BadgeEmissionView, error)
 	ListViewsByEdition(ctx context.Context, editionID uuid.UUID) ([]models.BadgeEmissionView, error)

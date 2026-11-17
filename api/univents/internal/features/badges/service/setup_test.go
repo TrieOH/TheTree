@@ -8,7 +8,7 @@ import (
 
 	"github.com/ovechkin-dm/mockio/mock"
 
-	"lib/email"
+	libjobs "lib/jobs"
 
 	idx "sdk/identityx"
 	"univents/internal/authz"
@@ -18,8 +18,8 @@ import (
 )
 
 // newOps builds a badges Operations with mocked ports. The caller wires the
-// behaviors it cares about; un-mocked methods return zero values. email may be
-// nil for tests that never trigger the badge email goroutine.
+// behaviors it cares about; un-mocked methods return zero values. jobs may be
+// nil: a recording fakeJobs is used instead.
 func newOps(
 	t *testing.T,
 	templates ports.BadgeTemplateRepo,
@@ -27,10 +27,10 @@ func newOps(
 	registrations ports.RegistrationRepo,
 	editions ports.EditionRepo,
 	events ports.EventRepo,
-	email *email.Client,
+	jobs badges.Jobs,
 ) *badges.Operations {
 	t.Helper()
-	return newOpsWithDeps(t, templates, emissions, registrations, editions, events, &fakeActors{}, email, mock.Mock[ports.EventRepo]())
+	return newOpsWithDeps(t, templates, emissions, registrations, editions, events, &fakeActors{}, jobs, mock.Mock[ports.EventRepo]())
 }
 
 // newOpsWithAuthz is newOps with control over the event repo used by authz
@@ -57,10 +57,13 @@ func newOpsWithDeps(
 	editions ports.EditionRepo,
 	events ports.EventRepo,
 	actors ports.ActorResolver,
-	email *email.Client,
+	jobs badges.Jobs,
 	authzEvents ports.EventRepo,
 ) *badges.Operations {
 	t.Helper()
+	if jobs == nil {
+		jobs = &fakeJobs{}
+	}
 	return badges.New(badges.Deps{
 		Repo:          templates,
 		Emissions:     emissions,
@@ -68,9 +71,18 @@ func newOpsWithDeps(
 		Editions:      editions,
 		Events:        events,
 		Actors:        actors,
-		Email:         email,
+		Jobs:          jobs,
+		AppURL:        "https://events.test",
 		Authz:         authz.New(authzEvents),
 	})
+}
+
+// fakeJobs records every enqueued job.
+type fakeJobs struct{ enqueued []libjobs.Job }
+
+func (f *fakeJobs) EnqueueAfter(_ context.Context, job libjobs.Job, _ time.Duration) error {
+	f.enqueued = append(f.enqueued, job)
+	return nil
 }
 
 // fakeActors is a no-account actor resolver: unknown id/email →

@@ -29,6 +29,9 @@ WHERE registration_id = @registration_id
   AND origin = 'participant'
   AND status = 'active';
 
+-- name: GetBadgeEmission :one
+SELECT * FROM badge_emissions WHERE id = @id;
+
 -- name: MarkBadgeEmissionEmailSent :exec
 UPDATE badge_emissions
 SET

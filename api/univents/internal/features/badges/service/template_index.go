@@ -78,7 +78,7 @@ func (o *Operations) loadTemplateIndex(ctx context.Context, views []models.Badge
 	return indexTemplates(templates), nil
 }
 
-func profileBadge(v models.BadgeEmissionView, idx templateIndex) models.BadgeProfileBadge {
+func (o *Operations) profileBadge(v models.BadgeEmissionView, idx templateIndex) models.BadgeProfileBadge {
 	t := idx.match(v.EditionID, v.TicketTypeID, v.Origin)
 	badge := models.BadgeProfileBadge{
 		EmissionID:  v.ID,
@@ -87,7 +87,7 @@ func profileBadge(v models.BadgeEmissionView, idx templateIndex) models.BadgePro
 		EventName:   v.EventName,
 		Origin:      v.Origin,
 		TicketName:  v.TicketName,
-		ActionURL:   profileURL(v.UserID),
+		ActionURL:   o.profileURL(v.UserID),
 	}
 	if t != nil {
 		id := t.ID

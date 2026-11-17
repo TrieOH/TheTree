@@ -103,7 +103,7 @@ func seedGiftedReg(t *testing.T, r *testrepos.Repos, attendeeUserID *uuid.UUID) 
 
 func newGiftWorker(t *testing.T, r *testrepos.Repos, sender *recordingSender) *jobs.SendGiftEmailWorker {
 	t.Helper()
-	return jobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, sender)
+	return jobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, sender, "https://events.test")
 }
 
 // TestSendGiftEmail_SendsToAccountlessRecipient pins the gifted-ticket
@@ -255,7 +255,7 @@ func TestSendGiftEmail_DeliversViaSMTP(t *testing.T) {
 		t.Fatalf("smtp port %q: %v", smtpPort.Port(), err)
 	}
 	sender := email.NewClient(email.Config{Host: host, Port: smtpPortNum, From: "univents@test", TLS: false})
-	worker := jobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, sender)
+	worker := jobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, sender, "https://events.test")
 
 	err = worker.Work(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err != nil {

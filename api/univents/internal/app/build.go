@@ -71,6 +71,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 
 		d.Jobs.Serve(jobs.Registry(jobs.Deps{
 			Certs:            certsRepo,
+			BadgeEmissions:   badgesRepo,
 			Editions:         editionsRepo,
 			Events:           eventsRepo,
 			Purchases:        purchasesRepo,
@@ -81,13 +82,14 @@ func Build(cfg config.Config) backend.BuildFunc {
 			Email:            d.Email,
 			Notifier:         notifier,
 			Tx:               d.Tx,
+			AppURL:           cfg.AppURL,
 		}))
 
 		// Badges and the WS hub are used by other features, so they are
 		// built first.
 		badgesOps := badges.New(badges.Deps{
 			Repo: badgesRepo, Emissions: badgesRepo, Registrations: registrationsRepo, Editions: editionsRepo,
-			Events: eventsRepo, Actors: actors, Email: d.Email, Authz: az,
+			Events: eventsRepo, Actors: actors, Jobs: d.Jobs, Authz: az, AppURL: cfg.AppURL,
 		})
 		wsOps := ws.New(ws.Deps{Tokens: wsTokensRepo, Purchases: purchasesRepo, Intents: pay, Notifier: notifier})
 
@@ -112,14 +114,14 @@ func Build(cfg config.Config) backend.BuildFunc {
 			badgeHandlers: badges.NewHandlers(badgesOps),
 			signatureHandlers: signatures.NewHandlers(signatures.New(signatures.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Signatures: signaturesRepo, Requests: signaturesRepo,
-				Email: d.Email, HmacSecret: cfg.HmacSecret, Authz: az,
+				Email: d.Email, HmacSecret: cfg.HmacSecret, Authz: az, AppURL: cfg.AppURL,
 			})),
 			certificationHandlers: certifications.NewHandlers(certifications.New(certifications.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Certs: certsRepo, Programs: programsRepo,
 				Email: d.Email, Jobs: d.Jobs, Authz: az,
 			})),
 			paymentHandlers: payments.NewHandlers(payments.New(payments.Deps{
-				Events: eventsRepo, Payssage: pay, Authz: az, WalletID: cfg.PayssageWalletID,
+				Events: eventsRepo, Payssage: pay, Authz: az, WalletID: cfg.PayssageWalletID, AppURL: cfg.AppURL,
 			})),
 			webhookHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
 				Purchases: purchasesRepo, Registrations: registrationsRepo, ProductPurchases: productsRepo,
