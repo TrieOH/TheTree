@@ -1777,6 +1777,9 @@ importers:
         specifier: 3.8.3
         version: 3.8.3
     devDependencies:
+      '@iconify-json/lucide':
+        specifier: 'catalog:'
+        version: 1.2.148
       '@solidjs/web':
         specifier: catalog:solid
         version: 2.0.0-rc.17(solid-js@2.0.0-rc.17)
@@ -1798,6 +1801,9 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.7.0
+      unplugin-icons:
+        specifier: 'catalog:'
+        version: 22.5.0(@vue/compiler-sfc@3.5.44)(supports-color@10.2.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

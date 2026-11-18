@@ -24,6 +24,7 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "catalog:",
     "@solidjs/web": "catalog:solid",
     "@types/node": "catalog:",
     "class-variance-authority": "catalog:",
@@ -31,7 +32,8 @@
     "oxlint": "catalog:",
     "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "unplugin-icons": "catalog:"
   },
   "dependencies": {
     "prettier": "3.8.3"

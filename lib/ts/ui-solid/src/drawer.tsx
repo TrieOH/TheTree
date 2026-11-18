@@ -1,3 +1,4 @@
+import XIcon from "~icons/lucide/x";
 import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Portal } from "@solidjs/web";
@@ -82,18 +83,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
               class="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
               onClick={() => props.onClose()}
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="size-4"
-                aria-hidden="true"
-              >
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
+              <XIcon class="size-4" aria-hidden="true" />
             </button>
           </header>
           {props.children}

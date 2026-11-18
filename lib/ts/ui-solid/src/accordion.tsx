@@ -1,3 +1,4 @@
+import PlusIcon from "~icons/lucide/plus";
 import { For, createSignal } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { cn } from "./lib/cn";
@@ -55,18 +56,7 @@ export function Accordion(props: AccordionProps): JSX.Element {
                   isOpen(item.value) && "rotate-45",
                 )}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="size-4"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14M12 5v14" />
-                </svg>
+                <PlusIcon class="size-4" aria-hidden="true" />
               </span>
             </button>
 
