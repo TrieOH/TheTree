@@ -144,3 +144,5 @@ export {
 } from "./reveal";
 
 export { VirtualizedContainer, type VirtualizedContainerProps } from "./virtualized-container";
+
+export { Pagination, type PaginationProps } from "./pagination";

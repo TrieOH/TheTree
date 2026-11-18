@@ -60,6 +60,8 @@ export interface ButtonProps {
   /** Solid 2 types ARIA booleans as the string form. */
   "aria-expanded"?: "true" | "false";
   "aria-controls"?: string;
+  "aria-current"?: "page";
+  "aria-pressed"?: "true" | "false";
   onClick?: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
   children?: JSX.Element;
 }
@@ -76,6 +78,8 @@ export function Button(props: ButtonProps) {
       aria-label={props["aria-label"]}
       aria-expanded={props["aria-expanded"]}
       aria-controls={props["aria-controls"]}
+      aria-current={props["aria-current"]}
+      aria-pressed={props["aria-pressed"]}
       disabled={props.disabled}
       onClick={props.onClick}
       class={cn(
