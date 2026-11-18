@@ -147,5 +147,7 @@ export { VirtualizedContainer, type VirtualizedContainerProps } from "./virtuali
 
 export { Pagination, type PaginationProps } from "./pagination";
 export { InfiniteScroll, type InfiniteScrollProps } from "./infinite-scroll";
+export { CollectionToolbar, type CollectionToolbarProps } from "./collection-toolbar";
 export { FilterBar, type FilterBarProps, type ActiveFilter } from "./filter-bar";
 export { BulkActions, type BulkActionsProps, type BulkAction } from "./bulk-actions";
+export { DataTable, type DataTableProps, type DataTableColumn, type DataTableSort } from "./data-table";
