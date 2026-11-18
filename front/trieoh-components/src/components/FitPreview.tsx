@@ -7,7 +7,9 @@ const PADDING = 16;
  * in, so large components (a sidebar, a dialog) share a card with small ones.
  * It never scales up.
  */
-export function FitPreview(props: ParentProps) {
+export function FitPreview(
+  props: ParentProps<{ size?: { width: number; height: number } }>,
+) {
   let box: HTMLDivElement | undefined;
   let inner: HTMLDivElement | undefined;
   const [scale, setScale] = createSignal(1);
@@ -37,7 +39,11 @@ export function FitPreview(props: ParentProps) {
       <div
         ref={(el) => (inner = el)}
         class="absolute top-1/2 left-1/2 flex w-max min-w-55 max-w-none origin-center items-center justify-center"
-        style={{ transform: `translate(-50%, -50%) scale(${scale()})` }}
+        style={{
+          transform: `translate(-50%, -50%) scale(${scale()})`,
+          width: props.size ? `${props.size.width}px` : undefined,
+          height: props.size ? `${props.size.height}px` : undefined,
+        }}
       >
         {props.children}
       </div>

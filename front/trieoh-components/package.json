@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "oxlint src",
-    "tsc": "tsc --noEmit"
+    "check": "oxlint src tests",
+    "tsc": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@solidjs/web": "catalog:solid",
@@ -25,6 +26,8 @@
     "typescript": "catalog:",
     "unplugin-icons": "catalog:",
     "vite": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "vitest": "catalog:",
+    "jsdom": "catalog:"
   }
 }

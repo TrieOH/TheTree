@@ -1,5 +1,14 @@
+import {
+  PaginationExample,
+  ToolbarExample,
+  FilterBarExample,
+  BulkActionsExample,
+  InfiniteScrollExample,
+  PaginatedExample,
+  DataTableExample,
+} from "./examples/CollectionExamples";
 import { catalogSections, catalogTop } from "./catalog-navigation";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import {
   cn,
@@ -35,7 +44,6 @@ import {
   MultiStepStepper,
   MultiStepFields,
   MultiStepSummaryCard,
-  PaginatedContainer,
   type InputProps,
   type ButtonVariant,
   type ButtonSize,
@@ -84,6 +92,8 @@ type Control = {
   number?: NumberRange;
 };
 export type Entry = {
+  /** Stable canvas for interactive miniature previews. */
+  previewSize?: { width: number; height: number };
   name: string;
   group: string;
   description: string;
@@ -1584,12 +1594,134 @@ export function createCatalog(options: {
       ),
     },
     {
+      name: "Pagination",
+      previewSize: { width: 480, height: 120 },
+      group: "Navegação",
+      description:
+        "Paginação independente com números, reticências, tamanho de página ou navegação por cursor.",
+      defaults: {
+        page: "1",
+        pageSize: "10",
+        totalItems: "240",
+        mode: "numbered",
+        showPageSizeSelector: true,
+        disabled: false,
+      },
+      controls: [
+        number("page", "Página", { min: 1, max: 24 }),
+        select("pageSize", "Itens por página", ["10", "25", "50", "100"]),
+        number("totalItems", "Total de itens", { min: 0, max: 10000 }),
+        select("mode", "Navegação", ["numbered", "cursor"]),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("disabled", "Desabilitado"),
+      ],
+      render: (values, update) => (
+        <PaginationExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "CollectionToolbar",
+      previewSize: { width: 560, height: 520 },
+      group: "Layout",
+      description:
+        "Busca, ordenação, contador e alternância de visualização para coleções.",
+      defaults: {
+        search: "",
+        sort: "asc",
+        layout: "list",
+        status: "Todos",
+        disabled: false,
+        withPagination: false,
+      },
+      controls: [
+        text("search", "Busca"),
+        select("status", "Status", ["Todos", "Ativo", "Arquivado"]),
+        select("sort", "Ordenação", ["asc", "desc"]),
+        select("layout", "Visualização", ["list", "grid"]),
+        text("disabled", "Desabilitado"),
+        text("withPagination", "Exibir paginação"),
+      ],
+      render: (values, update) => (
+        <ToolbarExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "FilterBar",
+      previewSize: { width: 480, height: 320 },
+      group: "Layout",
+      description:
+        "Filtros ativos removíveis, com limpeza individual ou de todos os filtros.",
+      defaults: { disabled: false },
+      controls: [text("disabled", "Desabilitado")],
+      render: (values, update) => (
+        <FilterBarExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "BulkActions",
+      previewSize: { width: 480, height: 160 },
+      group: "Ações",
+      description:
+        "Ações em lote sobre a seleção, com contador e limpeza de seleção.",
+      defaults: { busy: false, iconOnly: false },
+      controls: [
+        text("busy", "Operação em andamento"),
+        text("iconOnly", "Somente ícones"),
+      ],
+      render: (values, update) => (
+        <BulkActionsExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "InfiniteScroll",
+      previewSize: { width: 480, height: 360 },
+      group: "Layout",
+      description:
+        "Carrega mais itens ao aproximar-se do fim, com nova tentativa, carregamento manual e fim da lista.",
+      defaults: { automatic: true, simulateError: false },
+      controls: [
+        text("automatic", "Carregamento automático"),
+        text("simulateError", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <InfiniteScrollExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "DataTable",
+      previewSize: { width: 560, height: 540 },
+      group: "Layout",
+      description:
+        "Tabela com seleção entre páginas, ordenação, ações por registro e paginação controlada.",
+      defaults: {
+        selectable: true,
+        rowActions: true,
+        showPageSizeSelector: true,
+        loading: false,
+        simulateError: false,
+      },
+      controls: [
+        text("selectable", "Permitir seleção"),
+        text("rowActions", "Ações por registro"),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("loading", "Carregando"),
+        text("simulateError", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <DataTableExample values={values} update={update} />
+      ),
+    },
+    {
       name: "PaginatedContainer",
+      previewSize: { width: 560, height: 440 },
       group: "Layout",
       description: "Coleção com busca, ordenação e paginação.",
       defaults: {
+        dataMode: "No componente",
+        showPageSizeSelector: true,
+        simulateError: false,
         filterValue: "",
-        pageSize: "2",
+        pageSize: "5",
         layout: "list",
         gap: "3",
         filterPlaceholder: "Buscar projetos…",
@@ -1597,7 +1729,13 @@ export function createCatalog(options: {
         minItemWidth: "12rem",
       },
       controls: [
-        select("pageSize", "Itens por página", ["1", "2", "3"]),
+        select("dataMode", "Onde paginar (demonstração)", [
+          "No componente",
+          "No servidor (simulado)",
+        ]),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("simulateError", "Simular erro do servidor"),
+        select("pageSize", "Itens por página", ["5", "10", "25"]),
         select("layout", "Layout", ["list", "grid"]),
         select("gap", "Espaçamento", ["0", "2", "3", "4", "6"]),
         text("filterValue", "Busca"),
@@ -1605,39 +1743,8 @@ export function createCatalog(options: {
         text("itemLabel", "Nome dos itens"),
         text("minItemWidth", "Largura mínima"),
       ],
-      render: (v, update) => (
-        <PaginatedContainer
-          class={String(v.class)}
-          items={[
-            { name: "Website" },
-            { name: "Aplicativo" },
-            { name: "Design system" },
-          ]}
-          pageSize={Number(v.pageSize)}
-          layout={v.layout as "list" | "grid"}
-          gap={v.gap as "0" | "2" | "3" | "4" | "6"}
-          filterValue={String(v.filterValue)}
-          onFilterChange={(value) => update("filterValue", value)}
-          emptyState={
-            <EmptyState
-              title="Nenhum projeto encontrado"
-              description="Tente outro termo de busca."
-            />
-          }
-          filterPlaceholder={String(v.filterPlaceholder)}
-          itemLabel={String(v.itemLabel)}
-          minItemWidth={String(v.minItemWidth)}
-          sortFields={[{ key: "name", label: "Nome" }]}
-          renderItems={(items) => (
-            <For each={items}>
-              {(item) => (
-                <div class="my-1 rounded-[5px] border border-border bg-card px-3 py-2 text-[11px]">
-                  {item.name}
-                </div>
-              )}
-            </For>
-          )}
-        />
+      render: (values, update) => (
+        <PaginatedExample values={values} update={update} />
       ),
     },
     {

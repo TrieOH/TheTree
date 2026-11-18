@@ -79,7 +79,7 @@ export function CatalogPage(props: {
               </Link>
             </header>
             <div class="relative hidden min-h-0 overflow-hidden bg-background min-[641px]:block">
-              <FitPreview>
+              <FitPreview size={entry.previewSize}>
                 {entry.render(props.values[entry.name], (key, value) =>
                   props.onUpdate(entry.name, key, value),
                 )}

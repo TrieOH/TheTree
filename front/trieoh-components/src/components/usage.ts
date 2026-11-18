@@ -1,6 +1,9 @@
+import { collectionUsage } from "./collection-usage";
 import type { Values } from "../catalog";
 
 export function usage(name: string, v: Values): string {
+  const collection = collectionUsage(name, v);
+  if (collection !== undefined) return collection;
   let imports = name;
   let setup = "";
   let jsx = "";
@@ -139,11 +142,6 @@ export function usage(name: string, v: Values): string {
     case "VirtualizedContainer":
       setup = `const items = Array.from({ length: ${Number(String(v.count).replaceAll(".", ""))} }, (_, index) => index + 1);\\n\\n`;
       jsx = `<VirtualizedContainer items={items} columns={${Number(v.columns)}} estimatedRowHeight={72} gap={8} overscan={${Number(v.overscan)}}>\\n  {item => <div class="rounded-md border p-4">Item {item}</div>}\\n</VirtualizedContainer>`;
-      break;
-    case "PaginatedContainer":
-      setup = state(q("filterValue"), "search");
-      imports += ", EmptyState";
-      jsx = `<PaginatedContainer\\n  items={[{ name: "Website" }, { name: "Aplicativo" }, { name: "Design system" }]}\\n  pageSize={${Number(v.pageSize)}} layout={${q("layout")}} gap={${q("gap")}} filterPlaceholder={${q("filterPlaceholder")}} itemLabel={${q("itemLabel")}} minItemWidth={${q("minItemWidth")}}\\n  filterValue={search()} onFilterChange={setSearch}\\n  emptyState={<EmptyState title="Nenhum projeto encontrado" description="Tente outro termo de busca." />}\\n  sortFields={[{ key: "name", label: "Nome" }]}\\n  renderItems={items => <For each={items}>{item => <div>{item.name}</div>}</For>}\\n/>`;
       break;
     case "OverlayScrollbar":
       jsx = v.enabled
