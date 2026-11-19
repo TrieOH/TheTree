@@ -132,10 +132,10 @@ A Go error for something a caller did wrong, like `errs.ErrProjectNotFound`. Cod
 An error as the caller sees it: an RFC 9457 JSON object, declared in the spec.
 
 **Backend kit**:
-`lib/backend`, the code every backend starts from. Shared pieces like Postgres or email are modules, and each backend wires the rest itself.
+`lib/go/backend`, the code every backend starts from: the process from boot to shutdown. Shared pieces like Postgres or email are modules, and each backend wires the rest itself.
 
 **Harness**:
-`lib/httpserver`, which runs the HTTP server: middleware, telemetry, `/health` and shutdown.
+`lib/go/httpserver`, the HTTP layer the kit serves: middleware, telemetry, `/health`, the auth chains derived from the spec, and the problem writer.
 
 **Job carrier**:
 What moves background work. Locally it runs in the same process. On Cloudflare it goes through a queue and comes back to the container at `/_jobs`.

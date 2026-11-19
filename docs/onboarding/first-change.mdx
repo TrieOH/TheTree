@@ -75,16 +75,16 @@ WHERE id = @id
 RETURNING *;
 ```
 
-Run `just gen identityx` again, then add a method to the repo in `repo.go` that calls `RenameProject` and maps the row with `mapProject`. Add the same method to the `ProjectRepo` interface in `ports/project.go`, so the service can call it.
+Run `just gen identityx` again, then add a method to the repo in `repo.go` that calls `RenameProject` and maps the row with `mapProject`. Add the same method to the `ProjectRepo` interface in `ports/project.go`, so the operations can call it.
 
 If you need a new column, add a migration in `db/migrations/` and run `just migrate identityx`.
 
 ### Write the logic
 
-Each operation gets its own file in `service/`:
+The operations live in the feature's `operations.go`, next to its `repo.go` and `handlers.go`:
 
 ```go
-// service/rename.go
+// operations.go
 func (o *Operations) Rename(ctx context.Context, projectID uuid.UUID, name string) (*models.Project, error) {
 	if err := o.Authz.CheckProject(ctx, projectID, models.ProjectRoleAdmin); err != nil {
 		return nil, err
@@ -95,7 +95,21 @@ func (o *Operations) Rename(ctx context.Context, projectID uuid.UUID, name strin
 
 The access check comes first. It answers 404 when the project doesn't exist and 403 when the caller isn't an admin, so the operation doesn't have to.
 
-Return named errors from `errs/`, like `errs.ErrProjectNotFound`. `internal/app/problems.go` maps each one to an HTTP problem in one place. A new error goes in `errs/` and gets a line there.
+Return named errors, like `errs.ErrProjectNotFound`. A new error is one entry in the feature's `spec.yml` (or the API's `problems.yml`): its problem names the Go error and the message a client reads, and `just gen` generates both the error and its mapping.
+
+```yaml
+# internal/features/projects/spec.yml, under components.schemas
+    ProjectNameTaken:
+      x-problem:
+        slug: project-name-taken
+        status: 409
+        title: Project Name Taken
+        description: "Another project already has this name."
+        error: ErrProjectNameTaken
+        message: "another project in this organization already has this name; pick another"
+```
+
+Add its slug (or its status) to the route's `x-problems`. Only errors that carry data (typed errors) are written by hand in `errs/` and mapped in the API's `Problem` switch in `internal/app`.
 
 ### Connect the handler
 
@@ -116,7 +130,7 @@ The build passes again.
 
 ### Test it
 
-Unit tests sit next to the code they test and mock the repos with mockio. `authn/service/register_tos_test.go` is a good one to copy from. Tests that need a real database end in `_integration_test.go`.
+Unit tests sit next to the code they test and mock the repos with mockio. `internal/features/authn/register_tos_test.go` is a good one to copy from. Tests that need a real database end in `_integration_test.go`.
 
 ```sh
 just test identityx       # unit tests
