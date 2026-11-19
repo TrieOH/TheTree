@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"lib/openapispec"
 	"lib/telemetry"
 	"lib/validator"
 )
@@ -27,7 +28,7 @@ const shutdownTimeout = 10 * time.Second
 // Build), serving, then the shutdown start returned, in reverse order, on
 // SIGTERM/SIGINT. It returns an error instead of exiting: errx.Exit stays
 // at the process edge (cmd/main).
-func boot(app App) error {
+func boot(app App, ops []openapispec.Operation) error {
 	validator.SetupValidator()
 
 	ctx := context.Background()
@@ -37,7 +38,7 @@ func boot(app App) error {
 	}
 
 	bootCtx, bootSpan := startBoot(ctx, app.Name)
-	handler, shutdown, err := start(bootCtx, app)
+	handler, shutdown, err := start(bootCtx, app, ops)
 	if err != nil {
 		failBoot(bootSpan, err)
 		telemetry.Shutdown(ctx, shutdownTelemetry, app.Name)

@@ -20,9 +20,9 @@ import (
 var (
 	ErrInvalidParameter = errors.New("a path or query parameter is missing or malformed; errors lists which")
 	ErrInvalidHeader    = errors.New("a required header is missing or malformed; errors lists which")
-	// errOperationNotRegistered is spec/codegen drift: an operation the
-	// auth resolver has no chain for. It is a 500.
-	errOperationNotRegistered = errors.New("operation not registered with auth resolver")
+	// errOperationNotRegistered is spec/codegen drift: an operation Chains
+	// resolved no chain for. It is a 500.
+	errOperationNotRegistered = errors.New("operation has no auth chain")
 )
 
 // InvalidBodyError is a request body that does not decode. Its message

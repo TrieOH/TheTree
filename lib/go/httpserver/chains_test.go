@@ -1,4 +1,4 @@
-package authz
+package httpserver
 
 import (
 	"context"
@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"lib/httpcache"
+	"lib/openapispec"
+
+	fp "github.com/MintzyG/problematic"
 )
 
 var invocations []string
@@ -153,208 +156,161 @@ func scopeNamed() ScopeChecker {
 	}
 }
 
+// errScopeDenied is a scope checker's rejection; the test mapper answers it
+// with a 403.
+var errScopeDenied = errors.New("scope denied")
+
 // rejectingScope rejects every call, so the middleware path (write the
 // error, stop the chain) can be pinned.
 func rejectingScope(context.Context) error {
-	return ErrInsufficientRole
+	return errScopeDenied
 }
 
-// writeForbidden stands in for lib/httpserver's writer.
-func writeForbidden(w http.ResponseWriter, _ *http.Request, err error) {
-	if errors.Is(err, ErrInsufficientRole) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	w.WriteHeader(http.StatusInternalServerError)
-}
-
-func mustResolver(t *testing.T, spec string, primitives Primitives, opts Options) *Resolver {
-	t.Helper()
-	r, err := NewResolver([]byte(spec), primitives, opts)
+func chainsFor(spec string, primitives Primitives) (map[string][]func(http.Handler) http.Handler, error) {
+	ops, err := openapispec.Operations([]byte(spec))
 	if err != nil {
-		t.Fatalf("NewResolver: %v", err)
+		return nil, err
 	}
-	return r
+	return Chains(ops, primitives)
 }
 
-func TestResolverDefaultSecurityAndOverrides(t *testing.T) {
-	r := mustResolver(t, specWithDefault, testPrimitives, Options{})
+func mustChains(t *testing.T, spec string, primitives Primitives) map[string][]func(http.Handler) http.Handler {
+	t.Helper()
+	chains, err := chainsFor(spec, primitives)
+	if err != nil {
+		t.Fatalf("Chains: %v", err)
+	}
+	return chains
+}
 
-	if got := run(r.Chains()["GetPublic"]); len(got) != 0 {
+func TestChainsDefaultSecurityAndOverrides(t *testing.T) {
+	r := mustChains(t, specWithDefault, testPrimitives)
+
+	if got := run(r["GetPublic"]); len(got) != 0 {
 		t.Fatalf("getPublic must be public, ran %v", got)
 	}
-	if got := run(r.Chains()["GetDefaulted"]); len(got) != 1 || got[0] != "JWT" {
+	if got := run(r["GetDefaulted"]); len(got) != 1 || got[0] != "JWT" {
 		t.Fatalf("getDefaulted must inherit default bearerAuth, ran %v", got)
 	}
-	if got := run(r.Chains()["GetJWT"]); len(got) != 1 || got[0] != "JWT" {
+	if got := run(r["GetJWT"]); len(got) != 1 || got[0] != "JWT" {
 		t.Fatalf("getJWT must be bearerAuth, ran %v", got)
 	}
-	if got := run(r.Chains()["GetAPIKey"]); len(got) != 1 || got[0] != "APIKey" {
+	if got := run(r["GetAPIKey"]); len(got) != 1 || got[0] != "APIKey" {
 		t.Fatalf("getAPIKey must be apiKeyAuth, ran %v", got)
 	}
-	if got := run(r.Chains()["GetAny"]); len(got) != 1 || got[0] != "AnyAuth" {
+	if got := run(r["GetAny"]); len(got) != 1 || got[0] != "AnyAuth" {
 		t.Fatalf("getAny must derive the OR combination to AnyAuth, ran %v", got)
 	}
 }
 
-func TestResolverNoDefaultMeansPublic(t *testing.T) {
-	r := mustResolver(t, specNoDefault, testPrimitives, Options{})
-	if got := run(r.Chains()["GetX"]); len(got) != 0 {
+func TestChainsNoDefaultMeansPublic(t *testing.T) {
+	r := mustChains(t, specNoDefault, testPrimitives)
+	if got := run(r["GetX"]); len(got) != 0 {
 		t.Fatalf("operation without default security must be public, ran %v", got)
 	}
 }
 
-func TestResolverUnregisteredCombinationFails(t *testing.T) {
-	_, err := NewResolver([]byte(specUnknownScheme), testPrimitives, Options{})
+func TestChainsUnregisteredCombinationFails(t *testing.T) {
+	_, err := chainsFor(specUnknownScheme, testPrimitives)
 	if err == nil {
 		t.Fatal("want error for unregistered security combination, got nil")
 	}
 }
 
-func TestResolverAndBlockFails(t *testing.T) {
-	_, err := NewResolver([]byte(specAndBlock), testPrimitives, Options{})
+func TestChainsAndBlockFails(t *testing.T) {
+	_, err := chainsFor(specAndBlock, testPrimitives)
 	if err == nil || !strings.Contains(err.Error(), "separate blocks") {
 		t.Fatalf("want error for single-block AND security, got %v", err)
 	}
 }
 
-func TestResolverNilPrimitiveFails(t *testing.T) {
-	_, err := NewResolver([]byte(specWithDefault), Primitives{}, Options{})
+func TestChainsNilPrimitiveFails(t *testing.T) {
+	_, err := chainsFor(specWithDefault, Primitives{})
 	if err == nil || !strings.Contains(err.Error(), "is nil") {
 		t.Fatalf("want error for nil primitive, got %v", err)
 	}
 }
 
-func TestResolverSetupGuard(t *testing.T) {
-	r := mustResolver(t, specWithDefault, testPrimitives, Options{
-		SetupGuard:     named("setupGuard"),
-		SkipSetupGuard: []string{"getDefaulted"},
-	})
-
-	// skipped operation keeps only its auth middleware
-	if got := run(r.Chains()["GetDefaulted"]); len(got) != 1 || got[0] != "JWT" {
-		t.Fatalf("skipped op must keep only its auth chain, ran %v", got)
-	}
-	// every other operation — public included — gains the guard in front
-	if got := run(r.Chains()["GetPublic"]); len(got) != 1 || got[0] != "setupGuard" {
-		t.Fatalf("public op must still run the setup guard, ran %v", got)
-	}
-	if got := run(r.Chains()["GetJWT"]); len(got) != 2 || got[0] != "setupGuard" || got[1] != "JWT" {
-		t.Fatalf("protected op must run guard then auth, ran %v", got)
-	}
-}
-
-func TestResolverUnknownOperationListFails(t *testing.T) {
-	_, err := NewResolver([]byte(specWithDefault), testPrimitives, Options{
-		SkipSetupGuard: []string{"getNotInSpec"},
-	})
-	if err == nil || !strings.Contains(err.Error(), "getNotInSpec") {
-		t.Fatalf("want error naming the unknown SkipSetupGuard entry, got %v", err)
-	}
-}
-
-func TestResolverScopeRunsAfterAuthn(t *testing.T) {
-	r := mustResolver(t, specWithScope, Primitives{
+func TestChainsScopeRunsAfterAuthn(t *testing.T) {
+	r := mustChains(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{WriteError: writeForbidden})
+	})
 
-	if got := run(r.Chains()["GetScoped"]); len(got) != 2 || got[0] != "JWT" || got[1] != "scope" {
+	if got := run(r["GetScoped"]); len(got) != 2 || got[0] != "JWT" || got[1] != "scope" {
 		t.Fatalf("scoped op must run authn then scope, ran %v", got)
 	}
 	// an operation without x-scope keeps today's chain — no scope middleware
-	if got := run(r.Chains()["GetUnscoped"]); len(got) != 1 || got[0] != "JWT" {
+	if got := run(r["GetUnscoped"]); len(got) != 1 || got[0] != "JWT" {
 		t.Fatalf("unscoped op must keep only its auth chain, ran %v", got)
 	}
 }
 
-func TestResolverScopeAfterSetupGuard(t *testing.T) {
-	r := mustResolver(t, specWithScope, Primitives{
-		JWT:    named("JWT"),
-		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{SetupGuard: named("setupGuard"), WriteError: writeForbidden})
-
-	got := run(r.Chains()["GetScoped"])
-	want := []string{"setupGuard", "JWT", "scope"}
-	if len(got) != len(want) {
-		t.Fatalf("scoped op with setup guard must run guard, authn, scope; ran %v", got)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("scoped op with setup guard: order %v, want %v", got, want)
+func TestChainsScopeRejectionShortCircuits(t *testing.T) {
+	useTestProblems(t, func(err error) *fp.Problem {
+		if errors.Is(err, errScopeDenied) {
+			return fp.New(http.StatusForbidden).WithType("insufficient-role").WithDetail(err.Error())
 		}
-	}
-}
-
-func TestResolverScopeRejectionShortCircuits(t *testing.T) {
-	r := mustResolver(t, specWithScope, Primitives{
+		return nil
+	})
+	r := mustChains(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": rejectingScope},
-	}, Options{WriteError: writeForbidden})
+	})
 
 	invocations = nil
 	rec := httptest.NewRecorder()
 	var next http.Handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Error("scope rejection must stop the chain before the handler")
 	})
-	chain := r.Chains()["GetScoped"]
+	chain := r["GetScoped"]
 	for i := range slices.Backward(chain) {
 		next = chain[i](next)
 	}
 	next.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("scope rejection must write Forbidden, got %d", rec.Code)
+		t.Fatalf("scope rejection must write its problem, 403, got %d", rec.Code)
 	}
 }
 
-func TestResolverScopeOnPublicOperationFails(t *testing.T) {
-	_, err := NewResolver([]byte(specScopePublic), Primitives{
+func TestChainsScopeOnPublicOperationFails(t *testing.T) {
+	_, err := chainsFor(specScopePublic, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{})
+	})
 	if err == nil || !strings.Contains(err.Error(), "no security schemes") {
 		t.Fatalf("want error for x-scope on a public operation, got %v", err)
 	}
 }
 
-func TestResolverUnknownScopeFails(t *testing.T) {
+func TestChainsUnknownScopeFails(t *testing.T) {
 	// unknown scope with a non-nil registry
-	_, err := NewResolver([]byte(specScopeUnknown), Primitives{
+	_, err := chainsFor(specScopeUnknown, Primitives{
 		JWT: named("JWT"),
 		Scopes: map[string]ScopeChecker{
 			"platform-only": scopeNamed(),
 		},
-	}, Options{})
+	})
 	if err == nil || !strings.Contains(err.Error(), "getScopedUnknown") {
 		t.Fatalf("want error naming the operation and unknown scope, got %v", err)
 	}
 
 	// x-scope with a nil registry — the feature is off, but a spec that
 	// declares scopes must not silently pass
-	_, err = NewResolver([]byte(specScopeUnknown), Primitives{JWT: named("JWT")}, Options{})
+	_, err = chainsFor(specScopeUnknown, Primitives{JWT: named("JWT")})
 	if err == nil || !strings.Contains(err.Error(), "no scope checker registered") {
 		t.Fatalf("want error for x-scope with no registry, got %v", err)
 	}
 }
 
-func TestResolverNilScopeCheckerFails(t *testing.T) {
-	_, err := NewResolver([]byte(specWithScope), Primitives{
+func TestChainsNilScopeCheckerFails(t *testing.T) {
+	_, err := chainsFor(specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": nil},
-	}, Options{})
+	})
 	if err == nil || !strings.Contains(err.Error(), "no scope checker registered") {
 		t.Fatalf("want error for a registered-but-nil scope checker, got %v", err)
-	}
-}
-
-func TestResolverScopeWithoutWriterFails(t *testing.T) {
-	_, err := NewResolver([]byte(specWithScope), Primitives{
-		JWT:    named("JWT"),
-		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{})
-	if err == nil || !strings.Contains(err.Error(), "needs Options.WriteError") {
-		t.Fatalf("want error for x-scope with no error writer, got %v", err)
 	}
 }
 
@@ -371,12 +327,12 @@ paths:
 `
 }
 
-func TestResolverSharedCacheMarksTheResponse(t *testing.T) {
-	r := mustResolver(t, cacheSpec("get", "[]", "shared"), testPrimitives, Options{})
+func TestChainsSharedCacheMarksTheResponse(t *testing.T) {
+	r := mustChains(t, cacheSpec("get", "[]", "shared"), testPrimitives)
 	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	chain := r.Chains()["Cached"]
+	chain := r["Cached"]
 	for i := range slices.Backward(chain) {
 		next = chain[i](next)
 	}
@@ -387,13 +343,13 @@ func TestResolverSharedCacheMarksTheResponse(t *testing.T) {
 	}
 }
 
-func TestResolverCacheMisuseFails(t *testing.T) {
+func TestChainsCacheMisuseFails(t *testing.T) {
 	for name, spec := range map[string]string{
 		"authenticated": cacheSpec("get", "[{bearerAuth: []}]", "shared"),
 		"not a GET":     cacheSpec("post", "[]", "shared"),
 		"unknown value": cacheSpec("get", "[]", "forever"),
 	} {
-		_, err := NewResolver([]byte(spec), testPrimitives, Options{})
+		_, err := chainsFor(spec, testPrimitives)
 		if err == nil || !strings.Contains(err.Error(), "x-cache") {
 			t.Errorf("%s: want an x-cache error, got %v", name, err)
 		}

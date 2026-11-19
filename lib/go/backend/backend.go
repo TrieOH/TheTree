@@ -23,12 +23,12 @@ import (
 	"net/http"
 	"slices"
 
-	"lib/authz"
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
 	libjobs "lib/jobs"
 	"lib/jobs/httpjobs"
+	"lib/openapispec"
 	"lib/telemetry"
 
 	idx "sdk/identityx"
@@ -108,14 +108,15 @@ type Deps struct {
 	// jobs: enqueue right away; hand over the registry with Serve in Build.
 	Jobs Jobs
 
-	spec []byte
+	// ops is the spec's operations, read once by Run.
+	ops []openapispec.Operation
 }
 
 // IdentityX is what the identityx module provides: the SDK client and the
 // auth primitives every IdentityX consumer authenticates requests with.
 type IdentityX struct {
 	Client *idx.Client
-	Auth   authz.Primitives
+	Auth   httpserver.Primitives
 }
 
 // Jobs is the background-work carrier the jobs module provides. Enqueue
@@ -135,23 +136,12 @@ type Jobs interface {
 // security, enforced by primitives: d.IDX.Auth for IdentityX's consumers,
 // IdentityX's own primitives for IdentityX itself. Pass the result to the
 // generated openapi.Mount.
-func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
-	return d.ChainsWith(primitives, authz.Options{})
-}
-
-// ChainsWith is Chains with resolver options. IdentityX passes its setup
-// guard here until the guard moves into its own code (ADR-0014). Scope
-// rejections are written through the Backend's problems unless opts says
-// otherwise.
-func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[string][]func(http.Handler) http.Handler, error) {
-	if opts.WriteError == nil {
-		opts.WriteError = httpserver.WriteError
-	}
-	resolver, err := authz.NewResolver(d.spec, primitives, opts)
+func (d *Deps) Chains(primitives httpserver.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
+	chains, err := httpserver.Chains(d.ops, primitives)
 	if err != nil {
 		return nil, fmt.Errorf("resolve auth chains: %w", err)
 	}
-	return resolver.Chains(), nil
+	return chains, nil
 }
 
 // Run boots the Backend and serves until SIGTERM/SIGINT.
@@ -159,18 +149,19 @@ func Run(app App) error {
 	if app.Build == nil {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
 	}
-	httpserver.UseProblems(app.Errors, app.Server.APIURL)
-	err := httpserver.UseOperationProblems(app.Spec, app.Server.DebugMode)
+	ops, err := openapispec.Operations(app.Spec)
 	if err != nil {
-		return fmt.Errorf("%s: read x-problems: %w", app.Name, err)
+		return fmt.Errorf("%s: read the spec: %w", app.Name, err)
 	}
-	return boot(app)
+	httpserver.UseProblems(app.Errors, app.Server.APIURL)
+	httpserver.UseOperationProblems(ops, app.Server.DebugMode)
+	return boot(app, ops)
 }
 
 // start opens the modules, builds the router through Build, and returns the
 // handler with the shutdown that closes every module in reverse order.
-func start(ctx context.Context, app App) (http.Handler, func(context.Context) error, error) {
-	d := &Deps{spec: app.Spec}
+func start(ctx context.Context, app App, ops []openapispec.Operation) (http.Handler, func(context.Context) error, error) {
+	d := &Deps{ops: ops}
 	closeAll, err := openModules(ctx, d, app.Modules)
 	if err != nil {
 		return nil, nil, err

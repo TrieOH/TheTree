@@ -7,9 +7,10 @@ import (
 	"slices"
 	"testing"
 
-	"lib/authz"
+	"lib/httpserver"
 	libjobs "lib/jobs"
 	"lib/jobs/httpjobs"
+	"lib/openapispec"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -118,8 +119,8 @@ paths:
 
 func TestChainsFollowTheSpec(t *testing.T) {
 	pass := func(next http.Handler) http.Handler { return next }
-	d := &Deps{spec: []byte(spec)}
-	chains, err := d.Chains(authz.Primitives{JWT: pass, APIKey: pass, Any: pass})
+	d := &Deps{ops: mustOps(t)}
+	chains, err := d.Chains(httpserver.Primitives{JWT: pass, APIKey: pass, Any: pass})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,9 +133,18 @@ func TestChainsFollowTheSpec(t *testing.T) {
 }
 
 func TestChainsFailWithoutAPrimitive(t *testing.T) {
-	d := &Deps{spec: []byte(spec)}
-	_, err := d.Chains(authz.Primitives{})
+	d := &Deps{ops: mustOps(t)}
+	_, err := d.Chains(httpserver.Primitives{})
 	if err == nil {
 		t.Fatal("expected an error: the spec needs a JWT primitive")
 	}
+}
+
+func mustOps(t *testing.T) []openapispec.Operation {
+	t.Helper()
+	ops, err := openapispec.Operations([]byte(spec))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ops
 }

@@ -11,6 +11,7 @@ import (
 	"lib/database"
 
 	libauthz "lib/authz"
+	"lib/httpserver"
 )
 
 type Service struct {
@@ -57,9 +58,9 @@ func (s *Service) requirePlatformClient(ctx context.Context) error {
 // value the spec declares per operation. The resolver validates every
 // x-scope an operation declares against this registry and fails boot on a
 // miss. Adding a scope is one spec line plus one entry here — the generic
-// mechanism in lib/authz needs no further wiring.
-func (s *Service) ScopeCheckers() map[string]libauthz.ScopeChecker {
-	return map[string]libauthz.ScopeChecker{
+// mechanism in lib/httpserver needs no further wiring.
+func (s *Service) ScopeCheckers() map[string]httpserver.ScopeChecker {
+	return map[string]httpserver.ScopeChecker{
 		"platform-only": s.requirePlatformClient,
 	}
 }

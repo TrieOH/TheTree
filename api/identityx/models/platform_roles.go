@@ -14,7 +14,7 @@ const (
 	PlatformRoleSuperAdmin PlatformRole = "super_admin"
 )
 
-// Rank orders platform roles for lib/authz.Min: support is the lowest tier,
+// Rank orders platform roles for lib/authz.AtLeast: support is the lowest tier,
 // super_admin the highest.
 func (r PlatformRole) Rank() int {
 	switch r {

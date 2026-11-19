@@ -51,14 +51,11 @@ func UseProblems(m fp.ErrorMapper, baseURL string) {
 }
 
 // UseOperationProblems installs each operation's x-problems from the
-// bundled spec, which WriteError checks every answered problem against.
-// strict makes an unlisted problem panic (tests and DEBUG_MODE always are);
-// otherwise it is a warning and a span attribute, and the response stands.
-func UseOperationProblems(spec []byte, strict bool) error {
-	ops, err := openapispec.Operations(spec)
-	if err != nil {
-		return err
-	}
+// bundled spec's operations, which WriteError checks every answered problem
+// against. strict makes an unlisted problem panic (tests and DEBUG_MODE
+// always are); otherwise it is a warning and a span attribute, and the
+// response stands.
+func UseOperationProblems(ops []openapispec.Operation, strict bool) {
 	listed := make(map[string][]string, len(ops))
 	for _, op := range ops {
 		if op.Problems != nil {
@@ -69,7 +66,6 @@ func UseOperationProblems(spec []byte, strict bool) error {
 	opProblems = listed
 	strictProblems = strict || testing.Testing()
 	problemsMu.Unlock()
-	return nil
 }
 
 // operationSlot carries the strict server's operationID to WriteError: the

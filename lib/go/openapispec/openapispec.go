@@ -59,8 +59,8 @@ type operation struct {
 // Operations parses the spec and returns every operation with its
 // effective security (the spec default applied where the operation declares
 // none), its x-scope (empty when undeclared), and its route (method + path).
-// The auth resolver (lib/authz) and the problem check (lib/httpserver)
-// read the spec through it.
+// lib/backend reads it once at boot, for the auth chains and the problem
+// check (both lib/httpserver).
 func Operations(spec []byte) ([]Operation, error) {
 	var doc openAPISpec
 	err := yaml.Unmarshal(spec, &doc)

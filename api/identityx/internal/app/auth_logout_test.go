@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"lib/httpserver"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
-	libauthz "lib/authz"
 	"lib/database"
 	"lib/validator"
 
@@ -60,7 +60,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	return newTestRouter(t, server, libauthz.Primitives{
+	return newTestRouter(t, server, httpserver.Primitives{
 		JWT:    jwtStub,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,

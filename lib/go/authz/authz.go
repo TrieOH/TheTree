@@ -1,3 +1,5 @@
+// Package authz holds the role checks every Backend shares. The auth chains
+// the spec derives (security, x-scope, x-cache) live in lib/httpserver.
 package authz
 
 import (

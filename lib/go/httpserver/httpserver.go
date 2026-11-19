@@ -1,6 +1,7 @@
 // Package httpserver is the HTTP layer shared by every TrieOH backend: the
 // standard router skeleton (middleware stack, /health, OpenTelemetry
-// wrapping), the strict stack, the auth primitives and the problem writer.
+// wrapping), the strict stack, the auth primitives and the per-operation
+// chains derived from the spec, and the problem writer.
 // The process lifecycle lives in lib/backend. Telemetry is pushed
 // over OTLP (see lib/telemetry); nothing is scraped from the process.
 package httpserver

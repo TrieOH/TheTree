@@ -13,6 +13,7 @@ import (
 
 	"lib/database"
 	"lib/fielderr"
+	"lib/openapispec"
 
 	fp "github.com/MintzyG/problematic"
 	"github.com/go-chi/chi/v5"
@@ -118,17 +119,18 @@ func TestWriteErrorIsAProblem(t *testing.T) {
 // outside an operation, goes out as is.
 func TestWriteErrorChecksXProblems(t *testing.T) {
 	useTestProblems(t, testMapper)
-	err := UseOperationProblems([]byte(`
+	ops, err := openapispec.Operations([]byte(`
 paths:
   /members:
     post:
       operationId: addMember
       x-problems: [add-self]
-`), false)
+`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = UseOperationProblems(nil, false) })
+	UseOperationProblems(ops, false)
+	t.Cleanup(func() { UseOperationProblems(nil, false) })
 
 	// serve answers like the generated strict server: the handler's error
 	// is written with the request the server was handed.

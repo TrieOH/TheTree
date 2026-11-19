@@ -7,7 +7,6 @@ import (
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
-	libauthz "lib/authz"
 	"lib/httpserver"
 )
 
@@ -16,7 +15,7 @@ import (
 // instead of listing the kit's identityx module. The scope checkers come
 // from the Access-check module: adding a scope is one spec x-scope line plus
 // one entry in authz.ScopeCheckers.
-func authPrimitives(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations, authzSvc *authz.Service) libauthz.Primitives {
+func authPrimitives(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations, authzSvc *authz.Service) httpserver.Primitives {
 	p := authenticators(tokensMgr, apiKeys).Primitives()
 	p.Scopes = authzSvc.ScopeCheckers()
 	return p
