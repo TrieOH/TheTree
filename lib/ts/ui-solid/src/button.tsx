@@ -45,6 +45,9 @@ export type ButtonSize = NonNullable<
  * attribute — add to the list when a screen needs more.
  */
 export interface ButtonProps {
+  ref?: (element: HTMLButtonElement) => void;
+  onKeyDown?: JSX.EventHandler<HTMLButtonElement, KeyboardEvent>;
+  "aria-haspopup"?: "dialog" | "menu" | "listbox";
   shape?: Shape;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -69,6 +72,9 @@ export interface ButtonProps {
 export function Button(props: ButtonProps) {
   return (
     <button
+      ref={props.ref}
+      onKeyDown={props.onKeyDown}
+      aria-haspopup={props["aria-haspopup"]}
       type={props.type ?? "button"}
       id={props.id}
       name={props.name}
