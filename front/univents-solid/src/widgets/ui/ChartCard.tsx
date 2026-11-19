@@ -1,3 +1,5 @@
-export { ChartCard } from "../chart/chart-card";
-export type { ChartCardProps } from "../chart/chart-card";
-export type { ChartDatum } from "../chart/types";
+export {
+  ChartCard,
+  type ChartCardProps,
+  type ChartDatum,
+} from "@trieoh/ui-solid";

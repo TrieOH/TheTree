@@ -7,6 +7,7 @@ import {
 } from "solid-js";
 import { CatalogNav, OverlayScrollbar, Toaster, toast } from "@trieoh/ui-solid";
 import { createCatalog, type Values } from "./catalog";
+import { VirtualizedExample } from "./examples/VirtualizedExample";
 import { ScrollbarExample } from "./examples/ScrollbarExample";
 import { StudioHeader } from "./components/StudioHeader";
 import { CatalogPage } from "./components/CatalogPage";
@@ -20,6 +21,8 @@ import {
 } from "./catalog-navigation";
 
 export default function App() {
+  if (window.location.hash.startsWith("#/preview/virtualized"))
+    return <VirtualizedExample />;
   if (window.location.hash.startsWith("#/preview/scrollbar"))
     return <ScrollbarExample />;
   const [dark, setDark] = createSignal(false);

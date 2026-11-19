@@ -1,3 +1,4 @@
+import ChevronRightIcon from "~icons/lucide/chevron-right";
 import type { JSX } from "@solidjs/web";
 import { For, Show, type Accessor } from "solid-js";
 import { cn } from "./lib/cn";
@@ -12,7 +13,10 @@ export interface BreadcrumbProps {
   ariaLabel?: string;
   class?: string;
   /** Supply a router link to keep client-side navigation. */
-  renderLink?: (item: Accessor<BreadcrumbItem>, props: { class: string }) => JSX.Element;
+  renderLink?: (
+    item: Accessor<BreadcrumbItem>,
+    props: { class: string },
+  ) => JSX.Element;
 }
 
 export function Breadcrumb(props: BreadcrumbProps): JSX.Element {
@@ -34,17 +38,29 @@ export function Breadcrumb(props: BreadcrumbProps): JSX.Element {
         {(item, index) => (
           <>
             <Show when={index() > 0}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3 shrink-0 text-muted-foreground/40">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRightIcon
+                class="h-3 w-3 shrink-0 text-muted-foreground/40"
+                aria-hidden="true"
+              />
             </Show>
             <Show
               when={index() < props.items.length - 1}
-              fallback={<span aria-current="page" class="max-w-37.5 truncate text-foreground">{item().label}</span>}
+              fallback={
+                <span
+                  aria-current="page"
+                  class="max-w-37.5 truncate text-foreground"
+                >
+                  {item().label}
+                </span>
+              }
             >
-              {props.renderLink
-                ? props.renderLink(item, { class: linkClass })
-                : <a href={item().path} class={linkClass}>{item().label}</a>}
+              {props.renderLink ? (
+                props.renderLink(item, { class: linkClass })
+              ) : (
+                <a href={item().path} class={linkClass}>
+                  {item().label}
+                </a>
+              )}
             </Show>
           </>
         )}

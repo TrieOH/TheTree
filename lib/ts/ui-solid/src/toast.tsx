@@ -1,11 +1,10 @@
+import LucideCheck from "~icons/lucide/check";
+import LucideX from "~icons/lucide/x";
+import LucideWarning from "~icons/lucide/triangle-alert";
+import LucideInfo from "~icons/lucide/info";
+import { Spinner } from "./spinner";
 import type { JSX } from "@solidjs/web";
-import {
-  For,
-  Show,
-  createSignal,
-  onSettled,
-  untrack,
-} from "solid-js";
+import { For, Show, createSignal, onSettled, untrack } from "solid-js";
 import { Portal } from "@solidjs/web";
 
 export type ToastType =
@@ -69,16 +68,17 @@ const DEFAULT_DURATION = 4000;
 const MAX_VISIBLE_PER_POSITION = 5;
 const EXIT_ANIMATION_MS = 200;
 
-const [toasts, setToasts] = createSignal<ToastRecord[]>([], { ownedWrite: true });
+const [toasts, setToasts] = createSignal<ToastRecord[]>([], {
+  ownedWrite: true,
+});
 let nextId = 1;
 let defaultPosition: ToastPosition = "bottom-right";
 
 const closeHandlers = new Map<number, () => void>();
 
-const [heightMap, setHeightMap] = createSignal<Map<number, number>>(
-  new Map(),
-  { ownedWrite: true },
-);
+const [heightMap, setHeightMap] = createSignal<Map<number, number>>(new Map(), {
+  ownedWrite: true,
+});
 
 function setHeight(id: number, height: number) {
   setHeightMap((current) => {
@@ -137,10 +137,7 @@ function pushToast(
     onAutoClose: options.onAutoClose,
   };
 
-  setToasts((current) => [
-    ...current.filter((item) => item.id !== id),
-    record,
-  ]);
+  setToasts((current) => [...current.filter((item) => item.id !== id), record]);
   enforcePositionLimit(position);
   return id;
 }
@@ -169,10 +166,7 @@ export interface ToastFn {
   ) => Promise<T>;
 }
 
-const toastFn = ((
-  input: string | ToastPayload,
-  options?: ToastOptions,
-) =>
+const toastFn = ((input: string | ToastPayload, options?: ToastOptions) =>
   untrack(() => {
     if (typeof input === "string") {
       return pushToast(input, options?.type ?? "default", options);
@@ -218,9 +212,7 @@ toastFn.promise = (promise, messages, options) => {
         typeof messages.success === "function"
           ? messages.success(data)
           : messages.success;
-      untrack(() =>
-        pushToast(text, "success", { ...options, id: initialId }),
-      );
+      untrack(() => pushToast(text, "success", { ...options, id: initialId }));
     })
     .catch((error: unknown) => {
       const text =
@@ -236,93 +228,27 @@ toastFn.promise = (promise, messages, options) => {
 export const toast: ToastFn = toastFn;
 
 /* ------------------------------------------------------------------ */
-/*  Inline SVG Icons                                                  */
+/*  Status Icons                                                  */
 /* ------------------------------------------------------------------ */
 
 function CheckIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-3"
-      aria-hidden="true"
-    >
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
+  return <LucideCheck class="size-3" aria-hidden="true" />;
 }
 
 function ErrorIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-3"
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
+  return <LucideX class="size-3" aria-hidden="true" />;
 }
 
 function WarningIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-3"
-      aria-hidden="true"
-    >
-      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-      <path d="M12 9v4M12 17h.01" />
-    </svg>
-  );
+  return <LucideWarning class="size-3" aria-hidden="true" />;
 }
 
 function InfoIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-3"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4M12 8h.01" />
-    </svg>
-  );
+  return <LucideInfo class="size-3" aria-hidden="true" />;
 }
 
 function LoadingIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      class="size-3 animate-spin"
-      aria-hidden="true"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  );
+  return <Spinner size={12} activeColor="currentColor" />;
 }
 
 const ICON_STYLE: Record<
@@ -454,8 +380,8 @@ function ToastItem(props: ToastItemProps) {
     const pushedTowardEdge = pos.startsWith("top")
       ? dy < -SWIPE_THRESHOLD
       : pos.startsWith("bottom")
-      ? dy > SWIPE_THRESHOLD
-      : false;
+        ? dy > SWIPE_THRESHOLD
+        : false;
 
     if (Math.abs(dx) > SWIPE_THRESHOLD || pushedTowardEdge) {
       close();
@@ -665,8 +591,7 @@ function PositionGroup(props: {
 
   const ordered = () => [...props.items()].reverse();
 
-  const heightOf = (id: number) =>
-    heightMap().get(id) ?? DEFAULT_ITEM_HEIGHT;
+  const heightOf = (id: number) => heightMap().get(id) ?? DEFAULT_ITEM_HEIGHT;
 
   const frontHeight = () => {
     const list = ordered();
@@ -707,9 +632,7 @@ function PositionGroup(props: {
             index={index}
             offset={() => offsetFor(index())}
             scale={() =>
-              expanded()
-                ? 1
-                : Math.max(1 - index() * COLLAPSE_SCALE_STEP, 0.9)
+              expanded() ? 1 : Math.max(1 - index() * COLLAPSE_SCALE_STEP, 0.9)
             }
             layerOpacity={() =>
               expanded() || index() < VISIBLE_STACK_DEPTH ? 1 : 0

@@ -1,3 +1,4 @@
+import XIcon from "~icons/lucide/x";
 import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Portal } from "@solidjs/web";
@@ -260,16 +261,7 @@ function DialogSurface(surfaceProps: {
                     class="inline-flex size-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground/70 transition-all duration-150 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                     onClick={handleCloseBtnClick}
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      class="size-4"
-                      aria-hidden="true"
-                    >
-                      <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round" />
-                    </svg>
+                    <XIcon class="size-4" aria-hidden="true" />
                   </button>
                 </div>
               </Show>
@@ -305,16 +297,7 @@ function DialogSurface(surfaceProps: {
                       class="-mr-1.5 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground/70 transition-all duration-150 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                       onClick={handleCloseBtnClick}
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        class="size-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round" />
-                      </svg>
+                      <XIcon class="size-4" aria-hidden="true" />
                     </button>
                   </Show>
                 </header>

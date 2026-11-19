@@ -1,3 +1,5 @@
+import CheckIcon from "~icons/lucide/check";
+import MinusIcon from "~icons/lucide/minus";
 import type { JSX } from "@solidjs/web";
 import { createEffect, Show } from "solid-js";
 import { cn } from "./lib/cn";
@@ -98,22 +100,28 @@ export function Checkbox(props: CheckboxProps) {
             shapeClass(props.controlShape),
           )}
         />
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 20 20"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class={cn(
-            "pointer-events-none absolute inset-0 p-0.5 text-accent-foreground peer-checked:opacity-100 peer-disabled:text-muted-foreground forced-colors:hidden",
-            sizes[props.size ?? "md"],
-            props.indeterminate ? "opacity-100" : "opacity-0",
-          )}
+        <Show
+          when={props.indeterminate}
+          fallback={
+            <CheckIcon
+              class={cn(
+                "pointer-events-none absolute inset-0 p-0.5 text-accent-foreground peer-checked:opacity-100 peer-disabled:text-muted-foreground forced-colors:hidden",
+                sizes[props.size ?? "md"],
+                props.indeterminate ? "opacity-100" : "opacity-0",
+              )}
+              aria-hidden="true"
+            />
+          }
         >
-          <path d={props.indeterminate ? "M4 10h12" : "m4 10 4 4 8-8"} />
-        </svg>
+          <MinusIcon
+            class={cn(
+              "pointer-events-none absolute inset-0 p-0.5 text-accent-foreground peer-checked:opacity-100 peer-disabled:text-muted-foreground forced-colors:hidden",
+              sizes[props.size ?? "md"],
+              props.indeterminate ? "opacity-100" : "opacity-0",
+            )}
+            aria-hidden="true"
+          />
+        </Show>
       </span>
     </label>
   );

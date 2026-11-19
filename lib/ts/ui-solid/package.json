@@ -24,16 +24,23 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "catalog:",
     "@solidjs/web": "catalog:solid",
+    "@types/d3-scale": "catalog:",
+    "@types/d3-shape": "catalog:",
     "@types/node": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "oxlint": "catalog:",
     "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "unplugin-icons": "catalog:"
   },
   "dependencies": {
+    "@tanstack/charts": "catalog:",
+    "d3-scale": "catalog:",
+    "d3-shape": "catalog:",
     "prettier": "3.8.3"
   }
 }

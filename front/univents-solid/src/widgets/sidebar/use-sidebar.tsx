@@ -1,3 +1,4 @@
+import { createHotkeys } from "@trieoh/ui-solid";
 import {
   createComponent,
   createContext,
@@ -33,19 +34,10 @@ export function SidebarProvider(props: ParentProps) {
   const [collapsed, setCollapsed] = createSignal(false);
   const [mobileOpen, setMobileOpen] = createSignal(false);
 
-  const onKeyDown = (event: KeyboardEvent) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
-      event.preventDefault();
-      if (window.innerWidth < DESKTOP_BREAKPOINT) {
-        setMobileOpen((open) => !open);
-      } else {
-        setCollapsed((value) => !value);
-      }
-      return;
-    }
-
-    if (event.key === "Escape") setMobileOpen(false);
-  };
+  createHotkeys(() => [
+    { hotkey: "Mod+B", callback: () => { if(window.innerWidth < DESKTOP_BREAKPOINT) setMobileOpen(open => !open); else setCollapsed(value => !value); } },
+    { hotkey: "Escape", callback: () => setMobileOpen(false), options: { enabled: mobileOpen() } },
+  ], { ignoreInputs: false });
 
   const onResize = () => {
     const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
@@ -56,12 +48,10 @@ export function SidebarProvider(props: ParentProps) {
   // Listeners are attached after mount and cleaned up on the owner, never
   // `onCleanup` inside a callback (`NO_OWNER_CLEANUP`).
   onSettled(() => {
-    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("resize", onResize);
   });
 
   onCleanup(() => {
-    window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("resize", onResize);
   });
 

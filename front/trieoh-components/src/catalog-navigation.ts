@@ -9,6 +9,7 @@ export const groups = [
   "Overlays",
   "Feedback",
   "Layout",
+  "Dashboard",
 ];
 export const groupHref = (group: string) =>
   group === ALL_GROUPS ? "#/" : `#/group/${encodeURIComponent(group)}`;

@@ -38,6 +38,13 @@ export function fillContinuousSeries({
     const to = windowEnd ?? points[points.length - 1].date;
     if (from.getTime() > to.getTime()) continue;
 
+    // Avoid expanding a sparse decade-long history into millions of rows.
+    if ((to.getTime() - from.getTime()) / 86_400_000 > 3660) {
+      result.push(
+        ...points.filter((point) => point.date >= from && point.date <= to),
+      );
+      continue;
+    }
     let pointIndex = 0;
     let lastKnownValue: number | null = null;
     const cursor = startOfDay(from);

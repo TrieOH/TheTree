@@ -1,5 +1,16 @@
+import { interactionEntries } from "./examples/interaction-entries";
+import { clientOnly } from "@solidjs/web";
+import {
+  PaginationExample,
+  ToolbarExample,
+  FilterBarExample,
+  BulkActionsExample,
+  InfiniteScrollExample,
+  PaginatedExample,
+  DataTableExample,
+} from "./examples/CollectionExamples";
 import { catalogSections, catalogTop } from "./catalog-navigation";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import {
   cn,
@@ -35,7 +46,6 @@ import {
   MultiStepStepper,
   MultiStepFields,
   MultiStepSummaryCard,
-  PaginatedContainer,
   type InputProps,
   type ButtonVariant,
   type ButtonSize,
@@ -69,6 +79,31 @@ import IconPlus from "~icons/lucide/plus";
 import IconMenu from "~icons/lucide/menu";
 import { DeviceFrame } from "./components/DeviceFrame";
 
+const StatCardExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "StatCardExample" },
+);
+const MetricDeltaExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "MetricDeltaExample" },
+);
+const SparklineExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "SparklineExample" },
+);
+const BarListExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "BarListExample" },
+);
+const PanelExample = clientOnly(() => import("./examples/DashboardExamples"), {
+  lazy: true,
+  export: "PanelExample",
+});
+const ChartExample = clientOnly(() => import("./examples/DashboardExamples"), {
+  lazy: true,
+  export: "ChartExample",
+});
+
 export type Values = Record<string, string | boolean>;
 export type NumberRange = {
   min?: number;
@@ -84,6 +119,8 @@ type Control = {
   number?: NumberRange;
 };
 export type Entry = {
+  /** Stable canvas for interactive miniature previews. */
+  previewSize?: { width: number; height: number };
   name: string;
   group: string;
   description: string;
@@ -224,6 +261,7 @@ export function createCatalog(options: {
     },
   ];
   const entries: Entry[] = [
+    ...interactionEntries.map(entry => ({ ...entry, defaults: { ...entry.defaults }, controls: [...entry.controls] })),
     {
       name: "Loading",
       group: "Feedback",
@@ -1565,12 +1603,354 @@ export function createCatalog(options: {
       ),
     },
     {
+      name: "VirtualizedContainer",
+      group: "Layout",
+      description: "Lista ou grid com rolagem contínua; monta apenas os itens próximos à tela.",
+      defaults: { mode: "Virtualizado", count: "10.000", columns: "1", overscan: "2" },
+      controls: [
+        select("mode", "Modo de renderização", ["Virtualizado", "Normal"]),
+        select("count", "Quantidade de itens", ["1.000", "10.000", "50.000"]),
+        select("columns", "Colunas", ["1", "2", "3"]),
+        select("overscan", "Linhas antecipadas", ["1", "2", "4"]),
+      ],
+      render: (v) => (
+        <iframe
+          title="Comparação de lista normal e virtualizada"
+          src={`#/preview/virtualized?mode=${v.mode}&count=${Number(String(v.count).replaceAll(".", ""))}&columns=${v.columns}&overscan=${v.overscan}&dark=${options.isDark()}`}
+          class={options.isDetail() ? "h-120 w-full rounded-md border border-border" : "h-40 w-80 border border-border"}
+        />
+      ),
+    },
+    {
+      name: "DashboardStatCard",
+      group: "Dashboard",
+      description:
+        "Card de métrica com ícone, comparação com o período anterior e histórico compacto.",
+      previewSize: { width: 340, height: 270 },
+      defaults: {
+        label: "Receita aprovada",
+        value: "24850",
+        previousValue: "19800",
+        hint: "Receita aprovada no período",
+        comparison: true,
+        sparkline: true,
+        loading: false,
+      },
+      controls: [
+        text("label", "Título"),
+        number("value", "Valor", { min: 0, max: 1000000 }),
+        number("previousValue", "Valor anterior", { min: 0, max: 1000000 }),
+        text("hint", "Descrição"),
+        text("comparison", "Mostrar comparação"),
+        text("sparkline", "Mostrar histórico"),
+        text("loading", "Carregando"),
+      ],
+      render: (values, update) => (
+        <StatCardExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "MetricDelta",
+      group: "Dashboard",
+      description:
+        "Variação percentual com tendência e indicação de melhora, inclusive para métricas em que diminuir é melhor.",
+      previewSize: { width: 400, height: 100 },
+      defaults: {
+        value: "125",
+        previousValue: "100",
+        improvement: "increase",
+        label: "vs. período anterior",
+      },
+      controls: [
+        number("value", "Valor atual", { min: -100000, max: 100000 }),
+        number("previousValue", "Valor anterior", { min: -100000, max: 100000 }),
+        select("improvement", "Melhora quando", ["increase", "decrease"]),
+        text("label", "Comparação"),
+      ],
+      render: (values, update) => (
+        <MetricDeltaExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "Sparkline",
+      group: "Dashboard",
+      description:
+        "Histórico compacto em linha ou área para complementar métricas, sem eixos nem controles.",
+      previewSize: { width: 420, height: 120 },
+      defaults: { type: "area", height: "80", empty: false, flat: false, showTooltip: true },
+      controls: [
+        select("type", "Tipo", ["line", "area"]),
+        number("height", "Altura", { min: 32, max: 180 }),
+        text("empty", "Sem dados"),
+        text("flat", "Valores constantes"),
+        text("showTooltip", "Tooltip de valores"),
+      ],
+      render: (values, update) => (
+        <SparklineExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "DashboardPanel",
+      group: "Dashboard",
+      description:
+        "Seção responsiva de dashboard com título, ações, conteúdo e estados de carregamento ou erro.",
+      previewSize: { width: 620, height: 480 },
+      defaults: {
+        title: "Visão geral",
+        description: "Acompanhe os resultados do evento.",
+        loading: false,
+        error: false,
+      },
+      controls: [
+        text("title", "Título"),
+        text("description", "Descrição"),
+        text("loading", "Carregando"),
+        text("error", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <PanelExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "DashboardBarList",
+      group: "Dashboard",
+      description:
+        "Ranking com barras proporcionais, valores e percentuais. Útil para canais de venda, status e produtos.",
+      previewSize: { width: 420, height: 250 },
+      defaults: { showPercentage: true, empty: false, loading: false },
+      controls: [
+        text("showPercentage", "Mostrar percentuais"),
+        text("empty", "Sem dados"),
+        text("loading", "Carregando"),
+      ],
+      render: (values, update) => (
+        <BarListExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "GenericChart",
+      group: "Dashboard",
+      description:
+        "Gráfico responsivo de linha, área, barras ou dispersão com séries, eixos, tooltip e formatação.",
+      previewSize: { width: 560, height: 320 },
+      defaults: {
+        type: "line",
+        height: "280",
+        curveStyle: "smooth",
+        multiSeries: true,
+        showPoints: false,
+        empty: false,
+      },
+      controls: [
+        select("type", "Tipo", ["line", "area", "bar", "scatter"]),
+        number("height", "Altura", { min: 120, max: 500 }),
+        select("curveStyle", "Curva", ["smooth", "straight"]),
+        text("multiSeries", "Múltiplas séries"),
+        text("showPoints", "Mostrar pontos"),
+        text("empty", "Sem dados"),
+      ],
+      render: (values, update) => (
+        <ChartExample
+          fallback={<Loading size="sm" tone="muted" />}
+          bare
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "ChartCard",
+      group: "Dashboard",
+      description:
+        "Card de gráfico completo com filtros de período e séries, troca de tipo e estados de carregamento, erro ou valores ocultos.",
+      previewSize: { width: 640, height: 500 },
+      defaults: {
+        title: "Resultado por período",
+        type: "area",
+        height: "280",
+        multiSeries: true,
+        showTypeSelector: true,
+        showRangeFilter: true,
+        showSeriesFilter: true,
+        showSearchFilter: false,
+        showPointsToggle: true,
+        loading: false,
+        error: false,
+        empty: false,
+        masked: false,
+      },
+      controls: [
+        text("title", "Título"),
+        select("type", "Tipo", ["line", "area", "bar", "scatter"]),
+        number("height", "Altura", { min: 120, max: 500 }),
+        text("multiSeries", "Múltiplas séries"),
+        text("showTypeSelector", "Seletor de tipo"),
+        text("showRangeFilter", "Filtro de período"),
+        text("showSeriesFilter", "Filtro de séries"),
+        text("showSearchFilter", "Buscar série"),
+        text("showPointsToggle", "Alternar pontos"),
+        text("loading", "Carregando"),
+        text("error", "Simular erro"),
+        text("empty", "Sem dados"),
+        text("masked", "Ocultar valores"),
+      ],
+      render: (values, update) => (
+        <ChartExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "Pagination",
+      previewSize: { width: 480, height: 120 },
+      group: "Navegação",
+      description:
+        "Paginação independente com números, reticências, tamanho de página ou navegação por cursor.",
+      defaults: {
+        page: "1",
+        pageSize: "10",
+        totalItems: "240",
+        mode: "numbered",
+        showPageSizeSelector: true,
+        disabled: false,
+      },
+      controls: [
+        number("page", "Página", { min: 1, max: 24 }),
+        select("pageSize", "Itens por página", ["10", "25", "50", "100"]),
+        number("totalItems", "Total de itens", { min: 0, max: 10000 }),
+        select("mode", "Navegação", ["numbered", "cursor"]),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("disabled", "Desabilitado"),
+      ],
+      render: (values, update) => (
+        <PaginationExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "CollectionToolbar",
+      previewSize: { width: 560, height: 520 },
+      group: "Layout",
+      description:
+        "Busca, ordenação, contador e alternância de visualização para coleções.",
+      defaults: {
+        search: "",
+        sort: "asc",
+        layout: "list",
+        status: "Todos",
+        disabled: false,
+        withPagination: false,
+      },
+      controls: [
+        text("search", "Busca"),
+        select("status", "Status", ["Todos", "Ativo", "Arquivado"]),
+        select("sort", "Ordenação", ["asc", "desc"]),
+        select("layout", "Visualização", ["list", "grid"]),
+        text("disabled", "Desabilitado"),
+        text("withPagination", "Exibir paginação"),
+      ],
+      render: (values, update) => (
+        <ToolbarExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "FilterBar",
+      previewSize: { width: 480, height: 320 },
+      group: "Layout",
+      description:
+        "Filtros ativos removíveis, com limpeza individual ou de todos os filtros.",
+      defaults: { disabled: false },
+      controls: [text("disabled", "Desabilitado")],
+      render: (values, update) => (
+        <FilterBarExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "BulkActions",
+      previewSize: { width: 480, height: 160 },
+      group: "Ações",
+      description:
+        "Ações em lote sobre a seleção, com contador e limpeza de seleção.",
+      defaults: { busy: false, iconOnly: false },
+      controls: [
+        text("busy", "Operação em andamento"),
+        text("iconOnly", "Somente ícones"),
+      ],
+      render: (values, update) => (
+        <BulkActionsExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "InfiniteScroll",
+      previewSize: { width: 480, height: 360 },
+      group: "Layout",
+      description:
+        "Carrega mais itens ao aproximar-se do fim, com nova tentativa, carregamento manual e fim da lista.",
+      defaults: { automatic: true, simulateError: false },
+      controls: [
+        text("automatic", "Carregamento automático"),
+        text("simulateError", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <InfiniteScrollExample values={values} update={update} />
+      ),
+    },
+    {
+      name: "DataTable",
+      previewSize: { width: 560, height: 540 },
+      group: "Layout",
+      description:
+        "Tabela com seleção entre páginas, ordenação, ações por registro e paginação controlada.",
+      defaults: {
+        selectable: true,
+        rowActions: true,
+        showPageSizeSelector: true,
+        loading: false,
+        simulateError: false,
+      },
+      controls: [
+        text("selectable", "Permitir seleção"),
+        text("rowActions", "Ações por registro"),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("loading", "Carregando"),
+        text("simulateError", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <DataTableExample values={values} update={update} />
+      ),
+    },
+    {
       name: "PaginatedContainer",
+      previewSize: { width: 560, height: 440 },
       group: "Layout",
       description: "Coleção com busca, ordenação e paginação.",
       defaults: {
+        dataMode: "No componente",
+        showPageSizeSelector: true,
+        simulateError: false,
         filterValue: "",
-        pageSize: "2",
+        pageSize: "5",
         layout: "list",
         gap: "3",
         filterPlaceholder: "Buscar projetos…",
@@ -1578,7 +1958,13 @@ export function createCatalog(options: {
         minItemWidth: "12rem",
       },
       controls: [
-        select("pageSize", "Itens por página", ["1", "2", "3"]),
+        select("dataMode", "Onde paginar (demonstração)", [
+          "No componente",
+          "No servidor (simulado)",
+        ]),
+        text("showPageSizeSelector", "Seletor de itens por página"),
+        text("simulateError", "Simular erro do servidor"),
+        select("pageSize", "Itens por página", ["5", "10", "25"]),
         select("layout", "Layout", ["list", "grid"]),
         select("gap", "Espaçamento", ["0", "2", "3", "4", "6"]),
         text("filterValue", "Busca"),
@@ -1586,39 +1972,8 @@ export function createCatalog(options: {
         text("itemLabel", "Nome dos itens"),
         text("minItemWidth", "Largura mínima"),
       ],
-      render: (v, update) => (
-        <PaginatedContainer
-          class={String(v.class)}
-          items={[
-            { name: "Website" },
-            { name: "Aplicativo" },
-            { name: "Design system" },
-          ]}
-          pageSize={Number(v.pageSize)}
-          layout={v.layout as "list" | "grid"}
-          gap={v.gap as "0" | "2" | "3" | "4" | "6"}
-          filterValue={String(v.filterValue)}
-          onFilterChange={(value) => update("filterValue", value)}
-          emptyState={
-            <EmptyState
-              title="Nenhum projeto encontrado"
-              description="Tente outro termo de busca."
-            />
-          }
-          filterPlaceholder={String(v.filterPlaceholder)}
-          itemLabel={String(v.itemLabel)}
-          minItemWidth={String(v.minItemWidth)}
-          sortFields={[{ key: "name", label: "Nome" }]}
-          renderItems={(items) => (
-            <For each={items}>
-              {(item) => (
-                <div class="my-1 rounded-[5px] border border-border bg-card px-3 py-2 text-[11px]">
-                  {item.name}
-                </div>
-              )}
-            </For>
-          )}
-        />
+      render: (values, update) => (
+        <PaginatedExample values={values} update={update} />
       ),
     },
     {
@@ -1736,6 +2091,13 @@ export function createCatalog(options: {
     },
   ];
   const shapeDefaults: Record<string, Shape> = {
+    DropdownMenu: "round",
+    Popover: "round",
+    DatePicker: "soft",
+    DateRangePicker: "soft",
+    FileUpload: "round",
+    DashboardStatCard: "round",
+    ChartCard: "round",
     Checkbox: "soft",
     SearchInput: "soft",
     Button: "soft",

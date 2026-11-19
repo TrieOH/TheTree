@@ -1,3 +1,4 @@
+import CheckIcon from "~icons/lucide/check";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { cn } from "../lib/cn";
@@ -95,20 +96,7 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
                       )}
                     >
                       <Show when={isDone()} fallback={i() + 1}>
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2.5"
-                          class="size-3.5"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M20 6 9 17l-5-5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
+                        <CheckIcon class="size-3.5" aria-hidden="true" />
                       </Show>
                     </span>
 

@@ -1,3 +1,8 @@
+import FileIcon from "~icons/lucide/file";
+import InfoIcon from "~icons/lucide/info";
+import CircleAlertIcon from "~icons/lucide/circle-alert";
+import TrashIcon from "~icons/lucide/trash-2";
+import { Spinner } from "./spinner";
 import type { Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Show, createMemo } from "solid-js";
@@ -40,87 +45,24 @@ function DefaultVariantIcon(props: {
               when={props.variant() === "info"}
               fallback={
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-xs">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="size-4.5"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <polyline
-                      points="14 2 14 8 20 8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  <FileIcon class="size-4.5" aria-hidden="true" />
                 </div>
               }
             >
               <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-secondary bg-secondary text-secondary-foreground shadow-xs">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  class="size-4.5"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path d="M12 16v-4M12 8h.01" stroke-linecap="round" />
-                </svg>
+                <InfoIcon class="size-4.5" aria-hidden="true" />
               </div>
             </Show>
           }
         >
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-accent bg-accent text-accent-foreground shadow-xs">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="size-4.5"
-              aria-hidden="true"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path d="M12 8v4M12 16h.01" stroke-linecap="round" />
-            </svg>
+            <CircleAlertIcon class="size-4.5" aria-hidden="true" />
           </div>
         </Show>
       }
     >
       <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-destructive bg-destructive text-primary shadow-xs">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="size-4.5"
-          aria-hidden="true"
-        >
-          <path
-            d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <TrashIcon class="size-4.5" aria-hidden="true" />
       </div>
     </Show>
   );
@@ -241,25 +183,11 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
             )}
           >
             <Show when={props.loading}>
-              <svg
-                class="mr-1.5 size-3.5 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
+              <Spinner
+                size={14}
+                activeColor="currentColor"
+                className="mr-1.5"
+              />
             </Show>
             <Show when={props.loading} fallback={confirmLabel()}>
               Processando...

@@ -1,5 +1,11 @@
-import { For, Show } from "solid-js";
-import { Button, Card, Link, SearchInput } from "@trieoh/ui-solid";
+import { Show } from "solid-js";
+import {
+  Button,
+  Card,
+  Link,
+  SearchInput,
+  VirtualizedContainer,
+} from "@trieoh/ui-solid";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import type { Entry, Values } from "../catalog";
 import { FitPreview } from "./FitPreview";
@@ -39,47 +45,60 @@ export function CatalogPage(props: {
           {props.entries.length} componentes
         </span>
       </div>
-      <div class="grid grid-cols-1 border-t border-border min-[641px]:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] min-[641px]:gap-4.25 min-[641px]:border-t-0">
-        <For each={props.entries}>
-          {(entry, index) => (
-            <Card class="block self-start overflow-hidden rounded-none border-0 border-b border-border bg-transparent shadow-none hover:border-muted-foreground min-[641px]:grid min-[641px]:aspect-square min-[641px]:grid-rows-[auto_minmax(0,1fr)_auto] min-[641px]:rounded-xl min-[641px]:border min-[641px]:bg-card min-[641px]:shadow-xs min-[641px]:contain-[size]">
-              <header class="hidden h-10.75 items-center gap-2.5 px-3.5 min-[641px]:flex">
-                <span class="font-mono text-[10px] text-muted-foreground opacity-60">
-                  {String(index() + 1).padStart(2, "0")}
-                </span>
-                <span class="text-[10px] text-muted-foreground">
-                  {entry.group}
-                </span>
-                <Link
-                  class="ml-auto inline-flex rounded p-1 text-foreground no-underline hover:bg-muted hover:no-underline"
-                  aria-label={`Ver documentação de ${entry.name}`}
-                  href={`#/components/${entry.name}`}
-                >
-                  <IconArrowUpRight class="size-3.5" />
-                </Link>
-              </header>
-              <div class="relative hidden min-h-0 overflow-hidden bg-background min-[641px]:block">
-                <FitPreview>
-                  {entry.render(props.values[entry.name], (key, value) =>
-                    props.onUpdate(entry.name, key, value),
-                  )}
-                </FitPreview>
-              </div>
+      <VirtualizedContainer
+        class="border-t border-border min-[641px]:border-t-0"
+        items={props.entries}
+        columns={(width) =>
+          window.matchMedia("(min-width: 641px)").matches
+            ? Math.max(1, Math.floor((width + 17) / 257))
+            : 1
+        }
+        gap={() => (window.matchMedia("(min-width: 641px)").matches ? 17 : 0)}
+        estimatedRowHeight={(width) =>
+          window.matchMedia("(min-width: 641px)").matches
+            ? (width - (Math.max(1, Math.floor((width + 17) / 257)) - 1) * 17) /
+              Math.max(1, Math.floor((width + 17) / 257))
+            : 50
+        }
+      >
+        {(entry, index) => (
+          <Card class="block self-start overflow-hidden rounded-none border-0 border-b border-border bg-transparent shadow-none hover:border-muted-foreground min-[641px]:grid min-[641px]:aspect-square min-[641px]:grid-rows-[auto_minmax(0,1fr)_auto] min-[641px]:rounded-xl min-[641px]:border min-[641px]:bg-card min-[641px]:shadow-xs min-[641px]:contain-[size]">
+            <header class="hidden h-10.75 items-center gap-2.5 px-3.5 min-[641px]:flex">
+              <span class="font-mono text-[10px] text-muted-foreground opacity-60">
+                {String(index() + 1).padStart(2, "0")}
+              </span>
+              <span class="text-[10px] text-muted-foreground">
+                {entry.group}
+              </span>
               <Link
-                class="flex h-auto w-full flex-col gap-1.5 overflow-hidden px-1 py-3.5 text-foreground no-underline hover:no-underline min-[641px]:h-21 min-[641px]:border-t min-[641px]:border-border min-[641px]:px-4 min-[641px]:py-3"
+                class="ml-auto inline-flex rounded p-1 text-foreground no-underline hover:bg-muted hover:no-underline"
+                aria-label={`Ver documentação de ${entry.name}`}
                 href={`#/components/${entry.name}`}
               >
-                <strong class="text-sm font-semibold wrap-anywhere min-[641px]:text-xs">
-                  {entry.name}
-                </strong>
-                <span class="hidden text-[11px] leading-[1.6] text-muted-foreground min-[641px]:line-clamp-2">
-                  {entry.description}
-                </span>
+                <IconArrowUpRight class="size-3.5" />
               </Link>
-            </Card>
-          )}
-        </For>
-      </div>
+            </header>
+            <div class="relative hidden min-h-0 overflow-hidden bg-background min-[641px]:block">
+              <FitPreview size={entry.previewSize}>
+                {entry.render(props.values[entry.name], (key, value) =>
+                  props.onUpdate(entry.name, key, value),
+                )}
+              </FitPreview>
+            </div>
+            <Link
+              class="flex h-auto w-full flex-col gap-1.5 overflow-hidden px-1 py-3.5 text-foreground no-underline hover:no-underline min-[641px]:h-21 min-[641px]:border-t min-[641px]:border-border min-[641px]:px-4 min-[641px]:py-3"
+              href={`#/components/${entry.name}`}
+            >
+              <strong class="text-sm font-semibold wrap-anywhere min-[641px]:text-xs">
+                {entry.name}
+              </strong>
+              <span class="hidden text-[11px] leading-[1.6] text-muted-foreground min-[641px]:line-clamp-2">
+                {entry.description}
+              </span>
+            </Link>
+          </Card>
+        )}
+      </VirtualizedContainer>
       <Show when={props.entries.length === 0}>
         <div class="px-5 py-17.5 text-center text-[13px]">
           <h2>Nenhum componente encontrado</h2>

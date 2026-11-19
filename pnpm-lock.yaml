@@ -1152,6 +1152,9 @@ importers:
         specifier: catalog:solid
         version: 2.0.0-rc.17
     devDependencies:
+      '@solidjs/diagnostics':
+        specifier: catalog:solid
+        version: 2.0.0-rc.19(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)(vitest@4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       '@iconify-json/lucide':
         specifier: 'catalog:'
         version: 1.2.148
@@ -1164,6 +1167,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      jsdom:
+        specifier: 'catalog:'
+        version: 25.0.1(supports-color@10.2.2)
       oxlint:
         specifier: 'catalog:'
         version: 1.79.0
@@ -1179,6 +1185,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       wrangler:
         specifier: 'catalog:'
         version: 4.155.0(@types/node@24.19.2)
@@ -1773,10 +1782,22 @@ importers:
 
   lib/ts/ui-solid:
     dependencies:
+      d3-shape:
+        specifier: 'catalog:'
+        version: 3.2.0
+      d3-scale:
+        specifier: 'catalog:'
+        version: 4.0.2
+      '@tanstack/charts':
+        specifier: 'catalog:'
+        version: 0.14.0(preact@10.29.8)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@2.0.0-rc.17)(vue@3.5.44(typescript@7.0.2))
       prettier:
         specifier: 3.8.3
         version: 3.8.3
     devDependencies:
+      '@iconify-json/lucide':
+        specifier: 'catalog:'
+        version: 1.2.148
       '@solidjs/web':
         specifier: catalog:solid
         version: 2.0.0-rc.17(solid-js@2.0.0-rc.17)
@@ -1789,6 +1810,12 @@ importers:
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
+      '@types/d3-scale':
+        specifier: 'catalog:'
+        version: 4.0.9
+      '@types/d3-shape':
+        specifier: 'catalog:'
+        version: 3.2.0
       oxlint:
         specifier: 'catalog:'
         version: 1.79.0
@@ -1798,6 +1825,9 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.7.0
+      unplugin-icons:
+        specifier: 'catalog:'
+        version: 22.5.0(@vue/compiler-sfc@3.5.44)(supports-color@10.2.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

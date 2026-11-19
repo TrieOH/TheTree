@@ -45,6 +45,9 @@ export type ButtonSize = NonNullable<
  * attribute — add to the list when a screen needs more.
  */
 export interface ButtonProps {
+  ref?: (element: HTMLButtonElement) => void;
+  onKeyDown?: JSX.EventHandler<HTMLButtonElement, KeyboardEvent>;
+  "aria-haspopup"?: "dialog" | "menu" | "listbox";
   shape?: Shape;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -60,6 +63,8 @@ export interface ButtonProps {
   /** Solid 2 types ARIA booleans as the string form. */
   "aria-expanded"?: "true" | "false";
   "aria-controls"?: string;
+  "aria-current"?: "page";
+  "aria-pressed"?: "true" | "false";
   onClick?: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
   children?: JSX.Element;
 }
@@ -67,6 +72,9 @@ export interface ButtonProps {
 export function Button(props: ButtonProps) {
   return (
     <button
+      ref={props.ref}
+      onKeyDown={props.onKeyDown}
+      aria-haspopup={props["aria-haspopup"]}
       type={props.type ?? "button"}
       id={props.id}
       name={props.name}
@@ -76,6 +84,8 @@ export function Button(props: ButtonProps) {
       aria-label={props["aria-label"]}
       aria-expanded={props["aria-expanded"]}
       aria-controls={props["aria-controls"]}
+      aria-current={props["aria-current"]}
+      aria-pressed={props["aria-pressed"]}
       disabled={props.disabled}
       onClick={props.onClick}
       class={cn(
