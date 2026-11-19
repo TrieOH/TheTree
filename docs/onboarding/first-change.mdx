@@ -1,0 +1,143 @@
+# Your first change
+
+- **Order:** 5
+- **Summary:** Add an endpoint to an API, from the spec to a pull request.
+
+This page walks through one change: letting an admin rename an IdentityX project with `PATCH /projects/{project_id}`. Every endpoint in every API is added the same way, so once you've done this, you can do the rest.
+
+Keep `api/identityx/internal/features/projects/` open as you go. The files there are the best examples of each step.
+
+<Steps>
+
+### Describe the route in the spec
+
+Routes start in the spec, not in Go. Add the path to the feature's `spec.yml`:
+
+```yaml
+# internal/features/projects/spec.yml
+  /projects/{project_id}:
+    patch:
+      tags: [projects]
+      operationId: renameProject
+      x-scope: platform-only
+      summary: Rename a project
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1 }
+      x-problems: [400, 401, 403, 404, 500, 503]
+      responses:
+        '200':
+          description: The renamed project
+          content:
+            application/json:
+              schema:
+                $ref: '../../../api-spec.yml#/components/schemas/Project'
+```
+
+Then point `api-spec.yml` at it, next to the other project paths:
+
+```yaml
+  /projects/{project_id}:
+    $ref: './internal/features/projects/spec.yml#/paths/~1projects~1{project_id}'
+```
+
+`x-problems` lists the errors the route can answer. The shared ones live in `api/problems.yml`.
+
+### Generate the code
+
+```sh
+just gen identityx
+```
+
+This turns the spec into Go types and a server interface in `internal/openapi/`. The build now fails, because nothing implements `RenameProject` yet. That's expected: the compiler is your to-do list from here.
+
+### Add the query
+
+SQL lives in `db/queries/`. sqlc turns each named query into a Go function.
+
+```sql
+-- db/queries/projects.sql
+-- name: RenameProject :one
+UPDATE projects
+SET name = @name
+WHERE id = @id
+RETURNING *;
+```
+
+Run `just gen identityx` again, then add a method to the repo in `repo.go` that calls `RenameProject` and maps the row with `mapProject`. Add the same method to the `ProjectRepo` interface in `ports/project.go`, so the service can call it.
+
+If you need a new column, add a migration in `db/migrations/` and run `just migrate identityx`.
+
+### Write the logic
+
+Each operation gets its own file in `service/`:
+
+```go
+// service/rename.go
+func (o *Operations) Rename(ctx context.Context, projectID uuid.UUID, name string) (*models.Project, error) {
+	if err := o.Authz.CheckProject(ctx, projectID, models.ProjectRoleAdmin); err != nil {
+		return nil, err
+	}
+	return o.Projects.Rename(ctx, projectID, name)
+}
+```
+
+The access check comes first. It answers 404 when the project doesn't exist and 403 when the caller isn't an admin, so the operation doesn't have to.
+
+Return named errors from `errs/`, like `errs.ErrProjectNotFound`. `internal/app/problems.go` maps each one to an HTTP problem in one place. A new error goes in `errs/` and gets a line there.
+
+### Connect the handler
+
+The handler only translates HTTP to the operation and back:
+
+```go
+// handlers.go
+func (h *Handlers) RenameProject(ctx context.Context, req openapi.RenameProjectRequestObject) (openapi.RenameProjectResponseObject, error) {
+	project, err := h.ops.Rename(ctx, req.ProjectId, req.Body.Name)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.RenameProject200JSONResponse(*project), nil
+}
+```
+
+The build passes again.
+
+### Test it
+
+Unit tests sit next to the code they test and mock the repos with mockio. `authn/service/register_tos_test.go` is a good one to copy from. Tests that need a real database end in `_integration_test.go`.
+
+```sh
+just test identityx       # unit tests
+just test-all identityx   # with the integration tests
+just lint identityx
+```
+
+Then try it for real: `just run identityx`, sign in on `localhost:3001`, and call the route.
+
+### Open a pull request
+
+```sh
+git switch -c identityx/feat/rename-project
+git commit -am "feat(identityx): rename projects"
+git push -u origin identityx/feat/rename-project
+```
+
+The hooks check the commit and the branch name as you go. [How we ship](/docs/onboarding/shipping) explains the format.
+
+</Steps>
+
+## The same steps in the other APIs
+
+Payssage, Informd and Univents have the same layout, so this page works for them too. Swap `identityx` for the API's name in the commands.
