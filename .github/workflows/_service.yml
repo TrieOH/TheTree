@@ -176,6 +176,16 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "[release] pushed $IMAGE → $DIGEST"
 
+      # The image must boot before it ships: a throwaway Postgres, a stub
+      # for the other services, /health within a minute. Nothing in prod is
+      # touched.
+      - name: Boot smoke test
+        if: steps.guard.outputs.superseded != 'true'
+        uses: ./.github/actions/release/smoke-boot
+        with:
+          service: ${{ env.SERVICE }}
+          image: ${{ env.IMAGE }}
+
       # wrangler only: the service's Worker package, not the whole workspace
       - name: Setup Node + pnpm
         if: steps.guard.outputs.superseded != 'true'
@@ -194,6 +204,38 @@ jobs:
           digest: ${{ steps.digest.outputs.digest }}
           api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # A green deploy means the container is on this image, not only the Worker.
+      - name: Wait for container rollout
+        if: steps.guard.outputs.superseded != 'true'
+        uses: ./.github/actions/deploy/wait-rollout
+        with:
+          service: ${{ env.SERVICE }}
+          version: ${{ env.VERSION }}
+          api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # A line on every Grafana chart at each release (tag "deploy"), green or
+      # failed. Skipped until GRAFANA_URL and GRAFANA_ANNOTATIONS_TOKEN exist.
+      - name: Grafana deploy annotation
+        if: always() && steps.guard.outputs.superseded != 'true'
+        env:
+          GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
+          GRAFANA_TOKEN: ${{ secrets.GRAFANA_ANNOTATIONS_TOKEN }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GRAFANA_URL" ] || [ -z "$GRAFANA_TOKEN" ]; then
+            echo "[annotate] GRAFANA_URL / GRAFANA_ANNOTATIONS_TOKEN not set, skipping"
+            exit 0
+          fi
+          text="$SERVICE $VERSION deployed"
+          [ "$OUTCOME" = "success" ] || text="$SERVICE $VERSION deploy FAILED"
+          body=$(jq -nc --arg text "$text" --arg svc "$SERVICE" --arg ver "$VERSION" --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{time: (now * 1000 | floor), tags: ["deploy", $svc, $ver], text: ($text + " — <a href=\"" + $run + "\">run</a>")}')
+          curl -fsS -X POST "$GRAFANA_URL/api/annotations" \
+            -H "Authorization: Bearer $GRAFANA_TOKEN" -H "Content-Type: application/json" -d "$body" \
+            || echo "::warning::could not post the Grafana annotation"
 
       - name: release.json
         if: steps.guard.outputs.superseded != 'true'
