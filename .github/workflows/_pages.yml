@@ -35,7 +35,7 @@ jobs:
       dir: ${{ steps.tag.outputs.dir }}
       metrics: ${{ steps.metrics.outputs.metrics }}
     steps:
-      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1.8.3
 
       - name: Parse tag
         id: tag
@@ -99,7 +99,7 @@ jobs:
       VERSION: ${{ needs.checks.outputs.version }}
       DIR: ${{ needs.checks.outputs.dir }}
     steps:
-      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1.8.3
 
       - name: Supersede guard
         id: guard
