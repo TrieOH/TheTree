@@ -1,0 +1,73 @@
+# How we ship
+
+- **Order:** 6
+- **Summary:** Commits, branches, the git hooks, pull requests and deploys.
+
+Code goes from your branch to `main` through a pull request. It reaches production only when someone on the team pushes a tag. Pushing to `main` runs no CI, so the git hooks are what check your work.
+
+## Commits
+
+```
+feat(payssage): add invoice generation
+```
+
+A commit message is an action, a scope in parentheses, and a short message.
+
+- **Actions:** `feat`, `fix`, `refactor`, `perf`, `style`, `docs`, `test`, `build`, `ci`, `chore`, `revert`.
+- **Scope:** the closest part of the repo that holds everything you changed. It comes from the folders: `identityx` for `api/identityx`, `identityx-ui` for `front/identityx`, `lib-go` for `lib/go`, `docs` for `docs/` and the README, `root` for the other files at the top of the repo.
+
+You don't have to guess the scope. If it's wrong, the hook tells you the right one. A change that touches two APIs gets a wider scope, like `apis`, so it's often better to split it into two commits.
+
+A body is optional and capped at 250 characters. Details go in the pull request.
+
+## Branches
+
+```
+payssage/feat/invoice-generation
+```
+
+A branch is a scope, an action and a name, separated by slashes. Every commit on the branch has to fit its scope. The hook checks this when you push.
+
+## What the hooks check
+
+`pnpm install` turns them on.
+
+| When | What runs |
+| --- | --- |
+| Commit | The message format. A scan of your changes for secrets. Lint and short tests for the Go code you touched, and typecheck and tests for the TypeScript you touched. |
+| Push | The branch name, and that all its commits fit its scope |
+
+Only the parts of the repo you changed get checked, so a commit usually takes seconds. When a hook fails, fix what it reports and commit again. Don't skip it with `--no-verify`: the secret scan is the only check your commits get before a release.
+
+## Pull requests
+
+Push your branch and open a pull request against `main`. Someone on the team reviews it and merges it. Merging deploys nothing.
+
+## Deploys
+
+This part is for the team. Contributors never push tags.
+
+A tag deploys one thing to production. The team makes them from the Releases page on GitHub, always from `main`.
+
+| Tag | What happens |
+| --- | --- |
+| `<api>/v1.2.3` | Runs every check, builds the image once, and deploys the API to Cloudflare |
+| `<app>-ui/v1.2.3` | Runs the checks, builds the app once, and deploys it to Cloudflare Workers |
+| `pages/<dir>/v1.2.3` | Builds a static site and deploys it to Cloudflare Pages |
+| `<sdk>-sdk-ts/v1.2.3` | Runs the checks on a TypeScript SDK. Publishing to npm is by hand. |
+
+A deploy happens only if every check passes. The portal's Delivery page shows each one, with how long every step took.
+
+### Hotfixes
+
+Add `-hotfix.N` to a tag, like `payssage/v1.2.4-hotfix.1`, to skip everything but the build and unit tests. It reaches production in about two minutes. Follow it with a normal release soon, so the full checks run on that code too.
+
+### Rolling back
+
+Point Cloudflare back at the previous version:
+
+```sh
+wrangler versions deploy --version-id <previous>
+```
+
+Run it from `api/<api>/cloudflare` for an API, or from `front/<app>` for an app.
