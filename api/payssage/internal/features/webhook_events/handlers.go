@@ -3,15 +3,14 @@ package webhook_events
 import (
 	"context"
 
-	"payssage/internal/features/webhook_events/service"
 	"payssage/internal/openapi"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) GetWebhookEvent(ctx context.Context, req openapi.GetWebhookEventRequestObject) (openapi.GetWebhookEventResponseObject, error) {
 	event, err := h.ops.GetByID(ctx, req.EventId)

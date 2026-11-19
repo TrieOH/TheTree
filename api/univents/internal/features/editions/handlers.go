@@ -5,16 +5,15 @@ import (
 
 	"lib/httpcache"
 	"univents/internal/cachetags"
-	"univents/internal/features/editions/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateEdition(ctx context.Context, req openapi.CreateEditionRequestObject) (openapi.CreateEditionResponseObject, error) {
 	edition, err := h.ops.Create(ctx, models.CreateEditionInput{

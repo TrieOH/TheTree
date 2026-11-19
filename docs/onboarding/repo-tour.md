@@ -46,10 +46,9 @@ A feature folder, using `internal/features/projects`:
 | `spec.yml` | The routes this feature serves, and the types and errors only it uses |
 | `handlers.go` | HTTP in and out |
 | `repo.go` | Database calls |
-| `service/` | The logic, one file per operation, like `create.go` |
-| `projects.go` | Connects the three, so the app can build the feature |
+| `operations.go` | The logic: `Deps`, `Operations`, `New` and every operation |
 
-To find the code for a route, find the route in a feature's `spec.yml`. The handler and the service file are right next to it.
+To find the code for a route, find the route in a feature's `spec.yml`. The handler and the operation are right next to it.
 
 ## Inside `front/`
 

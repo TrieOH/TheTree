@@ -5,17 +5,16 @@ import (
 	"net/http"
 	"uuid"
 
-	"univents/internal/features/store/service"
 	"univents/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 // ListEditionStoreStock is the public `GET /editions/{edition_id}/store/stock`
 // route: every purchasable item's current stock position — the REST twin of

@@ -4,16 +4,15 @@ import (
 	"context"
 
 	idx "sdk/identityx"
-	"univents/internal/features/checkouts/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 // CreateEditionCheckout is the money path (split 7): reserve the cart and
 // create the Payssage intent in one request. The response mirrors the
@@ -53,36 +52,36 @@ func (h *Handlers) CreateEditionCheckout(ctx context.Context, req openapi.Create
 // input. Validation (ticket attendee, per-type quantity, duplicates,
 // payment fields for paid orders) runs in the service — the spec only
 // enforces the static request shape.
-func toCheckoutInput(body *openapi.CreateCheckoutRequest) service.CheckoutInput {
+func toCheckoutInput(body *openapi.CreateCheckoutRequest) CheckoutInput {
 	paymentMethod := ""
 	if body.PaymentMethod != nil {
 		paymentMethod = string(*body.PaymentMethod)
 	}
-	payer := service.Payer{}
+	payer := Payer{}
 	if body.Payer != nil {
-		payer = service.Payer{
+		payer = Payer{
 			Email:                body.Payer.Email,
 			IdentificationType:   body.Payer.IdentificationType,
 			IdentificationNumber: body.Payer.IdentificationNumber,
 		}
 	}
-	in := service.CheckoutInput{
+	in := CheckoutInput{
 		PaymentMethod:   paymentMethod,
 		CardToken:       body.CardToken,
 		PaymentMethodID: body.PaymentMethodId,
 		Installments:    body.Installments,
 		IssuerID:        body.IssuerId,
 		Payer:           payer,
-		Items:           make([]service.CheckoutLine, 0, len(body.Items)),
+		Items:           make([]CheckoutLine, 0, len(body.Items)),
 	}
 	for _, item := range body.Items {
-		line := service.CheckoutLine{
+		line := CheckoutLine{
 			ItemType: models.PurchaseItemType(item.ItemType),
 			ItemID:   item.ItemId,
 			Quantity: item.Quantity,
 		}
 		if item.Attendee != nil {
-			line.Attendee = &service.Attendee{
+			line.Attendee = &Attendee{
 				UserID: item.Attendee.UserId,
 				Email:  item.Attendee.Email,
 				Name:   item.Attendee.Name,

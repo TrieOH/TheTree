@@ -3,16 +3,15 @@ package oauth
 import (
 	"context"
 
-	"payssage/internal/features/oauth/service"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) ConnectProvider(ctx context.Context, req openapi.ConnectProviderRequestObject) (openapi.ConnectProviderResponseObject, error) {
 	url, err := h.ops.Connect(ctx, models.ConnectInput{

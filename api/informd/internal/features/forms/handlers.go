@@ -3,16 +3,15 @@ package forms
 import (
 	"context"
 
-	"Informd/internal/features/forms/service"
 	"Informd/internal/openapi"
 	"Informd/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) AddFormMember(ctx context.Context, req openapi.AddFormMemberRequestObject) (openapi.AddFormMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddFormMemberInput{

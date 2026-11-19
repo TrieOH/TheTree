@@ -3,16 +3,15 @@ package signatures
 import (
 	"context"
 
-	"univents/internal/features/signatures/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CancelSignatureRequest(ctx context.Context, req openapi.CancelSignatureRequestRequestObject) (openapi.CancelSignatureRequestResponseObject, error) {
 	err := h.ops.CancelRequest(ctx, req.RequestId, req.Body.Reason)

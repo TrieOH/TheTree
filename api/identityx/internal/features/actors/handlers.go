@@ -3,16 +3,15 @@ package actors
 import (
 	"context"
 
-	"IdentityX/internal/features/actors/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateActor(ctx context.Context, req openapi.CreateActorRequestObject) (openapi.CreateActorResponseObject, error) {
 	actor, err := h.ops.Create(ctx, models.CreateActorInput{

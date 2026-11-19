@@ -3,16 +3,15 @@ package tos
 import (
 	"context"
 
-	"IdentityX/internal/features/tos/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func toOpenTos(t models.TermsOfService) openapi.ProjectTos {
 	return openapi.ProjectTos{

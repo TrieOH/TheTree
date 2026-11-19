@@ -123,7 +123,7 @@ One of the four Go APIs. Each is its own process.
 _Avoid_: service, microservice
 
 **Feature**:
-One slice of a backend, like `intents`. It's a folder in `internal/features/` with its routes in `spec.yml`, plus `handlers.go`, `repo.go` and a `service/` folder.
+One slice of a backend, like `intents`. It's a folder in `internal/features/` with its routes in `spec.yml`, plus `handlers.go`, `repo.go` and `operations.go`, all in one package.
 
 **Named error**:
 A Go error for something a caller did wrong, like `errs.ErrProjectNotFound`. Code returns it and never picks an HTTP status. One mapper per backend turns it into a problem.

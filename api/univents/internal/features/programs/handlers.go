@@ -6,16 +6,15 @@ import (
 	"lib/httpcache"
 	idx "sdk/identityx"
 	"univents/internal/cachetags"
-	"univents/internal/features/programs/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CheckInOccurrence(ctx context.Context, req openapi.CheckInOccurrenceRequestObject) (openapi.CheckInOccurrenceResponseObject, error) {
 	ident, err := idx.RequireIdentity(ctx)

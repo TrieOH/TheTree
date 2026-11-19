@@ -4,16 +4,15 @@ import (
 	"context"
 
 	idx "sdk/identityx"
-	"univents/internal/features/purchases/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 // ListMyPurchases lists the authenticated user's purchases with their
 // items, newest first. No pagination yet — the list is unbounded for now

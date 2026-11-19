@@ -3,16 +3,15 @@ package projects
 import (
 	"context"
 
-	"IdentityX/internal/features/projects/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) AddProjectMember(ctx context.Context, req openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddProjectMemberInput{
