@@ -90,6 +90,12 @@ func setupDB(ctx context.Context, cfg Config, constraints ConstraintErrors, runM
 	defer span.End()
 	checkCtx, cancel := context.WithTimeout(checkCtx, 10*time.Second)
 	defer cancel()
-	validateConstraints(checkCtx, db)
+	err = validateConstraints(checkCtx, db)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "constraints")
+		CloseDB(db)
+		return nil, err
+	}
 	return db, nil
 }

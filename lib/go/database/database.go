@@ -2,13 +2,10 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
-
-	"lib/errx"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -109,39 +106,47 @@ func UseConstraints(constraints ConstraintErrors) {
 	constraintRegistry = constraints
 }
 
-func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
+// validateConstraints fails when the schema has a constraint (or a uniq_ or
+// one_ index) the registry has no named error for: a violation of it would
+// answer a generic 500 instead of the error it means.
+func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
 	rows, err := db.Query(ctx, `
 		SELECT con.conname
 		FROM pg_constraint con
 		JOIN pg_class rel ON rel.oid = con.conrelid
 		JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
 		WHERE nsp.nspname = 'public'
-		AND rel.relname NOT LIKE 'river_%'
 		AND rel.relname != 'goose_db_version'
 		AND con.contype IN ('u', 'c', 'x')
 		UNION
 		SELECT indexname
 		FROM pg_indexes
 		WHERE schemaname = 'public'
-		AND tablename NOT LIKE 'river_%'
 		AND tablename != 'goose_db_version'
 		AND (indexname LIKE 'uniq_%' OR indexname LIKE 'one_%')
 	`)
 	if err != nil {
-		errx.Exit(err, "error querying constraints")
+		return fmt.Errorf("query constraints: %w", err)
 	}
 	defer rows.Close()
 
 	var missing []string
 	for rows.Next() {
 		var name string
-		_ = rows.Scan(&name)
+		err = rows.Scan(&name)
+		if err != nil {
+			return fmt.Errorf("scan constraint: %w", err)
+		}
 		if _, ok := constraintRegistry[name]; !ok {
 			missing = append(missing, name)
 		}
 	}
-
-	if len(missing) > 0 {
-		errx.Exit(errors.New("missing constraints messages"), "the following constraint messages are missing from the registry: "+strings.Join(missing, ", "))
+	err = rows.Err()
+	if err != nil {
+		return fmt.Errorf("read constraints: %w", err)
 	}
+	if len(missing) > 0 {
+		return fmt.Errorf("constraints with no named error in the registry: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }
