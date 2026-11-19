@@ -1,8 +1,8 @@
 // Package backend is the kit every Backend boots from (ADR-0014). A Backend
 // declares what it is — name, spec, server settings, the shared modules it
-// uses, and a Build function — and Run does the rest: the process lifecycle
-// (through httpserver.Boot), the modules in the listed order, the router
-// frame, Build, and the shutdown of every module in reverse order.
+// uses, and a Build function — and Run does the rest: the process lifecycle,
+// the modules in the listed order, the router frame (lib/httpserver), Build,
+// and the shutdown of every module in reverse order.
 //
 //	errx.Exit(backend.Run(backend.App{
 //		Name:    "payssage",
@@ -164,18 +164,7 @@ func Run(app App) error {
 	if err != nil {
 		return fmt.Errorf("%s: read x-problems: %w", app.Name, err)
 	}
-	return httpserver.Boot(httpserver.Config{
-		AppName:            app.Name,
-		Port:               app.Server.Port,
-		ProfilePort:        app.Server.ProfilePort,
-		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
-		OpenAPISpec:        app.Spec,
-		Problems:           app.Problems,
-		RateLimit:          app.Server.RateLimit,
-	}, func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
-		return start(ctx, app)
-	})
+	return boot(app)
 }
 
 // start opens the modules, builds the router through Build, and returns the

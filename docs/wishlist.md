@@ -11,7 +11,7 @@ Rules:
 | # | Area | Item | Size | Why | Linear |
 |---|------|------|------|-----|--------|
 | 1 | Payssage | Fix the MercadoPago provider: refresh seller tokens, derive the idempotency key from the purchase | M | Expired tokens break checkout; retries can double-charge | TRI-13, TRI-14 |
-| 2 | Backend | Timeouts on outbound HTTP: inject one client instead of `http.DefaultClient` | S | 2 calls can hang forever (MercadoPago `exchange_code.go`, `httpserver/bootspan.go`) | TRI-15 |
+| 2 | Backend | Timeouts on outbound HTTP: inject one client instead of `http.DefaultClient` | S | 2 calls can hang forever (MercadoPago `exchange_code.go`, `backend/bootspan.go`) | TRI-15 |
 | 3 | Backend | Email provider | M | Email is down everywhere; `lib/go/email` only speaks SMTP | TRI-12 |
 | 4 | Univents | Move realtime to a Durable Object | M | The hub keeps sockets in container memory: open sockets keep the container awake, and it only works with `max_instances: 1` | TRI-16 |
 | 5 | IdentityX | ToS consent edge cases (stamped at login not refresh; version can move during OAuth) | S | Consent records can be wrong | TRI-27, TRI-28 |
