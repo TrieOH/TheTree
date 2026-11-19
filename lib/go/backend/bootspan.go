@@ -54,7 +54,10 @@ func startBoot(ctx context.Context, appName string) (context.Context, trace.Span
 }
 
 // failBoot ends the boot span as failed.
+// It also logs err through the OTel logger: a boot that dies before its port
+// opens leaves no other trace in the logs, so this line is how Grafana says why.
 func failBoot(span trace.Span, err error) {
+	telemetry.Log().Error("boot failed", telemetry.Err(err))
 	span.RecordError(err)
 	span.SetStatus(codes.Error, err.Error())
 	span.End()

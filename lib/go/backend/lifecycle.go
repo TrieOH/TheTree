@@ -41,7 +41,11 @@ func boot(app App, ops []openapispec.Operation) error {
 	handler, shutdown, err := start(bootCtx, app, ops)
 	if err != nil {
 		failBoot(bootSpan, err)
-		telemetry.Shutdown(ctx, shutdownTelemetry, app.Name)
+		// Flush before exiting so the boot error reaches Grafana; bounded so
+		// an unreachable collector can't hold a dying process.
+		flushCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		telemetry.Shutdown(flushCtx, shutdownTelemetry, app.Name)
+		cancel()
 		return fmt.Errorf("%s boot: %w", app.Name, err)
 	}
 
