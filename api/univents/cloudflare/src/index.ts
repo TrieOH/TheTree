@@ -1,13 +1,15 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
+import { CachedEntrypoint, gateway, type PurgeJob } from "@trieoh/container-budget/edge";
 import {
-	CachedEntrypoint,
-	PURGE_RETRY_SECONDS,
-	cached,
-	gateway,
-	isPurgeJob,
-	type PurgeJob,
-} from "@trieoh/container-budget/edge";
+	type Job,
+	backoff,
+	containerEnv,
+	deliver,
+	isJobsPath,
+	jobsOutbound,
+	runJobs,
+} from "@trieoh/container-budget/jobs";
 import { ROUTES } from "./routes";
 
 // Required by outboundByHost: the container's outbound requests are routed
@@ -18,28 +20,6 @@ export { ContainerProxy } from "@cloudflare/containers";
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
 const INSTANCES = 1;
-
-// The container enqueues by POSTing a job envelope here (JOBS_URL). The
-// request never leaves Cloudflare: outboundByHost hands it to the queue.
-const JOBS_HOST = "jobs.internal";
-
-// A delayed job carries its delay in this header, in whole seconds
-// (lib/jobs/httpjobs.DelayHeader).
-const DELAY_HEADER = "Job-Delay-Seconds";
-
-// The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
-// may reach it.
-const EVENTS_PATH = "/_jobs";
-
-// Retry backoff: 30s, doubling per attempt, capped at an hour.
-const RETRY_BASE_SECONDS = 30;
-const RETRY_MAX_SECONDS = 60 * 60;
-
-function retryDelay(attempts: number): number {
-	return Math.min(RETRY_BASE_SECONDS * 2 ** (attempts - 1), RETRY_MAX_SECONDS);
-}
-
-type Envelope = { kind: string; args?: unknown };
 
 // Reads, with Workers Caching in front (ADR-0020).
 export class Cached extends CachedEntrypoint<Env> {
@@ -55,78 +35,28 @@ export class UniventsContainer extends BudgetedContainer<Env> {
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";
 
-	static outboundByHost = {
-		[JOBS_HOST]: async (req: Request, env: Env) => {
-			const envelope = await req.json<Envelope>();
-			const delaySeconds = Number(req.headers.get(DELAY_HEADER) ?? 0) || 0;
-			await env.JOBS.send(envelope, { contentType: "json", delaySeconds });
-			return new Response(null, { status: 202 });
-		},
-	};
+	// Delayed jobs (purchase expiry) keep their delay on the queue.
+	static outboundByHost = jobsOutbound<Env>();
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);
-		// Vars and secrets become the container's environment; a running
-		// container keeps what it started with until it restarts.
-		this.envVars = { ...stringBindings(env), JOBS_URL: `http://${JOBS_HOST}/enqueue` };
+		this.envVars = containerEnv(env, { jobs: true });
 	}
-}
-
-function stringBindings(env: Env): Record<string, string> {
-	const vars: Record<string, string> = {};
-	for (const [key, value] of Object.entries(env)) {
-		if (typeof value === "string") vars[key] = value;
-	}
-	return vars;
 }
 
 async function instance(env: Env) {
 	return getRandom(env.UNIVENTS, INSTANCES);
 }
 
-// Delivers one job to a container. True when the job is done or can never
-// succeed (4xx); false when it should be retried.
-async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
-	const container = await instance(env);
-	const res = await container.fetch(
-		new Request(`http://univents${EVENTS_PATH}`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(envelope),
-		}),
-	);
-	if (res.status >= 400 && res.status < 500) {
-		console.error(`job ${envelope.kind} rejected: ${res.status} ${await res.text()}`);
-		return true;
-	}
-	return res.ok;
-}
-
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
-		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
-			return new Response("Not Found", { status: 404 });
-		}
+		if (isJobsPath(pathname)) return new Response("Not Found", { status: 404 });
 		if (!isRoute(pathname, ROUTES)) return notFound();
 		return gateway(request, env, ctx, async () => (await instance(env)).fetch(request), env.JOBS as Queue<PurgeJob>);
 	},
 
 	async queue(batch, env, ctx) {
-		for (const message of batch.messages) {
-			if (isPurgeJob(message.body)) {
-				if (await cached(ctx).purge(message.body.args.tags)) message.ack();
-				else message.retry({ delaySeconds: PURGE_RETRY_SECONDS });
-				continue;
-			}
-			const retry = { delaySeconds: retryDelay(message.attempts) };
-			try {
-				if (await deliver(env, message.body)) message.ack();
-				else message.retry(retry);
-			} catch (err) {
-				console.error("job delivery failed", err);
-				message.retry(retry);
-			}
-		}
+		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job), retryDelay: backoff });
 	},
-} satisfies ExportedHandler<Env, Envelope>;
+} satisfies ExportedHandler<Env, Job>;

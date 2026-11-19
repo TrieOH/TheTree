@@ -6,7 +6,8 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./edge": "./src/edge.ts"
+    "./edge": "./src/edge.ts",
+    "./jobs": "./src/jobs.ts"
   },
   "peerDependencies": {
     "@cloudflare/containers": "catalog:"

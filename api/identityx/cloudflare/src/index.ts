@@ -1,13 +1,16 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
+import { CachedEntrypoint, gateway, type PurgeJob } from "@trieoh/container-budget/edge";
 import {
-	CachedEntrypoint,
-	PURGE_RETRY_SECONDS,
-	cached,
-	gateway,
-	isPurgeJob,
-	type PurgeJob,
-} from "@trieoh/container-budget/edge";
+	type Job,
+	containerEnv,
+	deliver,
+	enqueue,
+	isJobsPath,
+	jobsOutbound,
+	periodicJobs,
+	runJobs,
+} from "@trieoh/container-budget/jobs";
 import { ROUTES } from "./routes";
 
 // Required by outboundByHost: the container's outbound requests are routed
@@ -18,14 +21,6 @@ export { ContainerProxy } from "@cloudflare/containers";
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
 const INSTANCES = 1;
-
-// The container enqueues by POSTing a job envelope here (JOBS_URL). The
-// request never leaves Cloudflare: outboundByHost hands it to the queue.
-const JOBS_HOST = "jobs.internal";
-
-// The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
-// may reach it.
-const EVENTS_PATH = "/_jobs";
 
 // Public signing keys. Every other API fetches them to verify tokens, so
 // the Worker answers from the edge cache, then from KV (shared by every
@@ -51,8 +46,6 @@ const PERIODIC: Record<string, string[]> = {
 	"0 3 * * *": ["cleanup_blacklist", "cleanup_action_tokens", "keys.rotate"],
 };
 
-type Envelope = { kind: string; args?: unknown };
-
 // Reads, with Workers Caching in front (ADR-0020).
 export class Cached extends CachedEntrypoint<Env> {
 	protected async origin(request: Request): Promise<Response> {
@@ -67,55 +60,22 @@ export class IdentityXContainer extends BudgetedContainer<Env> {
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";
 
-	static outboundByHost = {
-		[JOBS_HOST]: async (req: Request, env: Env) => {
-			const envelope = await req.json<Envelope>();
-			// Not work for the queue: the keys changed, so drop the cached JWKS.
-			if (envelope.kind === JWKS_CHANGED) {
-				await forgetJWKS(env);
-				return new Response(null, { status: 202 });
-			}
-			await env.JOBS.send(envelope, { contentType: "json" });
-			return new Response(null, { status: 202 });
-		},
-	};
+	// JWKS_CHANGED is not work for the queue: the keys changed, so the
+	// cached JWKS is dropped right away.
+	static outboundByHost = jobsOutbound<Env>(async (job, env) => {
+		if (job.kind !== JWKS_CHANGED) return false;
+		await forgetJWKS(env);
+		return true;
+	});
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);
-		// Vars and secrets become the container's environment; a running
-		// container keeps what it started with until it restarts.
-		this.envVars = { ...stringBindings(env), JOBS_URL: `http://${JOBS_HOST}/enqueue` };
+		this.envVars = containerEnv(env, { jobs: true });
 	}
-}
-
-function stringBindings(env: Env): Record<string, string> {
-	const vars: Record<string, string> = {};
-	for (const [key, value] of Object.entries(env)) {
-		if (typeof value === "string") vars[key] = value;
-	}
-	return vars;
 }
 
 async function instance(env: Env) {
 	return getRandom(env.IDENTITYX, INSTANCES);
-}
-
-// Delivers one job to a container. True when the job is done or can never
-// succeed (4xx); false when it should be retried.
-async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
-	const container = await instance(env);
-	const res = await container.fetch(
-		new Request(`http://identityx${EVENTS_PATH}`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(envelope),
-		}),
-	);
-	if (res.status >= 400 && res.status < 500) {
-		console.error(`job ${envelope.kind} rejected: ${res.status} ${await res.text()}`);
-		return true;
-	}
-	return res.ok;
 }
 
 async function jwks(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -160,9 +120,7 @@ async function forgetJWKS(env: Env): Promise<void> {
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
-		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
-			return new Response("Not Found", { status: 404 });
-		}
+		if (isJobsPath(pathname)) return new Response("Not Found", { status: 404 });
 		if (!isRoute(pathname, ROUTES)) return notFound();
 		if (pathname === JWKS_PATH && request.method === "GET") {
 			return jwks(request, env, ctx);
@@ -174,28 +132,11 @@ export default {
 	},
 
 	async queue(batch, env, ctx) {
-		for (const message of batch.messages) {
-			if (isPurgeJob(message.body)) {
-				if (await cached(ctx).purge(message.body.args.tags)) message.ack();
-				else message.retry({ delaySeconds: PURGE_RETRY_SECONDS });
-				continue;
-			}
-			try {
-				if (await deliver(env, message.body)) message.ack();
-				else message.retry();
-			} catch (err) {
-				console.error("job delivery failed", err);
-				message.retry();
-			}
-		}
+		// No retryDelay: failed jobs retry on the queue's own delay.
+		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job) });
 	},
 
 	async scheduled(controller, env) {
-		const kinds = PERIODIC[controller.cron] ?? [];
-		if (kinds.length === 0) {
-			console.error(`no periodic jobs for cron ${controller.cron}`);
-			return;
-		}
-		await env.JOBS.sendBatch(kinds.map((kind) => ({ body: { kind }, contentType: "json" })));
+		await enqueue(env.JOBS, periodicJobs(PERIODIC, controller.cron));
 	},
-} satisfies ExportedHandler<Env, Envelope>;
+} satisfies ExportedHandler<Env, Job>;
