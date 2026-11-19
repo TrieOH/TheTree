@@ -35,46 +35,76 @@ cp .example.env .env
 for api in identityx univents payssage informd; do
   cp api/$api/.example.env api/$api/.env
 done
+cp front/identityx/.env.example front/identityx/.env
 ```
 
-Then fill these in. For secrets, `openssl rand -hex 32` prints a good value.
+The APIs name their example file `.example.env`. The apps use `.env.example`.
+
+Fill these in now. For secrets, `openssl rand -hex 32` prints a good value.
 
 | File | Fill in |
 | --- | --- |
 | `.env` | `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY`: any values. They're the login for the local file storage. |
 | `api/identityx/.env` | `POSTGRES_PASSWORD` and `IDX_POSTGRES_PASSWORD`: the same value. `ENCRYPTION_KEY`, `HMAC_SECRET`: secrets. |
 | `api/univents/.env` | `HMAC_SECRET`: a secret |
-| `api/payssage/.env` | `POSTGRES_PASSWORD` and `PAYSSAGE_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_PROJECT_ID`, `IDENTITY_X_API_KEY`. |
-| `api/informd/.env` | `POSTGRES_PASSWORD` and `INFORMD_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_URL`, `IDENTITY_X_PROJECT_ID`, `IDENTITY_X_API_KEY`. |
+| `api/payssage/.env` | `POSTGRES_PASSWORD` and `PAYSSAGE_POSTGRES_PASSWORD`: the same value |
+| `api/informd/.env` | `POSTGRES_PASSWORD` and `INFORMD_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_URL=http://identityx:8080`. |
+| `front/identityx/.env` | `AUTH_SESSION_PASSWORD`: a secret |
 
-<Callout type="warning" title="TODO">How to get the IdentityX project ID and API key for Payssage and Informd on a fresh machine.</Callout>
+Payssage and Informd also need an IdentityX project ID and API key. You'll make those in step 4.
 
 Git ignores every `.env` file.
 
-## 3. Start the APIs
+## 3. Start IdentityX
 
 ```sh
 pnpm install
 just gen
-just up
+just run identityx
 ```
 
 - `pnpm install` installs the JavaScript packages and the git hooks.
 - `just gen` builds the generated code.
-- `just up` starts a Postgres for each API and migrates it. Then it starts the four APIs, the file storage, and Mailpit, which catches the emails the APIs send.
+- `just run identityx` starts IdentityX's database, migrates it, and runs the API.
+
+In a second terminal, start the IdentityX app:
+
+```sh
+pnpm identityx dev
+```
+
+## 4. Make the keys for Payssage and Informd
+
+Payssage and Informd sign in to IdentityX like any other app, so each one needs its own project and an API key. Do this once for each of them:
+
+1. Open `localhost:3001` and sign up. The verification email lands in Mailpit, at `localhost:8025`.
+2. Under Projects, create a project, such as `payssage`.
+3. In the project, under Actors, create an actor of type Service.
+4. Back on the project page, create an API key with that actor as its Subject.
+5. Put the project ID and the key in the API's `.env`, as `IDENTITY_X_PROJECT_ID` and `IDENTITY_X_API_KEY`.
+
+The project ID is in the page's address, after `/projects/`. Copy the key as soon as it's shown.
+
+## 5. Start everything
+
+Stop `just run identityx`, then:
+
+```sh
+just up
+```
+
+`just up` starts a Postgres for each API and migrates it. Then it starts the four APIs, the file storage, and Mailpit.
 
 Check that it worked: `just ps` lists the containers, and `curl localhost:8080/health` answers from IdentityX.
 
 To work on one API, run `just run <api>` instead, for example `just run univents`. It also starts the APIs that one calls.
 
-## 4. Run an app
+## 6. Run an app
 
 ```sh
 cp front/univents-solid/.env.example front/univents-solid/.env
 pnpm univents dev
 ```
-
-The apps name their example file `.env.example`. The APIs use `.example.env`.
 
 The example already points at your local APIs. Replace `AUTH_SESSION_PASSWORD` with the output of `openssl rand -hex 32`.
 
