@@ -6,7 +6,7 @@
 //   - inprocess: a bounded worker pool plus tickers, for a long-lived
 //     process (local compose).
 //   - httpjobs: the Envelope POSTed to an external queue, which delivers it
-//     back to the Backend's events endpoint; an external scheduler fires
+//     back to the Backend's job endpoint (/_jobs); an external scheduler fires
 //     the periodic jobs there (Cloudflare Queues and Cron Triggers).
 //
 // The Envelope is the only wire format, so every carrier delivers the same

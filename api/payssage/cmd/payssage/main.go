@@ -17,7 +17,8 @@ func main() {
 	errx.Exit(backend.Run(backend.App{
 		Name:   cfg.AppName,
 		Spec:   spec.OpenAPISpec,
-		Server: backend.ServerFrom(cfg.Server, cfg.CORS, cfg.ProfilePort),
+		Server: cfg.Server,
+		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
 			identityx.Module(cfg.IdentityX, identityx.Debug(true), identityx.AcceptAPIKeys()),

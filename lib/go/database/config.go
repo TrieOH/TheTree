@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"time"
@@ -23,8 +24,6 @@ type Config struct {
 	ChannelBinding string
 	// MaxConns caps the pgx pool; zero keeps pgx's default.
 	MaxConns int32
-
-	MigrationPath string
 }
 
 func (c Config) DSN() string {
@@ -53,22 +52,11 @@ func (c Config) port() string {
 }
 
 // SetupDB is the Postgres adapter's one boot entry point: connect to the
-// service database, run migrations, and validate that every constraint
-// carries a registered message. It returns errors instead of exiting so the
-// caller's boot path owns process failure. Its spans join ctx's trace, so
-// a boot traces its connect and constraint check.
+// service database and validate that every constraint has a named error. It
+// never migrates (`just migrate <svc>` owns the schema) and returns errors
+// instead of exiting, so the caller's boot path owns process failure. Its
+// spans join ctx's trace, so a boot traces its connect and constraint check.
 func SetupDB(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
-	return setupDB(ctx, cfg, constraints, true)
-}
-
-// SetupDBWithoutMigrations connects to the service database and validates its
-// constraints without changing its schema. Use this when schema migrations
-// are owned by a separate deployment or developer command.
-func SetupDBWithoutMigrations(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pgxpool.Pool, error) {
-	return setupDB(ctx, cfg, constraints, false)
-}
-
-func setupDB(ctx context.Context, cfg Config, constraints ConstraintErrors, runMigrations bool) (*pgxpool.Pool, error) {
 	connectCtx, span := telemetry.StartSpan(ctx, "db.connect")
 	db, err := WaitForDB(connectCtx, 30*time.Second, cfg)
 	if err != nil {
@@ -78,18 +66,17 @@ func setupDB(ctx context.Context, cfg Config, constraints ConstraintErrors, runM
 		return nil, fmt.Errorf("connect: %w", err)
 	}
 	span.End()
-	if runMigrations {
-		err = RunMigrations(db, cfg.MigrationPath)
-		if err != nil {
-			CloseDB(db)
-			return nil, fmt.Errorf("migrate: %w", err)
-		}
-	}
 	UseConstraints(constraints)
 	checkCtx, span := telemetry.StartSpan(ctx, "db.constraints")
 	defer span.End()
 	checkCtx, cancel := context.WithTimeout(checkCtx, 10*time.Second)
 	defer cancel()
-	validateConstraints(checkCtx, db)
+	// A registry gap degrades one error to a 500; it must never stop a boot.
+	err = validateConstraints(checkCtx, db)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "constraints")
+		log.Printf("WARN %v", err)
+	}
 	return db, nil
 }

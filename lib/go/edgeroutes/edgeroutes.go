@@ -4,8 +4,10 @@
 // outside the spec. A request whose first segment is not on the list cannot
 // reach a handler, so the Worker answers 404 without waking the container.
 //
-// The list is committed as cloudflare/src/routes.ts, next to the Worker, and
-// each service's test fails when it no longer matches the spec.
+// The list is committed as cloudflare/src/routes.ts, next to the Worker
+// (each API's deploy job has no Go to generate it). tools/problemgen writes
+// it on every `just gen`, and each service's test fails when the committed
+// list no longer matches the spec.
 package edgeroutes
 
 import (
@@ -26,7 +28,7 @@ import (
 const FileName = "cloudflare/src/routes.ts"
 
 // served are the first segments httpserver.NewRouter adds to every backend,
-// whether or not its spec declares them.
+// whether or not its spec declares them (pinned by this package's tests).
 var served = []string{"docs", "health", "problems"}
 
 // Segments returns the sorted first path segments of spec's operations,
@@ -68,7 +70,7 @@ func Render(spec []byte) ([]byte, error) {
 		return nil, err
 	}
 	var b strings.Builder
-	b.WriteString("// Code generated from api-spec.yml by `just gen-routes`. DO NOT EDIT.\n")
+	b.WriteString("// Code generated from api-spec.yml by `just gen`. DO NOT EDIT.\n")
 	b.WriteString("//\n")
 	b.WriteString("// The first path segments this API serves. The Worker answers any other\n")
 	b.WriteString("// path with 404 without starting the container.\n")
@@ -80,23 +82,27 @@ func Render(spec []byte) ([]byte, error) {
 	return []byte(b.String()), nil
 }
 
-// Verify compares the committed list in dir (the service module) with spec.
-// With update set it rewrites the file instead of reporting a mismatch.
-func Verify(spec []byte, dir string, update bool) error {
+// Write renders spec's list into dir (the service module).
+func Write(spec []byte, dir string) error {
 	want, err := Render(spec)
 	if err != nil {
 		return err
 	}
-	path := filepath.Clean(filepath.Join(dir, FileName))
-	if update {
-		return os.WriteFile(path, want, 0o600)
-	}
-	got, err := os.ReadFile(path)
+	return os.WriteFile(filepath.Clean(filepath.Join(dir, FileName)), want, 0o600)
+}
+
+// Verify compares the committed list in dir (the service module) with spec.
+func Verify(spec []byte, dir string) error {
+	want, err := Render(spec)
 	if err != nil {
-		return fmt.Errorf("edgeroutes: %w (run `just gen-routes`)", err)
+		return err
+	}
+	got, err := os.ReadFile(filepath.Clean(filepath.Join(dir, FileName)))
+	if err != nil {
+		return fmt.Errorf("edgeroutes: %w (run `just gen`)", err)
 	}
 	if !bytes.Equal(got, want) {
-		return fmt.Errorf("edgeroutes: %s is out of date with api-spec.yml (run `just gen-routes`)", FileName)
+		return fmt.Errorf("edgeroutes: %s is out of date with api-spec.yml (run `just gen`)", FileName)
 	}
 	return nil
 }

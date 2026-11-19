@@ -5,18 +5,17 @@ import (
 	"strings"
 
 	"IdentityX/errs"
-	"IdentityX/internal/features/authn/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/internal/setup"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops   *service.Operations
+	ops   *Operations
 	setup *setup.State
 }
 
-func NewHandlers(ops *service.Operations, st *setup.State) *Handlers {
+func NewHandlers(ops *Operations, st *setup.State) *Handlers {
 	return &Handlers{ops: ops, setup: st}
 }
 

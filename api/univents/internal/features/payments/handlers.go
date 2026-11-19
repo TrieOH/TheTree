@@ -5,15 +5,14 @@ import (
 
 	"lib/httpcache"
 	"univents/internal/cachetags"
-	"univents/internal/features/payments/service"
 	"univents/internal/openapi"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CompleteEventPayments(ctx context.Context, req openapi.CompleteEventPaymentsRequestObject) (openapi.CompleteEventPaymentsResponseObject, error) {
 	event, err := h.ops.Complete(ctx, req.EventId, req.Body.SellerId, req.Body.PublicKey)

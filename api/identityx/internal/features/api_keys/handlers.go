@@ -4,16 +4,15 @@ import (
 	"context"
 	"uuid"
 
-	"IdentityX/internal/features/api_keys/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func deref(v *string) string {
 	if v == nil {

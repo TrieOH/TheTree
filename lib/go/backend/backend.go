@@ -1,13 +1,14 @@
 // Package backend is the kit every Backend boots from (ADR-0014). A Backend
 // declares what it is — name, spec, server settings, the shared modules it
-// uses, and a Build function — and Run does the rest: the process lifecycle
-// (through httpserver.Boot), the modules in the listed order, the router
-// frame, Build, and the shutdown of every module in reverse order.
+// uses, and a Build function — and Run does the rest: the process lifecycle,
+// the modules in the listed order, the router frame (lib/httpserver), Build,
+// and the shutdown of every module in reverse order.
 //
 //	errx.Exit(backend.Run(backend.App{
 //		Name:    "payssage",
 //		Spec:    spec.OpenAPISpec,
-//		Server:  cfg.Server(),
+//		Server:  cfg.Server,
+//		CORS:    cfg.CORS,
 //		Modules: []backend.Module{postgres.Module(...), identityx.Module(...), jobs.Module(...)},
 //		Build:   build(cfg),
 //	}), "payssage exited with error")
@@ -23,12 +24,13 @@ import (
 	"net/http"
 	"slices"
 
-	"lib/authz"
+	libconfig "lib/config"
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
 	libjobs "lib/jobs"
 	"lib/jobs/httpjobs"
+	"lib/openapispec"
 	"lib/telemetry"
 
 	idx "sdk/identityx"
@@ -43,9 +45,11 @@ import (
 
 // App is what a Backend declares about itself.
 type App struct {
-	Name    string
-	Spec    []byte
-	Server  Server
+	Name   string
+	Spec   []byte
+	Server libconfig.Server
+	CORS   libconfig.CORS
+	// Modules open in the listed order and close in reverse.
 	Modules []Module
 	Build   BuildFunc
 	// Errors answers every error with its problem (ADR-0019): the
@@ -55,22 +59,6 @@ type App struct {
 	// Problems documents the Backend's problem types (its generated
 	// problems.Docs), served at GET /problems/{slug}.
 	Problems []httpserver.ProblemDoc
-}
-
-// Server is the process-level HTTP settings.
-type Server struct {
-	Port string
-	// APIURL is the Backend's public base URL (API_URL); problem types
-	// resolve against it.
-	APIURL      string
-	ProfilePort string
-	// CorsAllowedOrigins and CorsAllowedHeaders are comma-separated.
-	CorsAllowedOrigins string
-	CorsAllowedHeaders string
-	RateLimit          httpserver.RateLimit
-	// DebugMode (DEBUG_MODE) makes a problem its operation's x-problems
-	// doesn't list panic instead of warn.
-	DebugMode bool
 }
 
 // BuildFunc wires the Backend's own code: repos, services, handlers,
@@ -108,14 +96,15 @@ type Deps struct {
 	// jobs: enqueue right away; hand over the registry with Serve in Build.
 	Jobs Jobs
 
-	spec []byte
+	// ops is the spec's operations, read once by Run.
+	ops []openapispec.Operation
 }
 
 // IdentityX is what the identityx module provides: the SDK client and the
 // auth primitives every IdentityX consumer authenticates requests with.
 type IdentityX struct {
 	Client *idx.Client
-	Auth   authz.Primitives
+	Auth   httpserver.Primitives
 }
 
 // Jobs is the background-work carrier the jobs module provides. Enqueue
@@ -133,25 +122,14 @@ type Jobs interface {
 
 // Chains resolves every spec operation's auth chain from the operation's
 // security, enforced by primitives: d.IDX.Auth for IdentityX's consumers,
-// IdentityX's own primitives for IdentityX itself. Pass the result to
-// httpserver.MountStrict.
-func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
-	return d.ChainsWith(primitives, authz.Options{})
-}
-
-// ChainsWith is Chains with resolver options. IdentityX passes its setup
-// guard here until the guard moves into its own code (ADR-0014). Scope
-// rejections are written through the Backend's problems unless opts says
-// otherwise.
-func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[string][]func(http.Handler) http.Handler, error) {
-	if opts.WriteError == nil {
-		opts.WriteError = httpserver.WriteError
-	}
-	resolver, err := authz.NewResolver(d.spec, primitives, opts)
+// IdentityX's own primitives for IdentityX itself. Pass the result to the
+// generated openapi.Mount.
+func (d *Deps) Chains(primitives httpserver.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
+	chains, err := httpserver.Chains(d.ops, primitives)
 	if err != nil {
 		return nil, fmt.Errorf("resolve auth chains: %w", err)
 	}
-	return resolver.Chains(), nil
+	return chains, nil
 }
 
 // Run boots the Backend and serves until SIGTERM/SIGINT.
@@ -159,57 +137,55 @@ func Run(app App) error {
 	if app.Build == nil {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
 	}
-	httpserver.UseProblems(app.Errors, app.Server.APIURL)
-	err := httpserver.UseOperationProblems(app.Spec, app.Server.DebugMode)
+	ops, err := openapispec.Operations(app.Spec)
 	if err != nil {
-		return fmt.Errorf("%s: read x-problems: %w", app.Name, err)
+		return fmt.Errorf("%s: read the spec: %w", app.Name, err)
 	}
-	return httpserver.Boot(httpserver.Config{
-		AppName:            app.Name,
-		Port:               app.Server.Port,
-		ProfilePort:        app.Server.ProfilePort,
-		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
-		OpenAPISpec:        app.Spec,
-		Problems:           app.Problems,
-		RateLimit:          app.Server.RateLimit,
-	}, func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
-		return start(ctx, app)
-	})
+	httpserver.UseProblems(app.Errors, app.Server.APIURL)
+	httpserver.UseOperationProblems(ops, app.Server.DebugMode)
+	return boot(app, ops)
 }
 
 // start opens the modules, builds the router through Build, and returns the
 // handler with the shutdown that closes every module in reverse order.
-func start(ctx context.Context, app App) (http.Handler, func(context.Context) error, error) {
-	d := &Deps{spec: app.Spec}
+func start(ctx context.Context, app App, ops []openapispec.Operation) (http.Handler, func(context.Context) error, error) {
+	d := &Deps{ops: ops}
 	closeAll, err := openModules(ctx, d, app.Modules)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var buildErr error
-	handler := httpserver.NewRouter(httpserver.Config{
+	mux, handler := httpserver.NewRouter(httpserver.Config{
 		AppName:            app.Name,
-		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.CORS.AllowedOrigins,
+		CorsAllowedHeaders: app.CORS.AllowedHeaders,
 		OpenAPISpec:        app.Spec,
 		Problems:           app.Problems,
-		RateLimit:          app.Server.RateLimit,
-		Routes: func(r *chi.Mux) {
-			buildCtx, span := telemetry.StartSpan(ctx, "boot.build")
-			defer span.End()
-			buildErr = app.Build(buildCtx, d, r)
-			if buildErr == nil {
-				buildErr = mountJobs(d, r)
-			}
-			endBootStep(span, buildErr)
+		RateLimit: httpserver.RateLimit{
+			Disabled: app.Server.DisableRateLimit,
+			RPS:      app.Server.RateLimitRPS,
+			Burst:    app.Server.RateLimitBurst,
 		},
 	})
-	if buildErr != nil {
+	err = build(ctx, app, d, mux)
+	if err != nil {
 		_ = closeAll(ctx)
-		return nil, nil, fmt.Errorf("build: %w", buildErr)
+		return nil, nil, fmt.Errorf("build: %w", err)
 	}
 	return handler, closeAll, nil
+}
+
+// build runs the Backend's Build under its own boot span, then mounts the
+// jobs endpoint.
+func build(ctx context.Context, app App, d *Deps, r chi.Router) error {
+	ctx, span := telemetry.StartSpan(ctx, "boot.build")
+	defer span.End()
+	err := app.Build(ctx, d, r)
+	if err == nil {
+		err = mountJobs(d, r)
+	}
+	endBootStep(span, err)
+	return err
 }
 
 // openModules opens each module in the listed order. If one fails, the ones

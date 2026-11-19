@@ -97,20 +97,6 @@ func Verify(password, encoded string) error {
 	return nil
 }
 
-// NeedsRehash returns true if the hash was produced with different params,
-// useful for transparently upgrading hashes on login.
-func NeedsRehash(encoded string, p Params) (bool, error) {
-	current, _, _, err := decode(encoded)
-	if err != nil {
-		return false, err
-	}
-
-	return current.Memory != p.Memory ||
-		current.Iterations != p.Iterations ||
-		current.Parallelism != p.Parallelism ||
-		current.KeyLength != p.KeyLength, nil
-}
-
 func decode(encoded string) (Params, []byte, []byte, error) {
 	parts := strings.Split(encoded, "$")
 	if len(parts) != 6 {

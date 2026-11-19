@@ -3,16 +3,15 @@ package namespaces
 import (
 	"context"
 
-	"Informd/internal/features/namespaces/service"
 	"Informd/internal/openapi"
 	"Informd/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) AddNamespaceMember(ctx context.Context, req openapi.AddNamespaceMemberRequestObject) (openapi.AddNamespaceMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddNamespaceMemberInput{

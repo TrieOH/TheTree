@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"lib/httpserver"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
-	libauthz "lib/authz"
 	"lib/database"
 	"lib/validator"
 
@@ -47,7 +47,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			Authz:    authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
 			Notifier: emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
 		}),
-		Tx: nopTxRunner{},
+		Tx: database.NoTx{},
 	})
 	st := completedSetup()
 	server := newServer(operations{authn: ops}, st)
@@ -60,7 +60,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	return newTestRouter(t, server, libauthz.Primitives{
+	return newTestRouter(t, server, httpserver.Primitives{
 		JWT:    jwtStub,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,

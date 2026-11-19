@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 
 	"Informd/errs"
-	"Informd/internal/features/fields/service"
 	"Informd/internal/openapi"
 	"Informd/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func mustMarshal(v *map[string]any) *json.RawMessage {
 	if v == nil {

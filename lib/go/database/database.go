@@ -2,13 +2,10 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
-
-	"lib/errx"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,7 +47,7 @@ func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)
 
-		err = pool.Ping(ctx)
+		err = pingOnce(ctx, pool, maxAttempts-attempt+1)
 		if err == nil {
 			log.Printf("database connected on attempt %d\n", attempt)
 			return pool, nil
@@ -61,13 +58,26 @@ func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int
 		select {
 		case <-ctx.Done():
 			pool.Close()
-			return nil, fmt.Errorf("context deadline exceeded after %d attempts", attempt)
+			return nil, fmt.Errorf("gave up after %d attempts: %w", attempt, err)
 		case <-time.After(2 * time.Second):
 		}
 	}
 
 	pool.Close()
-	return nil, fmt.Errorf("failed to connect after %d attempts", maxAttempts)
+	return nil, fmt.Errorf("failed to connect after %d attempts: %w", maxAttempts, err)
+}
+
+// pingOnce gives one ping an even share of what is left of ctx's budget, so a
+// hung first ping can't use it all and leave no room for the retries.
+func pingOnce(ctx context.Context, pool *pgxpool.Pool, attemptsLeft int) error {
+	pingCtx := ctx
+	if deadline, ok := ctx.Deadline(); ok {
+		share := time.Until(deadline) / time.Duration(attemptsLeft)
+		var cancel context.CancelFunc
+		pingCtx, cancel = context.WithTimeout(ctx, share)
+		defer cancel()
+	}
+	return pool.Ping(pingCtx)
 }
 
 // RunMigrations uses pgx/stdlib to provide *sql.DB compatibility for goose
@@ -109,39 +119,49 @@ func UseConstraints(constraints ConstraintErrors) {
 	constraintRegistry = constraints
 }
 
-func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
+// validateConstraints reports a constraint (or a uniq_ or one_ index) the
+// registry has no named error for: a violation of it would answer a generic
+// 500 instead of the error it means. River's leftover tables are skipped.
+func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
 	rows, err := db.Query(ctx, `
 		SELECT con.conname
 		FROM pg_constraint con
 		JOIN pg_class rel ON rel.oid = con.conrelid
 		JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
 		WHERE nsp.nspname = 'public'
-		AND rel.relname NOT LIKE 'river_%'
 		AND rel.relname != 'goose_db_version'
+		AND rel.relname NOT LIKE 'river\_%'
 		AND con.contype IN ('u', 'c', 'x')
 		UNION
 		SELECT indexname
 		FROM pg_indexes
 		WHERE schemaname = 'public'
-		AND tablename NOT LIKE 'river_%'
 		AND tablename != 'goose_db_version'
+		AND tablename NOT LIKE 'river\_%'
 		AND (indexname LIKE 'uniq_%' OR indexname LIKE 'one_%')
 	`)
 	if err != nil {
-		errx.Exit(err, "error querying constraints")
+		return fmt.Errorf("query constraints: %w", err)
 	}
 	defer rows.Close()
 
 	var missing []string
 	for rows.Next() {
 		var name string
-		_ = rows.Scan(&name)
+		err = rows.Scan(&name)
+		if err != nil {
+			return fmt.Errorf("scan constraint: %w", err)
+		}
 		if _, ok := constraintRegistry[name]; !ok {
 			missing = append(missing, name)
 		}
 	}
-
-	if len(missing) > 0 {
-		errx.Exit(errors.New("missing constraints messages"), "the following constraint messages are missing from the registry: "+strings.Join(missing, ", "))
+	err = rows.Err()
+	if err != nil {
+		return fmt.Errorf("read constraints: %w", err)
 	}
+	if len(missing) > 0 {
+		return fmt.Errorf("constraints with no named error in the registry: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }

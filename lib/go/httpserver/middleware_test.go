@@ -50,7 +50,7 @@ func TestRealIPUsesCloudflareClientIP(t *testing.T) {
 // TestRateLimitKeysPerClientNotConnection — a client reconnecting from a
 // new port shares its bucket.
 func TestRateLimitKeysPerClientNotConnection(t *testing.T) {
-	h := testRouter(t, Config{RateLimit: RateLimit{RPS: 0.001, Burst: 1}})
+	h := testRouter(t, routerConfig{RateLimit: RateLimit{RPS: 0.001, Burst: 1}})
 	codes := make([]int, 0, 2)
 	for _, port := range []string{"1111", "2222"} {
 		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)

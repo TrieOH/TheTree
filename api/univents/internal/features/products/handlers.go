@@ -7,16 +7,15 @@ import (
 	"lib/httpcache"
 	"univents/errs"
 	"univents/internal/cachetags"
-	"univents/internal/features/products/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateInitialProduct(ctx context.Context, req openapi.CreateInitialProductRequestObject) (openapi.CreateInitialProductResponseObject, error) {
 	requiresRegistration := false

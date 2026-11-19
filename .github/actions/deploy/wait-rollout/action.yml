@@ -1,0 +1,64 @@
+name: Wait for container rollout
+description: >
+  Waits until Cloudflare has rolled the service's Container application out to
+  the image of this version, and fails if the rollout fails or never finishes.
+  `wrangler deploy` returns once the Worker is up, which can be before (or
+  without) the container moving to the new image. It only reads Cloudflare's
+  API: no request reaches the Worker or the container, so nothing is woken.
+inputs:
+  service:
+    description: the service, e.g. identityx
+    required: true
+  version:
+    description: the tag's version, e.g. v0.48.14
+    required: true
+  api-token:
+    description: Cloudflare API token (Containers read)
+    required: true
+  account-id:
+    description: Cloudflare account id
+    required: true
+  timeout:
+    description: seconds to wait for the rollout
+    default: '600'
+runs:
+  using: composite
+  steps:
+    - name: Wait for ${{ inputs.service }} ${{ inputs.version }}
+      shell: bash
+      env:
+        SERVICE: ${{ inputs.service }}
+        VERSION: ${{ inputs.version }}
+        TOKEN: ${{ inputs.api-token }}
+        ACCOUNT: ${{ inputs.account-id }}
+        TIMEOUT: ${{ inputs.timeout }}
+      run: |
+        set -euo pipefail
+        api() { curl -fsS -H "Authorization: Bearer $TOKEN" "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/containers/$1"; }
+        APP=$(api applications | jq -r --arg p "$SERVICE-api-" '.result[] | select(.name | startswith($p)) | .id' | head -1)
+        [ -n "$APP" ] || { echo "::error::no Container application named $SERVICE-api-*"; exit 1; }
+
+        deadline=$(( $(date +%s) + TIMEOUT ))
+        while :; do
+          app=$(api "applications/$APP")
+          image=$(jq -r '.result.configuration.image' <<<"$app")
+          rollout=$(jq -r '.result.active_rollout_id // empty' <<<"$app")
+          status=none target=
+          if [ -n "$rollout" ]; then
+            r=$(api "applications/$APP/rollouts/$rollout")
+            status=$(jq -r '.result.status' <<<"$r")
+            target=$(jq -r '.result.target_configuration.image' <<<"$r")
+          fi
+          echo "[rollout] app image=${image##*:} rollout=${rollout:-none} status=$status target=${target##*:}"
+          if [ "${target##*:}" = "$VERSION" ] || [ -z "$rollout" -a "${image##*:}" = "$VERSION" ]; then
+            case "$status" in
+            completed | none) echo "[rollout] $SERVICE container is on $VERSION"; exit 0 ;;
+            failed | stopped | reverted) echo "::error title=$SERVICE rollout $status::Cloudflare's rollout to $VERSION ended as $status"; exit 1 ;;
+            esac
+          fi
+          if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "::error title=$SERVICE rollout not done::after ${TIMEOUT}s the container is not on $VERSION (rollout status $status, target ${target##*:}, app image ${image##*:})"
+            exit 1
+          fi
+          sleep 15
+        done

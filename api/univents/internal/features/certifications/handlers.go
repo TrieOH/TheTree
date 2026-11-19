@@ -6,16 +6,15 @@ import (
 
 	idx "sdk/identityx"
 	"univents/errs"
-	"univents/internal/features/certifications/service"
 	"univents/internal/openapi"
 	"univents/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateCertificationTemplate(ctx context.Context, req openapi.CreateCertificationTemplateRequestObject) (openapi.CreateCertificationTemplateResponseObject, error) {
 	design, err := json.Marshal(req.Body.DesignData)

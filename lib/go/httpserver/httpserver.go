@@ -1,14 +1,14 @@
-// Package httpserver is the HTTP-serving harness shared by every TrieOH backend:
-// server lifecycle, pprof, middleware configuration, and the standard router skeleton
-// (middleware stack, /health, OpenTelemetry wrapping). Telemetry is pushed
+// Package httpserver is the HTTP layer shared by every TrieOH backend: the
+// standard router skeleton (middleware stack, /health, OpenTelemetry
+// wrapping), the strict stack, the auth primitives and the per-operation
+// chains derived from the spec, and the problem writer.
+// The process lifecycle lives in lib/backend. Telemetry is pushed
 // over OTLP (see lib/telemetry); nothing is scraped from the process.
 package httpserver
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"net/http/pprof"
 	"slices"
 	"strings"
 	"sync"
@@ -26,16 +26,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Config carries everything a backend must tell the harness about itself.
+// Config is what the router skeleton needs from a backend.
 type Config struct {
 	AppName            string
-	Port               string
-	ProfilePort        string
 	CorsAllowedOrigins string
 	CorsAllowedHeaders string
-	// SkipLogPrefixes are extra request prefixes the request logger should
-	// ignore, on top of the always-skipped /health.
-	SkipLogPrefixes []string
 	// RateLimit configures the per-client rate limiter. The zero value
 	// keeps the historical defaults (400 rps, burst 20).
 	RateLimit RateLimit
@@ -46,9 +41,6 @@ type Config struct {
 	// Problems documents the Backend's problem types, served at
 	// GET /problems/{slug} (ADR-0019).
 	Problems []ProblemDoc
-	// Routes receives the chi router and registers the backend's feature
-	// routes, auth middlewares, and any extra mounts (websockets).
-	Routes func(r *chi.Mux)
 }
 
 // RateLimit is the per-client (real IP) token bucket. It limits per process:
@@ -118,9 +110,10 @@ func spanRouteNameMiddleware(next http.Handler) http.Handler {
 }
 
 // NewRouter builds the standard router skeleton: chi with the standard
-// middleware stack, the backend's routes, /health, wrapped in OpenTelemetry
-// instrumentation that skips /health and OPTIONS.
-func NewRouter(cfg Config) http.Handler {
+// middleware stack and /health, /problems and /docs. The backend mounts its
+// own routes on the returned mux; the returned handler serves the mux
+// wrapped in OpenTelemetry instrumentation that skips /health and OPTIONS.
+func NewRouter(cfg Config) (*chi.Mux, http.Handler) {
 	r := chi.NewRouter()
 
 	r.Use(spanRouteNameMiddleware)
@@ -128,9 +121,6 @@ func NewRouter(cfg Config) http.Handler {
 		r.Use(mw)
 	}
 
-	if cfg.Routes != nil {
-		cfg.Routes(r)
-	}
 	r.Get("/health", health(cfg.AppName))
 	if len(cfg.Problems) > 0 {
 		r.Get("/problems/{slug}", serveProblemDocs(cfg.Problems))
@@ -166,7 +156,7 @@ func NewRouter(cfg Config) http.Handler {
 	// histogram: their "duration" is how long the client stayed connected.
 	unmeasured := otelhttp.NewHandler(r, "http.server",
 		append(slices.Clip(opts), otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	return r, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if realtime(req) {
 			unmeasured.ServeHTTP(w, req)
 			return
@@ -181,41 +171,6 @@ func NewRouter(cfg Config) http.Handler {
 func realtime(r *http.Request) bool {
 	return strings.EqualFold(r.Header.Get("Upgrade"), "websocket") ||
 		strings.Contains(r.Header.Get("Accept"), "text/event-stream")
-}
-
-// Start serves handler on cfg.Port, blocking until the process exits. It also
-// starts the pprof server on cfg.ProfilePort when set.
-//
-// Superseded by Boot, which owns the whole process lifecycle.
-func newServer(handler http.Handler, port string) *http.Server {
-	return &http.Server{
-		Addr:         ":" + port,
-		Handler:      handler,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 60 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-}
-
-func servePprof(port, appName string) {
-	pmux := http.NewServeMux()
-	pmux.HandleFunc("/debug/pprof/", pprof.Index)
-	pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      pmux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 120 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-	log.Printf("%s pprof listening on :%s", appName, port)
-	err := srv.ListenAndServe()
-	if err != nil {
-		log.Fatalf("%s pprof server error: %v", appName, err)
-	}
 }
 
 var (
@@ -233,7 +188,7 @@ func collectors() (*httpCollectors, error) {
 
 // stack is the standard middleware stack shared by every backend.
 func stack(cfg Config) []func(http.Handler) http.Handler {
-	skipLog := append([]string{"/health", "/docs/openapi.yml"}, cfg.SkipLogPrefixes...)
+	skipLog := []string{"/health", "/docs/openapi.yml"}
 
 	collectors, err := collectors()
 	if err != nil {

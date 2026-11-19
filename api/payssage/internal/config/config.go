@@ -16,11 +16,8 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"PAYSSAGE_"`
 
-	// Profiling
-	ProfilePort string `env:"PROFILE_PORT"`
-
 	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /events; the
+	// them to this queue producer, which delivers them back to /_jobs; the
 	// deploy's scheduler fires the periodic ones there.
 	JobsURL string `env:"JOBS_URL"`
 

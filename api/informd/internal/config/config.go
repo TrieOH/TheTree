@@ -15,8 +15,7 @@ type Config struct {
 	Postgres libconfig.Postgres `envPrefix:"INFORMD_"`
 
 	// Feature fields
-	AppURL      string `env:"APP_URL,required"`
-	ProfilePort string `env:"PROFILE_PORT"`
+	AppURL string `env:"APP_URL,required"`
 }
 
 func LoadConfig() Config {

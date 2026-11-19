@@ -3,16 +3,15 @@ package wallets
 import (
 	"context"
 
-	"payssage/internal/features/wallets/service"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) BindCollector(ctx context.Context, req openapi.BindCollectorRequestObject) (openapi.BindCollectorResponseObject, error) {
 	err := h.ops.BindCollector(ctx, req.WalletId, req.Body.CollectorId)

@@ -1,3 +1,5 @@
+import { isJobsPath } from "./jobs";
+
 // Scanner traffic (/.env, /index.php, /wp-login, /) never matches an API
 // route, but reaching the container would still wake it. No API path has a
 // file extension or a dot segment except these.
@@ -22,11 +24,13 @@ export function isNoise(pathname: string): boolean {
 }
 
 // True when pathname can reach one of the API's handlers: it is not noise,
-// and its first segment is one the API serves (`routes`, generated from its
-// spec into cloudflare/src/routes.ts). Scanners probing paths no API has,
-// like /user, /graphql or /%2eenv, get 404 without waking the container.
+// not the job endpoint (only the Worker may reach it), and its first segment
+// is one the API serves (`routes`, generated from its spec into
+// cloudflare/src/routes.ts). Scanners probing paths no API has, like /user,
+// /graphql or /%2eenv, get 404 without waking the container.
 export function isRoute(pathname: string, routes: ReadonlySet<string>): boolean {
 	if (ALLOWED.has(pathname)) return true;
+	if (isJobsPath(pathname)) return false;
 	if (isNoise(pathname)) return false;
 	const end = pathname.indexOf("/", 1);
 	return routes.has(pathname.slice(1, end === -1 ? undefined : end));

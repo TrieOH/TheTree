@@ -154,7 +154,11 @@ func Build(cfg config.Config) backend.BuildFunc {
 			tos: tosOps,
 		}
 
-		chains, err := d.ChainsWith(authPrimitives(tokensMgr, ops.apiKeys, authzSvc), chainOptions(setupState))
+		chains, err := d.Chains(authPrimitives(tokensMgr, ops.apiKeys, authzSvc))
+		if err != nil {
+			return err
+		}
+		err = guardSetup(chains, setupState)
 		if err != nil {
 			return err
 		}

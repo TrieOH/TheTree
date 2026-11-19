@@ -18,9 +18,6 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
 
-	// Profiling
-	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
-
 	// Feature fields
 	AppURL string `env:"APP_URL,required"`
 
@@ -57,7 +54,7 @@ type Config struct {
 	HmacSecret string `env:"HMAC_SECRET,required"`
 
 	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /events.
+	// them to this queue producer, which delivers them back to /_jobs.
 	JobsURL string `env:"JOBS_URL"`
 }
 

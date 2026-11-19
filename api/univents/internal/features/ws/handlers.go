@@ -5,15 +5,14 @@ import (
 	"net/http"
 
 	idx "sdk/identityx"
-	"univents/internal/features/ws/service"
 	"univents/internal/openapi"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 // GetWsToken issues the one-time WS handshake token (split 6): the caller
 // must be the purchase's purchaser — a non-owner gets 404 via the service

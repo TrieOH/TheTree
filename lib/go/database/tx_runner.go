@@ -1,24 +1,11 @@
 package database
 
-import (
-	"context"
-
-	"github.com/jackc/pgx/v5"
-)
-
-// TxOptions defines transaction behavior.
-// Zero values result in explicit default options being passed:
-//   - Isolation: sql.LevelDefault (driver-defined default isolation)
-//   - ReadOnly: false
-type TxOptions struct {
-	Isolation pgx.TxIsoLevel
-	ReadOnly  pgx.TxAccessMode
-}
+import "context"
 
 // TxRunner executes functions within a database transaction.
 //
 // Implementations are expected to:
-//   - Use database default isolation and read-write mode unless specified
+//   - Use the database's default isolation, read-write
 //   - Reject nested transactions rather than flattening or using save points
 //
 // A transaction-bound context is passed to fn and must be used by repositories
@@ -30,5 +17,12 @@ type TxOptions struct {
 // no init-order contract exists.
 type TxRunner interface {
 	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
-	WithinTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error
+}
+
+// NoTx is the TxRunner for tests that have no database: it calls fn
+// directly, so the repo fakes see the caller's context.
+type NoTx struct{}
+
+func (NoTx) WithinTx(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
 }

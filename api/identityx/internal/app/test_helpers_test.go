@@ -9,8 +9,8 @@ import (
 	"IdentityX/internal/openapi"
 	"IdentityX/internal/problems"
 	"IdentityX/internal/setup"
-	libauthz "lib/authz"
 	"lib/httpserver"
+	"lib/openapispec"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -23,7 +23,7 @@ func mwAnyAuth(next http.Handler) http.Handler { return next }
 // built in tests exercise the same scope enforcement production gets. The
 // platform-only checker only reads the context identity, so a service with
 // nil repos is a safe host for it here.
-func testScopeCheckers() map[string]libauthz.ScopeChecker {
+func testScopeCheckers() map[string]httpserver.ScopeChecker {
 	return authz.New(nil, nil, nil).ScopeCheckers()
 }
 
@@ -37,27 +37,32 @@ func completedSetup() *setup.State {
 // newTestRouter mounts the strict server with the real middleware stack
 // (validation + auth dispatch + setup guard + fun-envelope error handlers)
 // on a fresh chi router.
-func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *setup.State) *chi.Mux {
+func newTestRouter(t *testing.T, h *server, primitives httpserver.Primitives, st *setup.State) *chi.Mux {
 	t.Helper()
-	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
+	ops, err := openapispec.Operations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("read the spec: %v", err)
+	}
+	chains, err := httpserver.Chains(ops, primitives)
 	if err != nil {
 		t.Fatalf("resolve auth chains: %v", err)
+	}
+	err = guardSetup(chains, st)
+	if err != nil {
+		t.Fatalf("guard setup: %v", err)
 	}
 	// Boot installs the problems before serving; the router under test
 	// answers errors through the same mapper.
 	httpserver.UseProblems(problems.Mapper(Problem), "http://identityx.test")
-	err = httpserver.UseOperationProblems(spec.OpenAPISpec, true)
-	if err != nil {
-		t.Fatalf("read x-problems: %v", err)
-	}
+	httpserver.UseOperationProblems(ops, true)
 	r := chi.NewRouter()
-	openapi.Mount(r, h, resolver.Chains())
+	openapi.Mount(r, h, chains)
 	return r
 }
 
 // testPrimitives are pass-through auth stubs with the real scope checkers.
-func testPrimitives() libauthz.Primitives {
-	return libauthz.Primitives{
+func testPrimitives() httpserver.Primitives {
+	return httpserver.Primitives{
 		JWT:    mwJWT,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,

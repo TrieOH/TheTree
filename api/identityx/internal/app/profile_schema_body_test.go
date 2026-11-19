@@ -1,13 +1,13 @@
 package app
 
 import (
+	"lib/httpserver"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"uuid"
 
-	libauthz "lib/authz"
 	"lib/validator"
 )
 
@@ -20,7 +20,7 @@ func schemaTestRouter(t *testing.T) http.Handler {
 	validator.SetupValidator()
 	st := completedSetup()
 	server := newServer(operations{}, st)
-	return newTestRouter(t, server, libauthz.Primitives{
+	return newTestRouter(t, server, httpserver.Primitives{
 		JWT:    mwJWT,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,

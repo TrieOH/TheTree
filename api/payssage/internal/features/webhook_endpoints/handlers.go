@@ -3,16 +3,15 @@ package webhook_endpoints
 import (
 	"context"
 
-	"payssage/internal/features/webhook_endpoints/service"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateWebhookEndpoint(ctx context.Context, req openapi.CreateWebhookEndpointRequestObject) (openapi.CreateWebhookEndpointResponseObject, error) {
 	endpoint, err := h.ops.Create(ctx, models.CreateWebhookEndpointInput{

@@ -3,15 +3,14 @@ package collectors
 import (
 	"context"
 
-	"payssage/internal/features/collectors/service"
 	"payssage/internal/openapi"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) GetCollector(ctx context.Context, req openapi.GetCollectorRequestObject) (openapi.GetCollectorResponseObject, error) {
 	collector, err := h.ops.GetByID(ctx, req.CollectorId)

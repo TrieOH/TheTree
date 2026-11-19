@@ -3,16 +3,15 @@ package capabilities
 import (
 	"context"
 
-	"IdentityX/internal/features/capabilities/service"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CreateCapability(ctx context.Context, req openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	capability, err := h.ops.Create(ctx, models.CreateCapabilityInput{

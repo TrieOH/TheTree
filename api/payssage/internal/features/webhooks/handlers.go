@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"payssage/errs"
-	"payssage/internal/features/webhooks/service"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) ReceiveWebhook(ctx context.Context, req openapi.ReceiveWebhookRequestObject) (openapi.ReceiveWebhookResponseObject, error) {
 	raw := RawRequestFrom(ctx)

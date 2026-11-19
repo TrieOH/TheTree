@@ -26,17 +26,19 @@ COPY lib/go/ ./lib/go/
 COPY sdk/go/IdentityX/ ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/ ./sdk/go/Payssage/
 COPY tools/go/ ./tools/go/
+# sqlc.yaml covers all four backends, so it needs every schema and query;
+# the other services' output is deleted right after generating.
+COPY sqlc.yaml ./
+COPY api/informd/db/ ./api/informd/db/
+COPY api/payssage/db/ ./api/payssage/db/
+COPY api/univents/db/ ./api/univents/db/
 COPY api/identityx/ ./api/identityx/
 COPY api/problems.yml ./api/problems.yml
 WORKDIR /app/api/identityx
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
-    sqlc generate && \
-    go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go && \
-    oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml && \
-    oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml && \
-    go run tools/strictmount internal/openapi/mount.gen.go && \
-    # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
-    . /app/tools.versions && go get "github.com/oapi-codegen/runtime@v${OAPI_RUNTIME_VERSION}"
+    sqlc generate -f /app/sqlc.yaml && \
+    rm -rf /app/api/informd/db /app/api/informd/internal /app/api/payssage/db /app/api/payssage/internal /app/api/univents/db /app/api/univents/internal && \
+    /app/tools/go/generate.sh .
 WORKDIR /app/api/identityx
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \

@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 
 	"payssage/errs"
-	"payssage/internal/features/intents/service"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CancelIntent(ctx context.Context, req openapi.CancelIntentRequestObject) (openapi.CancelIntentResponseObject, error) {
 	intent, err := h.ops.Cancel(ctx, req.IntentId)

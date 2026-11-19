@@ -18,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"lib/authz"
 	"lib/backend"
 	libconfig "lib/config"
 	"lib/httpserver"
@@ -102,7 +101,7 @@ func Module(cfg libconfig.IdentityX, opts ...Option) backend.Module {
 }
 
 // primitives builds the JWT / API key / either middlewares.
-func primitives(client *idx.Client, baseURL string, o options) authz.Primitives {
+func primitives(client *idx.Client, baseURL string, o options) httpserver.Primitives {
 	return httpserver.Authenticators{
 		JWT:    jwtAuth(client, o.requireVerifiedEmail),
 		APIKey: apiKeyAuth(baseURL, o),

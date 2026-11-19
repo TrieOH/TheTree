@@ -1,6 +1,7 @@
 import { getRandom } from "@cloudflare/containers";
 import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
 import { CachedEntrypoint, gateway } from "@trieoh/container-budget/edge";
+import { containerEnv } from "@trieoh/container-budget/jobs";
 import { ROUTES } from "./routes";
 
 // How many container instances share the traffic. Informd keeps no state
@@ -8,9 +9,8 @@ import { ROUTES } from "./routes";
 // is a per-instance backstop), so any instance can serve any request.
 const INSTANCES = 1;
 
-// Informd has no background jobs, so unlike IdentityX and Payssage there is
-// no queue, no cron and no /events endpoint: the Worker only fronts the
-// container.
+// Informd has no background jobs, so unlike the other APIs there is no
+// queue, no cron and no job endpoint: the Worker only fronts the container.
 export class InformdContainer extends BudgetedContainer<Env> {
 	protected readonly app = "informd";
 	protected readonly memoryGiB = 0.25; // lite
@@ -20,9 +20,7 @@ export class InformdContainer extends BudgetedContainer<Env> {
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);
-		// Vars and secrets become the container's environment; a running
-		// container keeps what it started with until it restarts.
-		this.envVars = stringBindings(env);
+		this.envVars = containerEnv(env, { jobs: false });
 	}
 }
 
@@ -31,14 +29,6 @@ export class Cached extends CachedEntrypoint<Env> {
 	protected async origin(request: Request): Promise<Response> {
 		return (await getRandom(this.env.INFORMD, INSTANCES)).fetch(request);
 	}
-}
-
-function stringBindings(env: Env): Record<string, string> {
-	const vars: Record<string, string> = {};
-	for (const [key, value] of Object.entries(env)) {
-		if (typeof value === "string") vars[key] = value;
-	}
-	return vars;
 }
 
 export default {

@@ -4,15 +4,14 @@ import (
 	"context"
 
 	"univents/errs"
-	"univents/internal/features/webhooks/service"
 	"univents/internal/openapi"
 )
 
 type Handlers struct {
-	ops *service.Operations
+	ops *Operations
 }
 
-func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
 
 // ReceivePayssageWebhook is the payment-confirmation entry point (D3): the
 // only component that approves a purchase. The raw body (for signature
@@ -24,7 +23,7 @@ func (h *Handlers) ReceivePayssageWebhook(ctx context.Context, req openapi.Recei
 	if raw == nil || req.Body == nil {
 		return nil, errs.ErrInvalidRequest
 	}
-	err := h.ops.Receive(ctx, service.ReceiveInput{
+	err := h.ops.Receive(ctx, ReceiveInput{
 		IntentID:     req.Body.IntentId,
 		EventType:    req.Body.EventType,
 		RawBody:      raw.Body,

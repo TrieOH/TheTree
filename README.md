@@ -1,228 +1,97 @@
-# TrieOH (TheTree)
+# TheTree
 
-Monorepo for **TrieOH** — a SaaS platform of four Go microservices on
-Cloudflare Containers, with front-ends deployed to Cloudflare Workers.
+TheTree is TrieOH's monorepo. It holds four products, the code they share, and the pipeline that deploys them.
 
-**This repo is source + CI + the deploy trigger.** Releases deploy by pushing a
-tag here (see [Releases & deploys](#releases--deploys)).
+| Product | What it does |
+| --- | --- |
+| IdentityX | Login, accounts, organizations, projects and API keys |
+| Payssage | Payments through MercadoPago |
+| Informd | Forms and their responses |
+| Univents | Events: tickets, check-in, badges and certificates |
 
-## Stack
+Each product is a Go API plus a web app. Every app signs in through IdentityX, and Univents takes payments through Payssage. The APIs run on Cloudflare Containers and the apps on Cloudflare Workers.
 
-| Layer | Tech | Notes |
-|---|---|---|
-| Backends | Go 1.27 · chi · sqlc · goose | 4 microservices in `api/` |
-| Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
-| Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
-| SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
-| CI/CD | GitHub Actions (`deploy.yml`) | tag-gated checks → image pushed once (GHCR) → Cloudflare Containers / Workers |
-| Dev infra | Docker Compose (`compose.yml`) | four service Postgres containers, rustfs, mailpit + hot-rebuilt services |
+New here? Start with the [onboarding docs](https://portal.trieoh.com/docs/onboarding/start-here) on the dev portal.
 
-## Repo layout
+## What's where
 
 ```
-api/<svc>/       # one Go service per dir (cmd/, internal/, db/, api-spec.yml + each feature's spec.yml)
-front/<svc>/     # one React SPA per dir
-lib/go/          # shared Go library
-lib/ts/          # shared TS packages: orval clients, ui-react/ui-solid,
-                 # front-core (+ -react / -solid bindings)
-sdk/go/ sdk/ts/  # public SDKs
-docs/            # CONTEXT.md (domain glossary), adr/, agents/
+api/<api>/    Go APIs: identityx, payssage, informd, univents
+front/<app>/  Web apps (React and Solid), plus the dev portal
+lib/go/       Shared Go code
+lib/ts/       Shared TypeScript: API clients, UI kits, front-core
+sdk/          Go and TypeScript SDKs
+docs/         ADRs, onboarding docs, plans
+e2e/          End-to-end tests
 ```
 
-### Package boundaries
+A TypeScript package's name says which framework it may use: `-react`, `-solid`, or no suffix for neither. `pnpm check:boundaries` fails when one imports across that line. The [repo tour](https://portal.trieoh.com/docs/onboarding/repo-tour) has the rest.
 
-Every workspace package declares its framework in its **name**:
+## Running it
 
-| Suffix | Meaning | Examples |
-|---|---|---|
-| *(none)* | framework-free — React/Solid must not appear in `dependencies` | `@trieoh/front-core`, `@trieoh/univents-api`, `@trieoh/api-client` |
-| `-react` | React only | `@trieoh/ui-react`, `@trieoh/front-core-react` |
-| `-solid` | Solid only | `@trieoh/ui-solid`, `@trieoh/front-core-solid` |
+You need Go, Node, pnpm, Docker and `just`. `just setup` installs the other tools, at the versions in `tools.versions`.
 
-This is what keeps the Solid app from pulling React in (and vice versa): the
-React bindings live in `front-core-react`, the Solid ones in `front-core-solid`,
-and the shared logic in the neutral `front-core`. `pnpm check:boundaries` (a
-plain `node` script, also wired into the pre-commit hook and CI) fails the build
-when a package imports across that line.
+```sh
+cp .example.env .env
+for api in identityx univents payssage informd; do
+  cp api/$api/.example.env api/$api/.env
+done
 
-
-## Prereqs
-
-- Go 1.27 (`go.work` at the root)
-- Node 26 (`NODE_VERSION` in `tools.versions`)
-- pnpm (pinned via `packageManager` in package.json — corepack picks it up)
-- Docker + Docker Compose
-- `just` — all dev recipes live in the `justfile`
-- `sqlc` (for `just gen`)
-- `golangci-lint` (for `just lint`)
-- `gotestsum` (for `just test`)
-- `gitleaks` (for the pre-commit secret scan)
-- `trivy` (for the pre-push hook's whole-repo scan)
-
-All of them are installable with `just setup`, at the versions pinned in
-`tools.versions` — the one file the justfile, the Dockerfiles and CI read, so
-a bump happens there and nowhere else. `go install`
-puts binaries in `$(go env GOPATH)/bin` and trivy goes to `~/.local/bin` —
-add both to `PATH` if a command reports "command not found":
-
-```bash
-just setup
-export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"   # bash / zsh
-fish_add_path "$HOME/.local/bin" "$HOME/go/bin"             # fish (already set up in config.fish)
+pnpm install    # packages and git hooks
+just gen        # generated code
+just up         # databases, the four APIs, file storage, Mailpit
+pnpm univents dev
 ```
 
-## Hooks (enforced locally, not in CI)
+The env files need a few values filled in first. [Local setup](https://portal.trieoh.com/docs/onboarding/local-setup) lists them, along with the ports.
 
-Main pushes run **zero CI** — quality is gated at the deploy lane and by local
-hooks:
+## Everyday commands
 
-- **`commit-msg`** — validates `<scope>/ACTION: message` against the scope tree
-  *discovered from the repo layout*; the declared scope must be the closest
-  common ancestor of the staged changes (hard fail, tells you the right scope).
-- **`pre-commit`** — gitleaks diff scan of staged changes (secret-only, fast),
-  then per-member checks against each member's actual diff (Go: lint +
-  `gotestsum -short`; fronts: `check`/`tsc`/`test`; SDKs: typecheck).
-- **`pre-push`** — branch naming must match the scope of the *entire* pushed
-  commit range. No repo-wide trivy — the deploy lane owns security scanning.
+`just` on its own lists every recipe.
 
-**Never bypass with `--no-verify`** — the deploy lane re-checks at tag time,
-but the per-commit secret scan is the only thing scanning your diffs between
-releases.
+| To | Run |
+| --- | --- |
+| Start or stop everything | `just up` / `just down` |
+| Run one API (and the ones it calls) | `just run <api>` |
+| Run one app | `pnpm <app> dev` |
+| Migrate a database | `just migrate <api>` |
+| Rebuild generated code | `just gen` |
+| Go tests | `just test <api>` |
+| Go lint | `just lint <api>` |
+| Typecheck the apps | `pnpm -r tsc` |
 
-## Quickstart
+Generated code (sqlc, oapi-codegen, the TS clients, Workers types) is never committed. Run `just gen` after you change a spec or a query.
 
-**Backend:**
-```bash
-cp .example.env .env                       # root: rustfs creds
-cp api/<svc>/.example.env api/<svc>/.env   # per service (×4: identityx, univents, payssage, informd)
-just up               # postgres (with four service DBs), rustfs, mailpit + all four services
-just run identityx    # run one service in dev — or: univents, payssage, informd
-```
+## Commits and hooks
 
-**IdentityX** (ADR-0011) — one image, no runtime modes:
-```bash
-just run identityx         # compose container, jobs in-process, SMTP → mailpit
-just migrate identityx     # migrate over the direct (unpooled) endpoint
-```
-The API always connects through a pooler (`identityx-pooler` locally, Neon's
-pooled endpoint when deployed). It deploys to Cloudflare Containers from
-`api/identityx/cloudflare` (`pnpm -C api/identityx/cloudflare deploy`), with
-jobs on a Cloudflare Queue and Cron Triggers.
+Git hooks check your work locally, and pushing to `main` runs no CI, so the hooks are the check.
 
-**Frontend:**
-```bash
-pnpm install
-just gen-ts                                    # orval TS clients (not committed)
-just gen-cf                                    # Workers types (not committed)
-cp front/<svc>/.env.example front/<svc>/.env   # fill in real values
-pnpm <svc> dev        # one app (e.g. pnpm univents dev) — or pnpm dev for all
-```
+- Commits look like `feat(payssage): add invoice generation`. The scope must be the closest folder that holds everything you changed. The hook tells you the right one.
+- Branches look like `<scope>/<action>/<name>`, for example `payssage/feat/invoices`.
+- Each commit is scanned for secrets, and the code you touched is linted and tested.
 
-Env notes (all `*.env` files are gitignored):
-- Backend: the example defaults work for local (postgres/rustfs on
-  localhost); fill secrets as needed.
-- Frontend: the example's defaults already point at the local backends
-  (`VITE_API_URL=http://localhost:808x`). Minimum to fill:
-  `AUTH_SESSION_PASSWORD` (32+ chars); PostHog/upload keys are optional in dev.
-- A Worker only sees the runtime keys its `wrangler.jsonc` declares (`vars`
-  or `secrets.required`), in dev too: add a new one there, not just to `.env`.
-- Auth runs through the app's BFF (`AUTH_TRANSPORT=bff`) — the browser talks
-  to TanStack Start server functions, which call the APIs.
+Don't skip them with `--no-verify`.
 
-Dev database ports: IdentityX `5432`, Univents `5433`, Payssage `5434`, Informd `5435`
-(each app gets its own local Postgres container). RustFS `9000/9001` · backends `8080`–`8083`
-(pprof `6060`–`6063`) · frontends `3000`, `3001`, `3002`, `3004` · mailpit
-`8025`.
+## Deploying
 
-Each local Postgres container creates its database and role from its service
-env file. Backends never migrate on startup: `just db <svc>` starts the
-database and migrates it, `just migrate <svc> [up|status]` migrates on its own
-(set `<PREFIX>_DB_HOST`/`_PORT` to point it at another database, e.g. Neon's
-direct endpoint).
+Pushing a tag deploys to production. Pushing to `main` deploys nothing.
 
-## Daily commands
+| Tag | Deploys |
+| --- | --- |
+| `<api>/v1.2.3` | An API, after the full checks |
+| `<app>-ui/v1.2.3` | A web app |
+| `pages/<dir>/v1.2.3` | A Pages site |
+| `<sdk>-sdk-ts/v1.2.3` | Checks a TS SDK (publishing to npm is by hand) |
+| `...-hotfix.N` | A hotfix: compile and unit tests only, so it ships fast |
 
-Every `just` recipe is `just <command> [target]`; `just` alone lists them.
+Every hotfix should be followed soon by a normal release.
 
-| Task | Command |
-|---|---|
-| Run dev stack | `just up` / `just down` |
-| Run one backend | `just run <svc>` (e.g. `just run univents`) |
-| Start + migrate one database | `just db <svc>` |
-| Migrate | `just migrate <svc>` · `just migrate <svc> status` |
-| Run all frontends | `pnpm dev` |
-| Run one frontend | `pnpm <svc> dev` (e.g. `pnpm univents dev`) |
-| Frontend build | `pnpm -r build` |
-| Go tests | `just test [<svc>\|lib\|sdk]` (`-short`) · `just test-all [...]` (with integration) |
-| Lint (Go) | `just lint [<svc>\|lib\|sdk]` |
-| Frontend typecheck | `pnpm -r tsc` |
-| Frontend lint/format | `pnpm -r lint` / `pnpm -r format` |
-| Package boundary check | `pnpm check:boundaries` |
-| Bump Go deps | `just goup` |
+To roll back, run `wrangler versions deploy --version-id <previous>` from `api/<api>/cloudflare` or `front/<app>`.
 
-## Codegen (run after changing specs/models)
+Tags are for people only. Agents never push them.
 
-```bash
-just gen               # all backends: sqlc + oapi-codegen, then orval + Workers types
-just gen payssage      # one (or several) backends; orval and Workers types still cover all
-just gen-ts            # only the orval TS clients
-just gen-cf            # only the Workers types (worker-configuration.d.ts)
-```
+## More docs
 
-Generated code is **never committed**: `internal/sqlc/`, `internal/openapi/`,
-the orval TS clients under `lib/ts/<svc>/client/` and every
-`worker-configuration.d.ts` are gitignored and regenerated in CI/builds. The
-Workers types come only from `wrangler.jsonc` and the pinned wrangler, never
-from a local `.env`. The pre-commit hook regenerates the TS clients when they
-are missing or a spec (`api-spec.yml`, `problems.yml` or a feature's `spec.yml`)
-is staged (and type-checks the fronts that
-import them), and a Worker's types (fronts and `api/<svc>/cloudflare`) when missing or its
-`wrangler.jsonc` is staged. Pages sites (a `wrangler.jsonc` with
-`pages_build_output_dir`) are static and skipped.
-
-## Releases & deploys
-
-Three lanes, one rule of thumb: **main is cheap, deploys are the gate,
-`-hotfix.*` is the fire escape.**
-
-| Lane | Trigger | Gate |
-|---|---|---|
-| Dev | push to `main` | zero CI — hooks only. Main is latest-unstable, never prod. |
-| Release | tag `<artifact>/v<semver>` | full R-chain: compile → unit → lint → front → trivy → integration |
-| Hotfix | tag `<artifact>/v<semver>-hotfix.N` | compile + unit only (≤2 min tag-to-prod) |
-
-**Any dev with push access deploys by pushing a tag** — nothing else to
-touch. The pipeline is the gate: a deploy happens only if every check passes,
-and the process is fully automated from there (proven live on all four tag
-paths: full/express × service/front).
-
-- **Backends:** tag `<svc>/v<semver>` (e.g. `payssage/v0.7.10`) → `deploy.yml`:
-  R-chain checks → build once → push `ghcr.io/trieoh/<svc>@sha256:…` → the same
-  image pushed to Cloudflare's registry → Worker + Container rollout from
-  `api/<svc>/cloudflare` (config is its `wrangler.jsonc` vars; credentials
-  are Worker secrets, set with `wrangler secret put`).
-- **Frontends:** tag `<app>-ui/v<semver>` → checks, then one build, uploaded as a
-  Worker version and that SAME version promoted to production (build once, never
-  rebuild). Production config is the front's `wrangler.jsonc` vars, like the
-  backends; `vite build` inlines the `VITE_*` ones.
-- **Pages sites:** tag `pages/<dir>/v<semver>` → checks, build, Cloudflare Pages.
-- **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → the gate only (version guard:
-  tag == package.json version, build, trivy). Publishing to npm is by hand: npm
-  requires staged publishing for these packages.
-- **Every release** reports to the dev portal: the outcome and where it stopped
-  (`/webhooks/deploy`), and each step's time plus the metrics the actions record
-  with `.github/scripts/metric` (`/webhooks/ci`, shown under Delivery, CI).
-- **Rollback:** `wrangler versions deploy --version-id <previous>` — from
-  `api/<svc>/cloudflare` for backends, from `front/<app>` for fronts.
-- **Discipline:** hotfix tags skip most checks — a hotfix must get its next
-  normal release promptly (auditable in tag history).
-- **Agents/LLMs must never push tags** — tags are prod deploys, humans only.
-  See CONTEXT.md.
-
-## Docs
-
-- `docs/` in this repo is for **ADRs, agent plans, and agent context** —
-  [`CONTEXT.md`](CONTEXT.md) (domain glossary), [`docs/adr/`](docs/adr/)
-  (architecture decisions), [`docs/agents/`](docs/agents/) (agent
-  conventions), [`.agents/AGENTS.md`](.agents/AGENTS.md) (agent repo guide).
-- Human-facing docs live in [`TrieOH/docs`](https://github.com/TrieOH/docs).
+- [`CONTEXT.md`](CONTEXT.md): what the domain words mean
+- [Decisions](https://portal.trieoh.com/docs/decisions): why things are the way they are
+- [Dev portal](https://portal.trieoh.com): docs, issues, deploys and metrics

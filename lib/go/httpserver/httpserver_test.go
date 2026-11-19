@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel"
@@ -15,19 +14,28 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-func testRouter(t *testing.T, cfg Config) http.Handler {
+// routerConfig is the router's Config plus the routes a test mounts on it,
+// as a Backend's Build does.
+type routerConfig struct {
+	Config
+
+	Routes func(r *chi.Mux)
+}
+
+func testRouter(t *testing.T, cfg routerConfig) http.Handler {
 	t.Helper()
 	if cfg.AppName == "" {
 		cfg.AppName = "test"
 	}
-	if cfg.Routes == nil {
-		cfg.Routes = func(_ *chi.Mux) {}
+	mux, h := NewRouter(cfg.Config)
+	if cfg.Routes != nil {
+		cfg.Routes(mux)
 	}
-	return NewRouter(cfg)
+	return h
 }
 
 func TestHealthReturnsAppName(t *testing.T) {
-	h := testRouter(t, Config{AppName: "informd"})
+	h := testRouter(t, routerConfig{AppName: "informd"})
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil))
@@ -47,7 +55,7 @@ func TestMetricsCollectedNotServed(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	otel.SetMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))
 
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		Routes: func(r *chi.Mux) {
 			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusNoContent)
@@ -69,7 +77,7 @@ func TestMetricsCollectedNotServed(t *testing.T) {
 }
 
 func TestRateLimitDisabled(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		RateLimit: RateLimit{Disabled: true},
 		Routes: func(r *chi.Mux) {
 			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
@@ -87,7 +95,7 @@ func TestRateLimitDisabled(t *testing.T) {
 }
 
 func TestRateLimitConfigured(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		RateLimit: RateLimit{RPS: 1, Burst: 1},
 		Routes: func(r *chi.Mux) {
 			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
@@ -108,8 +116,8 @@ func TestRateLimitConfigured(t *testing.T) {
 	}
 }
 
-func TestRoutesCallbackRegistered(t *testing.T) {
-	h := testRouter(t, Config{
+func TestMountedRoutesServed(t *testing.T) {
+	h := testRouter(t, routerConfig{
 		Routes: func(r *chi.Mux) {
 			r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusNoContent)
@@ -126,7 +134,7 @@ func TestRoutesCallbackRegistered(t *testing.T) {
 }
 
 func TestRequestIDHeaderSet(t *testing.T) {
-	h := testRouter(t, Config{})
+	h := testRouter(t, routerConfig{})
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil))
@@ -137,7 +145,7 @@ func TestRequestIDHeaderSet(t *testing.T) {
 }
 
 func TestCORSHeaders(t *testing.T) {
-	h := testRouter(t, Config{CorsAllowedOrigins: "https://app.trieoh.com", CorsAllowedHeaders: "Content-Type"})
+	h := testRouter(t, routerConfig{CorsAllowedOrigins: "https://app.trieoh.com", CorsAllowedHeaders: "Content-Type"})
 
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)
 	req.Header.Set("Origin", "https://app.trieoh.com")
@@ -154,7 +162,7 @@ func TestCORSHeaders(t *testing.T) {
 // for logout/refresh) must come back in Access-Control-Allow-Headers, or
 // the browser blocks the request.
 func TestCORSPreflightAllowsConfiguredHeaders(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		CorsAllowedOrigins: "https://app.trieoh.com",
 		CorsAllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
 	})
@@ -185,7 +193,7 @@ func TestCORSPreflightAllowsConfiguredHeaders(t *testing.T) {
 // backends hit before the CORS wiring landed: a requested header that is
 // not in the allowed list must not be echoed back.
 func TestCORSPreflightRejectsUnconfiguredHeaders(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		CorsAllowedOrigins: "https://app.trieoh.com",
 		CorsAllowedHeaders: "Content-Type",
 	})
@@ -203,7 +211,7 @@ func TestCORSPreflightRejectsUnconfiguredHeaders(t *testing.T) {
 }
 
 func TestRecoverReturnsError(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		Routes: func(r *chi.Mux) {
 			r.Get("/boom", func(http.ResponseWriter, *http.Request) {
 				panic("boom")
@@ -220,7 +228,7 @@ func TestRecoverReturnsError(t *testing.T) {
 }
 
 func TestBodySizeLimited(t *testing.T) {
-	h := testRouter(t, Config{
+	h := testRouter(t, routerConfig{
 		Routes: func(r *chi.Mux) {
 			r.Post("/echo", func(w http.ResponseWriter, r *http.Request) {
 				_, err := io.Copy(io.Discard, r.Body)
@@ -239,17 +247,6 @@ func TestBodySizeLimited(t *testing.T) {
 
 	if rec.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("status = %d, want 413", rec.Code)
-	}
-}
-
-func TestNewServerTimeouts(t *testing.T) {
-	srv := newServer(http.NewServeMux(), "8080")
-
-	if srv.Addr != ":8080" {
-		t.Fatalf("addr = %q, want :8080", srv.Addr)
-	}
-	if srv.ReadTimeout != 30*time.Second || srv.WriteTimeout != 60*time.Second || srv.IdleTimeout != 120*time.Second {
-		t.Fatalf("timeouts = %v/%v/%v, want 30s/60s/120s", srv.ReadTimeout, srv.WriteTimeout, srv.IdleTimeout)
 	}
 }
 

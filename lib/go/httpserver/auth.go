@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-
-	"lib/authz"
 )
 
 // Authenticators verify the two credentials a request can carry. Each
@@ -28,7 +26,7 @@ var (
 
 // Primitives builds the JWT / API key / either middlewares the spec-derived
 // chains resolve against. Any prefers an API key when both are sent.
-func (a Authenticators) Primitives() authz.Primitives {
+func (a Authenticators) Primitives() Primitives {
 	jwt := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, ok := bearer(r)
@@ -49,7 +47,7 @@ func (a Authenticators) Primitives() authz.Primitives {
 			a.serve(w, r, next, a.APIKey, key)
 		})
 	}
-	return authz.Primitives{
+	return Primitives{
 		JWT:    jwt,
 		APIKey: apiKey,
 		Any: func(next http.Handler) http.Handler {
