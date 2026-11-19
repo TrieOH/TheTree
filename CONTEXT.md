@@ -1,58 +1,167 @@
-# TrieOH — Domain & Architecture Context
+# TrieOH
 
-Single-context glossary for TheTree. Architecture decisions live in `docs/adr/`.
-Terms here give names to good seams; keep this current when concepts are added
-or sharpened.
+The words we use for TheTree's products and code, and what each one means. When two words could name the same thing, the one here wins. Why things are built this way lives in `docs/adr/`.
 
-## Domain
+## IdentityX
 
-- **Actor** — a human, service, or machine identity in IdentityX; everything that can authenticate.
-- **Organization** — top-level tenant in IdentityX; members hold roles (member/admin/owner).
-- **Project** — an IdentityX workspace under an organization; scope for API keys and profiles.
-- **Project user vs Project member** — a project user is an actor scoped to the project (`actors.project_id` set, no role row); a project member holds a `project_members` role (member/admin/owner). **An organization is a project's enclosing scope: an actor with no `project_members` row but an org role on the project's org is a project member by fallback, with the org role cast onto the project (org member → project member, org admin → project admin, org owner → project owner).** The `internal/authz` module implements this — `CheckProject` tries the project role, then falls back to the org role; this is what lets an org owner manage a project they created without a member row. Profiles and profile schemas are public reads (anonymous GETs are served); project users may update only their own profile; members may read any profile in the project, and admin/owner may also update any profile in it.
-- **OAuth provider** — a third-party login provider (Google/GitHub) a project configures; the `oauth_providers` feature owns provider policy (configured/enabled) **and the login flow**: connect/callback, the one-time login state, the userinfo fetch (through an injected HTTP client), and identity linking all live behind its `Connect`/`Callback` interface, with credential resolution internal (`resolveLoginProvider`). The authn module no longer touches OAuth.
-- **Profile / Profile schema** — a user's public identity in IdentityX (name, pfp, socials minimum); shaped by a versioned JSON schema per platform/project; one instance per user carrying its schema version, auto-migrated when a new version validates, else kept and flagged for admin.
-- **Event** — a Univents gathering; owned by members with roles (owner/admin/staff).
-- **Platform role** — a role on the IdentityX platform itself (`platform_roles`: super_admin/admin/support), granted at setup (super_admin) and checked by `internal/authz`'s `CheckPlatform` for platform-scoped resources like the platform profile schema. Not a project or org role.
-- **Access check** — `internal/authz`: the module that answers "who may touch this" at one seam — `CheckProject` (project role with the org fallback), `CheckOrg`, `CheckPlatform`. Each check resolves the caller itself from the context identity the auth middleware wrote (no caller parameter on the interface), so the operations layer crosses it instead of inlining role lookups; unknown resources surface as 404, insufficient role as 403.
-- **Scope** — the client-kind restriction an operation places on its caller, declared per operation in the spec as `x-scope` (per-op only, no document default; absent = no restriction). The Access-check module registers scope checkers keyed by scope name (day one: `platform-only` — an authenticated identity with no project); the auth resolver validates every declared scope against the registry and enforces it as chain middleware after authn. A miss (unknown scope, or a scope on a public operation) fails boot. Adding a scope is one spec line plus one checker entry — no handler or chain code.
-- **Edition** — one run of an Event, with its own dates and registration window.
-- **Program / Program occurrence** — the schedule of an Edition (activities with days/times); staff are assigned to programs to mark attendance, and attendance grants certificates.
-- **Edition check-in** — a door-level check-in record `{edition, user, checked_in_by, timestamp}`; made by any event staff (owner/admin/staff), repeatable, and a single check-in suffices for the edition certificate.
-- **Ticket type / Product / Product variant** — what attendees can buy at an Edition. One active ticket per person per edition: an attendee holds a ticket through their registration (`pending` = reserved, `confirmed` = paid); a checkout for an attendee who already holds one is rejected (409), and the same attendee cannot appear twice in one cart (400). Cancelled/expired registrations free the slot.
-- **Signature request** — a token-authenticated request to sign a document; completed requests produce a Signature.
-- **Certification / Certification template** — a certificate design and its per-attendee emissions (by edition or by program).
-- **Badge** — a per-person emission carrying the holder's Univents profile URL as a QR (`/profile/{id}`, the badge's *action URL*); networking + on-site attendance check-in. Emissions are keyed `(edition, holder, origin participant|staff)` — one badge per slot, updated in place, never a history of designs. The design is not stored on the emission: it is derived at read time from the edition's `badge_templates` (a ticket-type-specific template wins over the edition default; a staff-origin emission prefers the edition's staff template, then the default; no match renders a placeholder), so design changes re-render live and nothing re-emails. Templates are scoped by `origin` — null (edition default / per ticket type) or `'staff'` (one staff-only design per edition, enforced by a unique index). Participant badges are emitted when a registration confirms (one email, with the QR embedded); staff badges are awarded on member add (published current/future editions only) and on edition publish, and past editions' staff badges are kept forever as keepsakes. Revoked emissions (`active|revoked` + reason) hide from profiles. The Univents backend never reads IdentityX profile data — holder names are derived by the front via IdentityX's public profile endpoint.
-- **Intent** — a Payssage payment attempt (checkout); statuses flow from the provider.
-- **Purchase** — an Edition-scoped order (tickets/products/program spots) created at checkout; items are reserved pending and confirmed by the Payssage webhook or expired by the delayed `purchases.expire` job (enqueued in the checkout tx; a no-op once the purchase is no longer pending, which is how approval "cancels" it — ADR-0013); the record of truth for a buyer's shopping.
-- **Doação (Donation)** — a gift to an Event (not a purchase): amount chosen by the donor (suggestions R$ 1/5/10 or free, minimum R$ 1); paid via a Payssage intent on the event's seller/wallet; recorded in its own table; no reservation or stock involved.
-- **Wallet / Collector / Seller** — Payssage ownership units; payment methods (e.g. MercadoPago) connect to a Collector or Seller via OAuth. Univents runs on **one platform Payssage wallet** shared by every event (platform-managed, owned by the owner of Univents via the service API key, **precreated out-of-band** with a 5% marketplace fee and one webhook endpoint on it; id + endpoint secret configured via env `PAYSSAGE_WALLET_ID` / `PAYSSAGE_WEBHOOK_SECRET`, verified at boot with a fail-fast `GetWallet` check — see plan issue-61 D6); each event's **seller** is the connected provider account on that wallet, and its provider public key is stored on the event (`events.payssage_seller_id` / `events.payssage_public_key` — no wallet id on events, it's env-configured). Unlink keeps the wallet; checkout/doação consume the event's seller + the platform wallet.
-- **Webhook endpoint / Webhook event / Webhook delivery** — Payssage fan-out of provider events to tenants. The delivery row is the source of truth (`pending` → `delivered` | `failed`); the `webhook.deliver` job only tells a worker to go deliver it, is enqueued after the rows commit, and is re-enqueued by the `webhook.redrive` sweep when lost. The job carrier owns retries; a dead job becomes `webhook.fail`. See ADR-0012.
-- **Form / Namespace / Response / Step / Field** — Informd's multi-tenant form survey model.
+**Actor**:
+Anything that can sign in: a person, a service or a machine.
+_Avoid_: user, account (except for a project user, below)
 
-## Architecture
+**Organization**:
+The top-level tenant. Its members are a member, an admin or an owner.
 
-- **Backend** — one of the four Go services (IdentityX, Payssage, Informd, Univents); a process, not a module.
-- **Feature** — a slice of a Backend with its own models and routes (e.g. the `intents` feature). It is a folder, `internal/features/<name>`, with its layers as subfolders (`repo/`, `service/`, `handlers/`) and one wiring file (`<name>.go`) that `Build` imports; its operations take a `Deps` struct (ADR-0015). Its contract sits beside it: `spec.yml` holds the paths it serves, the components only it uses and the problems only it answers, and the Backend's `api-spec.yml` imports each path with a relative `$ref` (ADR-0021).
-- **TS API client** — the orval-generated TypeScript client per backend (plain `fetch` functions + spec types, no framework bindings) in `lib/ts/<svc>/client/`, produced by `just gen-ts` from each `api-spec.yml` (gitignored, never committed); requests go through the shared fetcher stack via the `orval-mutator` (`@trieoh/api-client`), which hands back the plain payload and rejects with `ApiError`. Data-layer hooks are written per app feature (React Query in the React apps, plain query options in the Solid one), so the client stays importable anywhere.
-- **Edge cache** — Workers Caching in front of each API Worker's `Cached` entrypoint (ADR-0020). A response is private unless its operation is marked `x-cache: shared` (public GETs only); shared responses carry **cache tags** (one per entity, one per collection, named in each Backend's `internal/cachetags`) and stay at the edge until a write's `httpcache.Purge` names one of them. The default entrypoint, the **gateway**, is uncached: it answers CORS preflights, sends reads to `Cached` and runs the purges.
-- **Token lifecycle** — `internal/tokens`: the module where IdentityX opens, verifies, mints, rotates, and revokes tokens at one interface — `tokens.Manager` with `Verify`/`Mint`/`Rotate`/`Revoke`. The auth middleware (verify), login and OAuth callback (mint), refresh (rotate: blacklist both, re-mint), and logout (revoke, dead-refresh-tolerant) all cross it; key resolution, blacklist shaping, and entry reasons (`refresh`/`logout`) are implementation. Fail-closed: a rotation whose old pair survives the blacklist append is an error, not a success. The same module owns the single-use **action token** lifecycle — `tokens.ActionTokenManager` with `Mint`/`Redeem`/`DeleteExpired` — HMAC-signed verify/reset link tokens with a persisted anti-replay record (one secret, one purpose→TTL map, one `ports.ActionTokenRepo`). emails.Sender crosses it to mint (then enqueues the async email), authn crosses it to redeem, and the cleanup job crosses it to sweep. `Redeem` is strict and returns typed failure classes (`ErrActionTokenUsed`/`ErrActionTokenExpired`/`ErrActionTokenInvalid`) via the error chain; the verify email's idempotent fall-through (re-clicking a consumed link on an already-verified account succeeds) is actor-state policy applied by authn, not by the token module.
-- **API-key authentication** — the `api_keys` feature mints (`Create`) and verifies (`Authenticate`) API keys at one interface; the auth middleware crosses it instead of the repos, so key parsing, HMAC verification, expiry, and capability shaping (the `resource:action` pairs carried on the identity's subject) live in one module, mirroring how the Token-lifecycle module owns the JWT half.
-- **Key lifecycle** — `internal/keys`: the module where every scope (the platform, or a Project) always has active signing (Ed25519) and encryption (RSA-4096) keys with a real lifetime, at one interface — `Ensure(ctx, scope)` (idempotent and self-healing: create missing, rotate expired or legacy nil-expiry keys, sweep retiring keys one RefreshTTL after rotation) and `EnsureAll(ctx)` (platform + every project). Boot and the periodic rotation worker (`ROTATE_KEYS_JOB_DURATION`) cross it; project creation (the `projects` and `organizations` features) crosses it inside the creation tx, so every project ships with keys. Rotation is proactive (lead = one worker interval); the Token-lifecycle module verifies against keys but never creates them, and verification rejects `retired` keys (retiring keys still verify during the grace period). Encryption keys are provisioned and rotated with no consumer today (OAuth secrets are sealed with the master key) — kept symmetric by decision (see ADR-0006) as a deliberate reservation for per-project data encryption, so a future envelope-encryption consumer finds a ready lifecycle.
-- **Harness** — `lib/httpserver`: the shared module every Backend boots through. It owns the process lifecycle at one interface — `Boot(cfg, start)` (validator and middleware error writer, OTLP telemetry push, serving, pprof, `/health`, graceful SIGTERM shutdown ordering) — and the strict-mounting seam — `MountStrict` (validation, spec-derived fail-closed auth dispatch, unified param-binding error mapping). Storage never crosses Boot's interface: what the backend's start hook opens (a Postgres pool today, something else tomorrow) is its own concern; Boot never learns what a database is. `Boot` returns an error; `errx.Exit` stays the process edge in `cmd/main`. One interface, four call sites. See ADR-0001, ADR-0008, ADR-0009.
-- **Named error** — a Go error a Backend returns for a failure a client can cause (`errs.ErrAddSelf`, `errs.OutOfStockError`), declared in the leaf `api/<svc>/errs` package; the shared ones (`database.ErrNotFound` and the constraint classes, `authz.ErrInsufficientRole`, `validator.Error`) live in `lib/go`. Code returns, wraps and matches them with `errors.Is`/`errors.As` and never picks a status. A **problem** without members names its sentinel and the sentinel's text (`x-problem`'s `error` and `message`, the detail a client reads, which says what to do); `tools/problemgen` generates the sentinel into `errs/errs.gen.go` and maps it. Each Backend's **mapper** (`Problem` in `internal/app`) keeps only what a problem can't name: typed errors carrying the problem's members, named errors answered with a shared problem, not-found errors and check constraints. An unmapped error is a generic 500. See ADR-0016, ADR-0019, ADR-0022.
-- **Wire format** — what every Backend sends: the payload itself on success, lists as `{ items }`, `204` with no body when there is nothing to return, and every error as an RFC 9457 problem (`application/problem+json`: `type` `{API_URL}/problems/{slug}`, `status`, `title`, `detail`, `instance`, plus `errors: [{field, message}]` when request fields are at fault). No `fun.Response` envelope anywhere. TS clients read it with envoy-fetch's `toSuccess`/`toFailure` (`@trieoh/api-client/wire`). See ADR-0017, ADR-0019.
-- **Backend kit** — `lib/backend`: what a Backend boots from (ADR-0014). `backend.Run(App)` takes the name, spec, server settings, an ordered list of **modules** (`postgres`, `identityx`, `email`, `jobs` — shared infrastructure, each opening into `Deps` and closing in reverse order) and a `Build(ctx, deps, router)` that wires the Backend's own code and mounts its strict server. Backend-only infrastructure and boot checks live in `Build`; a thing becomes a module only when a second Backend needs it.
-- **Runtime** — every Backend is one plain HTTP server image: a compose container locally, a Cloudflare Container behind a Worker when deployed (`api/<svc>/cloudflare`). There is no mode switch. See ADR-0011.
-- **Job carrier** — what moves background work, behind `lib/jobs` (`Enqueuer`/`Registry`/`Envelope`): `inprocess` when `JOBS_URL` is unset (local), `httpjobs` when set (Cloudflare Queue in, `/_jobs` out; Cron Triggers fire the periodic jobs; the dead-letter queue maps a dead job to its give-up job). Backends declare jobs and periodic cadences once and never learn the carrier. A delayed job (`DelayedEnqueuer.EnqueueAfter`, up to 12h) is held by a timer in-process, or by the queue's message delay on Cloudflare. Enqueueing is not transactional: a Backend that needs it keeps its own record of the work and sweeps it (ADR-0012).
-- **Email transport** — `lib/email.Sender`: SMTP through any relay.
-- **Adapter** — a concrete thing that satisfies an interface at a seam (e.g. the MercadoPago provider module, the SQL repo modules, the email client).
-- **Profile data boundary** — the Univents backend never reads IdentityX profile data (names, avatars, overrides); frontends derive it via IdentityX's public profile endpoint (`getActorProfile`). Univents emits only its own data: registration/ticket names, event/edition names, and the action URL.
+**Project**:
+A workspace inside an organization. API keys and profiles belong to a project.
 
-## Releases & deploys
+**Project user**:
+An actor that belongs to a project, like someone who signed up to an app built on it. It has no role in the project.
 
-- **Release tag** — `<artifact>/v<semver>` (e.g. `payssage/v0.7.11`, `univents-ui/v0.10.6`, `identityx-sdk-ts/v0.15.6`). Pushing one triggers `.github`: the R-chain gate (compile → unit → lint → front → trivy → integration), then build-once publish, then the automated deploy. **Tags are prod deploys — agents/LLMs must never push tags. Humans cut release tags, always.** If a release is requested, prepare everything (commits pushed to main, version chosen, command drafted) and let the human run `git tag` + `git push --tags`.
-- **Three lanes** — main is cheap: pushes to `main` run zero CI (hooks only); main is latest-unstable, never prod. Deploys are the gate: the full check suite runs at tag time, before anything ships. `-hotfix.*` is the fire escape: `v<semver>-hotfix.N` tags run compile + unit only (≤2 min to prod) — for prod-burning emergencies, never as a shortcut; the skipped checks are an accepted risk until the next normal release.
-- **Hooks** — local quality layer (`.husky/`): `commit-msg` validates the scope against the scope tree *discovered from the repo layout* (declared scope must be the closest common ancestor of the changed files — the hook states the correct scope on failure); `pre-commit` runs a gitleaks diff scan of staged changes plus per-member checks against each member's actual diff; `pre-push` validates branch naming over the entire pushed range. Never bypass with `--no-verify` — the per-commit secret scan is the only thing scanning diffs between deploys.
-- **Deploy target** — backends run on Cloudflare Containers: the publish job pushes the GHCR image by digest to Cloudflare's registry and `wrangler deploy`s it, tagged with the release version. Cloudflare's Worker version history is the ledger; rollback is `wrangler rollback` (or `wrangler versions deploy <id>`) from `api/<svc>/cloudflare/`. The old `TrieOH/deploy` digest-ledger repo and its server rollout are retired.
-- **Artifact identity** — every release publishes an immutable artifact once and deploys that exact artifact: backends by image digest, frontends by Cloudflare Worker Version ID (`wrangler versions upload` → promote the same version), SDKs by npm version. `:latest` left the deployment contract.
+**Project member**:
+An actor with a role in the project: member, admin or owner. Someone with a role in the project's organization counts as a project member with the same role.
+
+**Platform role**:
+A role on IdentityX itself: support, admin or super admin. It's not a role in any organization or project.
+
+**Access check**:
+The one place an API asks "may this caller do this?". An unknown resource answers 404 and a missing role answers 403.
+
+**Scope**:
+A limit on which kind of caller may use a route, set with `x-scope` in the spec. Today there's one: `platform-only`, for callers that aren't in a project.
+
+**OAuth provider**:
+A login a project turns on, like Google or GitHub.
+
+**Profile**:
+A person's public face in IdentityX: name, picture and socials.
+
+**Profile schema**:
+The versioned shape a project's profiles follow. When a new version arrives, profiles that fit it move to it, and the rest are flagged for an admin.
+
+**API key**:
+A long-lived secret a service uses instead of signing in. It carries the capabilities it was given.
+
+**Action token**:
+A single-use link token, like the one in a verify or reset email.
+
+**Signing keys**:
+Every project, and the platform, always has signing and encryption keys. They rotate on their own, and new projects get theirs when they're created.
+
+## Univents
+
+**Event**:
+Something people attend. Its members are an owner, an admin or staff.
+
+**Edition**:
+One run of an event, with its own dates and registration window.
+
+**Program**:
+The schedule of an edition. Staff are assigned to programs to mark attendance, and attendance earns certificates.
+
+**Check-in**:
+A record that someone arrived at an edition. Any staff can make one, and one is enough for the edition's certificate.
+
+**Ticket type, product, product variant**:
+What people can buy at an edition. Each person holds at most one active ticket per edition.
+
+**Purchase**:
+An order at an edition. Its items stay reserved until the payment confirms, or expire if it doesn't.
+_Avoid_: order
+
+**Donation**:
+A gift to an event. The donor picks the amount, at least R$ 1. It's not a purchase and reserves nothing.
+_Avoid_: doação in code comments and docs
+
+**Certificate**:
+Proof of attendance, issued per edition or per program from a certificate template.
+_Avoid_: certification
+
+**Badge**:
+A person's badge for an edition, with a QR code that opens their Univents profile. Its design comes from the edition's badge templates when it's shown, so a design change shows up everywhere at once.
+
+**Signature request**:
+A request, opened by a link, to sign a document.
+
+Univents never reads IdentityX profiles. The apps fetch names and pictures from IdentityX's public profile route.
+
+## Payssage
+
+**Wallet**:
+What owns payments: its intents, sellers and webhooks hang off it. Univents uses one wallet for every event, with a 5% fee.
+
+**Collector**:
+The wallet's own provider account, like a MercadoPago account. It receives the wallet's fee.
+
+**Seller**:
+A provider account a payment is split to, connected to a wallet through the provider's login. Each Univents event has its own seller.
+
+**Intent**:
+One payment attempt. Its status comes from the provider.
+_Avoid_: payment, transaction
+
+**Webhook endpoint**:
+A tenant's URL that Payssage sends payment events to.
+
+**Webhook delivery**:
+One try at sending one event to one endpoint. The delivery row is the truth about whether it arrived.
+
+## Informd
+
+**Form**:
+A survey made of steps, each with fields.
+
+**Namespace**:
+A group of forms with its own members.
+
+**Response**:
+One person's answers to a form.
+
+## Code
+
+**Backend**:
+One of the four Go APIs. Each is its own process.
+_Avoid_: service, microservice
+
+**Feature**:
+One slice of a backend, like `intents`. It's a folder in `internal/features/` with its routes in `spec.yml`, plus `handlers.go`, `repo.go` and a `service/` folder.
+
+**Named error**:
+A Go error for something a caller did wrong, like `errs.ErrProjectNotFound`. Code returns it and never picks an HTTP status. One mapper per backend turns it into a problem.
+
+**Problem**:
+An error as the caller sees it: an RFC 9457 JSON object, declared in the spec.
+
+**Backend kit**:
+`lib/backend`, the code every backend starts from. Shared pieces like Postgres or email are modules, and each backend wires the rest itself.
+
+**Harness**:
+`lib/httpserver`, which runs the HTTP server: middleware, telemetry, `/health` and shutdown.
+
+**Job carrier**:
+What moves background work. Locally it runs in the same process. On Cloudflare it goes through a queue and comes back to the container at `/_jobs`.
+
+**Edge cache**:
+Cloudflare's cache in front of each API. Only routes marked `x-cache: shared` are cached, and a write purges what it changed.
+
+**Gateway**:
+The front door of each API's Worker. It answers CORS and runs purges, and isn't cached.
+
+**TS client**:
+The TypeScript client generated from each backend's spec. It's plain functions, with no React or Solid in it.
+
+**Adapter**:
+The concrete thing behind an interface, like the MercadoPago provider or a SQL repo.
+
+## Releases
+
+**Release tag**:
+A tag like `payssage/v0.7.11` or `univents-ui/v0.10.6`. Pushing one runs every check, then deploys to production. Only people push tags. Agents never do. If a release is asked for, an agent gets everything ready and leaves the tag to a person.
+
+**Hotfix tag**:
+A release tag ending in `-hotfix.N`. It skips everything but the build and unit tests, for real emergencies only. The next normal release runs the full checks.
+
+**Hooks**:
+The local checks in `.husky/`: commit message and scope, a secret scan, lint and tests for what changed, and the branch name on push. Never skip them.
+
+**Artifact**:
+What a release builds once and deploys as is: an image for a backend, a Worker version for an app, an npm version for an SDK. Rolling back means deploying the previous one.
