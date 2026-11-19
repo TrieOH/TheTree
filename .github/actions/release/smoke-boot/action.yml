@@ -1,0 +1,75 @@
+name: Boot smoke test
+description: >
+  Boots the image just built against a throwaway Postgres (migrated with the
+  service's goose migrations) and a stub for the other services, and fails
+  unless /health answers. A Backend that can't boot never reaches Cloudflare.
+  Nothing here touches production: the database is local, every other service
+  is the stub, and telemetry is off. Needs setup/versions (GOOSE_VERSION).
+inputs:
+  service:
+    description: the service, e.g. identityx
+    required: true
+  image:
+    description: the image to boot, e.g. ghcr.io/trieoh/identityx:v0.48.14
+    required: true
+  timeout:
+    description: seconds to wait for /health
+    default: '60'
+runs:
+  using: composite
+  steps:
+    - name: Boot ${{ inputs.service }}
+      shell: bash
+      env:
+        SERVICE: ${{ inputs.service }}
+        IMAGE: ${{ inputs.image }}
+        TIMEOUT: ${{ inputs.timeout }}
+        HERE: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        NET="smoke-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+        cleanup() {
+          docker rm -f smoke-app smoke-db >/dev/null 2>&1 || true
+          docker network rm "$NET" >/dev/null 2>&1 || true
+          [ -n "${STUB_PID:-}" ] && kill "$STUB_PID" 2>/dev/null || true
+        }
+        trap cleanup EXIT
+
+        docker network create "$NET" >/dev/null
+        docker run -d --name smoke-db --network "$NET" -p 127.0.0.1:55432:5432 \
+          -e POSTGRES_DB=smoke -e POSTGRES_USER=smoke -e POSTGRES_PASSWORD=smoke postgres:18 >/dev/null
+        # the image restarts Postgres once while it initializes, so wait for a query, not the port
+        for _ in $(seq 1 60); do
+          docker exec smoke-db psql -U smoke -d smoke -qtAc 'select 1' >/dev/null 2>&1 && break
+          sleep 1
+        done
+
+        curl -fsSL -o "$RUNNER_TEMP/goose" \
+          "https://github.com/pressly/goose/releases/download/v${GOOSE_VERSION}/goose_linux_x86_64"
+        chmod +x "$RUNNER_TEMP/goose"
+        "$RUNNER_TEMP/goose" -dir "api/$SERVICE/db/migrations" postgres \
+          "host=127.0.0.1 port=55432 user=smoke password=smoke dbname=smoke sslmode=disable" up
+
+        python3 "$HERE/stub.py" 18099 2>"$RUNNER_TEMP/stub.log" &
+        STUB_PID=$!
+
+        "$HERE/env.sh" "api/$SERVICE/.example.env" smoke-db http://stub:18099 >"$RUNNER_TEMP/smoke.env"
+        docker run -d --name smoke-app --network "$NET" --add-host stub:host-gateway \
+          --env-file "$RUNNER_TEMP/smoke.env" -p 127.0.0.1:18080:8080 "$IMAGE" >/dev/null
+
+        for i in $(seq 1 "$TIMEOUT"); do
+          if curl -fsS -o /dev/null http://127.0.0.1:18080/health 2>/dev/null; then
+            echo "[smoke] $SERVICE booted and answered /health in ${i}s"
+            docker logs smoke-app 2>&1 | grep -E 'WARN|"level":"WARN"' || true
+            exit 0
+          fi
+          if [ "$(docker inspect -f '{{.State.Running}}' smoke-app)" != "true" ]; then
+            echo "::error title=$SERVICE did not boot::the container exited (code $(docker inspect -f '{{.State.ExitCode}}' smoke-app)); its logs follow"
+            docker logs smoke-app 2>&1 | tail -50
+            exit 1
+          fi
+          sleep 1
+        done
+        echo "::error title=$SERVICE did not boot::no answer on /health after ${TIMEOUT}s; its logs follow"
+        docker logs smoke-app 2>&1 | tail -50
+        exit 1
