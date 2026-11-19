@@ -34,13 +34,8 @@ func (e *InvalidBodyError) Error() string { return "invalid request body: " + e.
 func (e *InvalidBodyError) Unwrap() error { return e.Err }
 
 // StrictHandlerFunc mirrors the strict-server handler shape every backend's
-// oapi-codegen output generates (method = openapi.StrictHandlerFunc). The
-// generated types share this underlying shape, so backends convert at the
-// seam:
-//
-//	openapi.StrictMiddlewareFunc(httpserver.AuthDispatch(chains))
-//
-// instead of re-implementing the dispatch loop per backend.
+// oapi-codegen output generates (openapi.StrictHandlerFunc). Each generated
+// Mount adapts StrictStack to its own package's types (tools/strictmount).
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
 
 // StrictMiddlewareFunc mirrors the strict-server middleware shape from the
@@ -111,58 +106,20 @@ func TraceMiddleware() StrictMiddlewareFunc {
 	}
 }
 
-// StrictHandlerFuncT and StrictMiddlewareFuncT capture the generated
-// packages' strict types structurally: every backend's oapi-codegen output
-// defines StrictHandlerFunc and StrictMiddlewareFunc with these exact
-// underlying shapes (distinct types, one per package), so the harness
-// converts to them with plain casts instead of per-backend adapt() funcs.
-type StrictHandlerFuncT interface {
-	~func(context.Context, http.ResponseWriter, *http.Request, any) (any, error)
-}
-
-type StrictMiddlewareFuncT[F StrictHandlerFuncT] interface {
-	~func(F, string) F
-}
-
-// adaptTo converts the harness strict middleware into the generated
-// package's strict-middleware type MF. The generated types share the
-// harness's underlying shape, so the leaf conversion is a plain cast.
-func adaptTo[HF StrictHandlerFuncT, MF StrictMiddlewareFuncT[HF]](mw StrictMiddlewareFunc) MF {
-	return MF(func(f HF, operationID string) HF {
-		return HF(mw(StrictHandlerFunc(f), operationID))
-	})
-}
-
-// MountStrict mounts the backend's generated strict server with the
-// harness's standard strict stack — one span per operation around the
-// spec-derived fail-closed auth dispatch around request validation — on every
-// backend. The generated package's surface crosses the seam as function
-// values and type parameters; every piece of policy (middleware order,
-// fail-closed dispatch, unified param-binding error mapping) lives here,
-// so the four backends cannot drift.
-//
-// The caller supplies the generated package's constructors as values
-// (newStrict = openapi.NewStrictHandlerWithOptions, handlerWith =
-// openapi.HandlerWithOptions) and builds the two generated options
-// structs — strictOpts with the harness's StrictRequestErrorHandler and
-// StrictResponseErrorHandler, chiOpts with BaseRouter, any extra
-// ChiServerOptions middlewares, and ParamBindingErrorHandler. All type
-// parameters except HF are inferred from the arguments.
-func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF], SO, SI, CO any](
-	server ServerT,
-	chains map[string][]func(http.Handler) http.Handler,
-	strictOpts SO,
-	newStrict func(ServerT, []MF, SO) SI,
-	chiOpts CO,
-	handlerWith func(SI, CO) http.Handler,
-) http.Handler {
-	strict := newStrict(server, []MF{
-		adaptTo[HF, MF](ValidateMiddleware()),
-		adaptTo[HF, MF](AuthDispatch(chains)),
-		adaptTo[HF, MF](TraceMiddleware()), // the generated server wraps in order: last runs first
-		adaptTo[HF, MF](operationMiddleware()),
-	}, strictOpts)
-	return handlerWith(strict, chiOpts)
+// StrictStack is the harness's strict middleware stack, in the order the
+// generated server takes it (it wraps in order, so the last runs first):
+// one span per operation, around the operationID record, around the
+// spec-derived fail-closed auth dispatch, around request validation. Every
+// Backend's generated Mount (tools/strictmount) serves its strict server
+// through this list, so the policy lives here once and the four Backends
+// cannot drift.
+func StrictStack(chains map[string][]func(http.Handler) http.Handler) []StrictMiddlewareFunc {
+	return []StrictMiddlewareFunc{
+		ValidateMiddleware(),
+		AuthDispatch(chains),
+		TraceMiddleware(),
+		operationMiddleware(),
+	}
 }
 
 // ParamBindingErrorHandler returns the error handler for the

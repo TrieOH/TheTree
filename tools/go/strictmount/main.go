@@ -1,9 +1,10 @@
 // Command strictmount writes mount.gen.go into a Backend's generated openapi
-// package: the one Mount function that serves the strict server through
-// httpserver.MountStrict. The option structs it fills are generated per
-// package, so the glue cannot live in lib/httpserver; generating it keeps
-// one copy of it in the repo. It runs after oapi-codegen, from the Backend's
-// directory: go run tools/strictmount internal/openapi/mount.gen.go
+// package: the one Mount function that serves the strict server through the
+// harness's strict stack (httpserver.StrictStack). The option structs and
+// the strict function types it fills are generated per package, so the glue
+// cannot live in lib/httpserver; generating it keeps one copy of it in the
+// repo. It runs after oapi-codegen, from the Backend's directory:
+// go run tools/strictmount internal/openapi/mount.gen.go
 package main
 
 import (
@@ -28,21 +29,22 @@ import (
 // checked against each operation's x-problems. mws run before the strict
 // server decodes the request (a webhook's raw-body capture).
 func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.Handler) http.Handler, mws ...MiddlewareFunc) {
-	httpserver.MountStrict[StrictHandlerFunc](
-		s,
-		chains,
-		StrictHTTPServerOptions{
-			RequestErrorHandlerFunc:  httpserver.StrictRequestErrorHandler(),
-			ResponseErrorHandlerFunc: httpserver.StrictResponseErrorHandler(),
-		},
-		NewStrictHandlerWithOptions,
-		ChiServerOptions{
-			BaseRouter:       r,
-			Middlewares:      append([]MiddlewareFunc{httpserver.OperationSlot}, mws...),
-			ErrorHandlerFunc: httpserver.ParamBindingErrorHandler(),
-		},
-		HandlerWithOptions,
-	)
+	harness := httpserver.StrictStack(chains)
+	stack := make([]StrictMiddlewareFunc, 0, len(harness))
+	for _, mw := range harness {
+		stack = append(stack, func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
+			return StrictHandlerFunc(mw(httpserver.StrictHandlerFunc(f), operationID))
+		})
+	}
+	strict := NewStrictHandlerWithOptions(s, stack, StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  httpserver.StrictRequestErrorHandler(),
+		ResponseErrorHandlerFunc: httpserver.StrictResponseErrorHandler(),
+	})
+	HandlerWithOptions(strict, ChiServerOptions{
+		BaseRouter:       r,
+		Middlewares:      append([]MiddlewareFunc{httpserver.OperationSlot}, mws...),
+		ErrorHandlerFunc: httpserver.ParamBindingErrorHandler(),
+	})
 }
 `
 

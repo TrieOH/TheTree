@@ -133,8 +133,8 @@ type Jobs interface {
 
 // Chains resolves every spec operation's auth chain from the operation's
 // security, enforced by primitives: d.IDX.Auth for IdentityX's consumers,
-// IdentityX's own primitives for IdentityX itself. Pass the result to
-// httpserver.MountStrict.
+// IdentityX's own primitives for IdentityX itself. Pass the result to the
+// generated openapi.Mount.
 func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
 	return d.ChainsWith(primitives, authz.Options{})
 }
