@@ -51,7 +51,7 @@ Fill these in now. For secrets, `openssl rand -hex 32` prints a good value.
 | `api/informd/.env` | `POSTGRES_PASSWORD` and `INFORMD_POSTGRES_PASSWORD`: the same value. `IDENTITY_X_URL=http://identityx:8080`. |
 | `front/identityx/.env` | `AUTH_SESSION_PASSWORD`: a secret |
 
-Payssage and Informd also need an IdentityX project ID and API key. You'll make those in step 4.
+Payssage, Informd and Univents also need an IdentityX project ID and API key. You'll make those in step 4, and Univents' Payssage values in step 5.
 
 Git ignores every `.env` file.
 
@@ -73,9 +73,9 @@ In a second terminal, start the IdentityX app:
 pnpm identityx dev
 ```
 
-## 4. Make the keys for Payssage and Informd
+## 4. Make the IdentityX keys
 
-Payssage and Informd sign in to IdentityX like any other app, so each one needs its own project and an API key. Do this once for each of them:
+Payssage, Informd and Univents sign in to IdentityX like any other app, so each one needs its own project and an API key. Do this once for each of them:
 
 1. Open `localhost:3001` and sign up. The verification email lands in Mailpit, at `localhost:8025`.
 2. Under Projects, create a project, such as `payssage`.
@@ -83,11 +83,48 @@ Payssage and Informd sign in to IdentityX like any other app, so each one needs 
 4. Back on the project page, create an API key with that actor as its Subject.
 5. Put the project ID and the key in the API's `.env`, as `IDENTITY_X_PROJECT_ID` and `IDENTITY_X_API_KEY`.
 
-The project ID is in the page's address, after `/projects/`. Copy the key as soon as it's shown.
+The project ID is in the page's address, after `/projects/`. Copy the key as soon as it's shown. The keys don't need any capabilities.
 
-## 5. Start everything
+## 5. Make Univents' wallet
 
-Stop `just run identityx`, then:
+Univents takes every payment through one Payssage wallet, owned by Payssage's service actor. Start Payssage:
+
+```sh
+just run payssage
+```
+
+Then, in another terminal, create the wallet with the Payssage key from step 4:
+
+```sh
+KEY=<payssage api key>
+API=http://localhost:8082
+
+# Create the wallet. Its ID is in the response.
+curl -s -X POST $API/wallets -H "X-API-Key: $KEY" -d '{"name":"Platform Wallet"}'
+WALLET=<wallet id>
+
+# Use test payments, and take a 5% fee.
+curl -s -X PATCH $API/wallets/$WALLET/sandbox -H "X-API-Key: $KEY" -d '{"sandbox":true}'
+curl -s -X PATCH $API/wallets/$WALLET/fee -H "X-API-Key: $KEY" -d '{"fee_bps":500}'
+
+# Send payment events to Univents. The secret is in the response.
+curl -s -X POST $API/wallets/$WALLET/webhooks/endpoints -H "X-API-Key: $KEY" \
+  -d '{"name":"univents","url":"http://univents:8080/webhooks/payssage"}'
+```
+
+Put these in `api/univents/.env`:
+
+| Variable | Value |
+| --- | --- |
+| `PAYSSAGE_API_KEY` | The Payssage key, not Univents' own |
+| `PAYSSAGE_WALLET_ID` | The wallet ID |
+| `PAYSSAGE_WEBHOOK_SECRET` | The webhook secret |
+
+The webhook URL uses `univents`, not `localhost`, because Payssage calls it from inside Docker. If you ever drop Payssage's database, the wallet goes with it, so you'd redo this step.
+
+## 6. Start everything
+
+Stop the running commands, then:
 
 ```sh
 just up
@@ -99,7 +136,7 @@ Check that it worked: `just ps` lists the containers, and `curl localhost:8080/h
 
 To work on one API, run `just run <api>` instead, for example `just run univents`. It also starts the APIs that one calls.
 
-## 6. Run an app
+## 7. Run an app
 
 ```sh
 cp front/univents-solid/.env.example front/univents-solid/.env
