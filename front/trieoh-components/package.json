@@ -28,6 +28,7 @@
     "vite": "catalog:",
     "wrangler": "catalog:",
     "vitest": "catalog:",
-    "jsdom": "catalog:"
+    "jsdom": "catalog:",
+    "@solidjs/diagnostics": "catalog:solid"
   }
 }

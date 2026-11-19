@@ -1,3 +1,4 @@
+import { clientOnly } from "@solidjs/web";
 import {
   PaginationExample,
   ToolbarExample,
@@ -76,6 +77,31 @@ import IconUsers from "~icons/lucide/users";
 import IconPlus from "~icons/lucide/plus";
 import IconMenu from "~icons/lucide/menu";
 import { DeviceFrame } from "./components/DeviceFrame";
+
+const StatCardExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "StatCardExample" },
+);
+const MetricDeltaExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "MetricDeltaExample" },
+);
+const SparklineExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "SparklineExample" },
+);
+const BarListExample = clientOnly(
+  () => import("./examples/DashboardExamples"),
+  { lazy: true, export: "BarListExample" },
+);
+const PanelExample = clientOnly(() => import("./examples/DashboardExamples"), {
+  lazy: true,
+  export: "PanelExample",
+});
+const ChartExample = clientOnly(() => import("./examples/DashboardExamples"), {
+  lazy: true,
+  export: "ChartExample",
+});
 
 export type Values = Record<string, string | boolean>;
 export type NumberRange = {
@@ -1594,6 +1620,207 @@ export function createCatalog(options: {
       ),
     },
     {
+      name: "DashboardStatCard",
+      group: "Dashboard",
+      description:
+        "Card de métrica com ícone, comparação com o período anterior e histórico compacto.",
+      previewSize: { width: 340, height: 270 },
+      defaults: {
+        label: "Receita aprovada",
+        value: "24850",
+        previousValue: "19800",
+        hint: "Receita aprovada no período",
+        comparison: true,
+        sparkline: true,
+        loading: false,
+      },
+      controls: [
+        text("label", "Título"),
+        number("value", "Valor", { min: 0, max: 1000000 }),
+        number("previousValue", "Valor anterior", { min: 0, max: 1000000 }),
+        text("hint", "Descrição"),
+        text("comparison", "Mostrar comparação"),
+        text("sparkline", "Mostrar histórico"),
+        text("loading", "Carregando"),
+      ],
+      render: (values, update) => (
+        <StatCardExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "MetricDelta",
+      group: "Dashboard",
+      description:
+        "Variação percentual com tendência e indicação de melhora, inclusive para métricas em que diminuir é melhor.",
+      previewSize: { width: 400, height: 100 },
+      defaults: {
+        value: "125",
+        previousValue: "100",
+        improvement: "increase",
+        label: "vs. período anterior",
+      },
+      controls: [
+        number("value", "Valor atual", { min: -100000, max: 100000 }),
+        number("previousValue", "Valor anterior", { min: -100000, max: 100000 }),
+        select("improvement", "Melhora quando", ["increase", "decrease"]),
+        text("label", "Comparação"),
+      ],
+      render: (values, update) => (
+        <MetricDeltaExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "Sparkline",
+      group: "Dashboard",
+      description:
+        "Histórico compacto em linha ou área para complementar métricas, sem eixos nem controles.",
+      previewSize: { width: 420, height: 120 },
+      defaults: { type: "area", height: "80", empty: false, flat: false, showTooltip: true },
+      controls: [
+        select("type", "Tipo", ["line", "area"]),
+        number("height", "Altura", { min: 32, max: 180 }),
+        text("empty", "Sem dados"),
+        text("flat", "Valores constantes"),
+        text("showTooltip", "Tooltip de valores"),
+      ],
+      render: (values, update) => (
+        <SparklineExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "DashboardPanel",
+      group: "Dashboard",
+      description:
+        "Seção responsiva de dashboard com título, ações, conteúdo e estados de carregamento ou erro.",
+      previewSize: { width: 620, height: 480 },
+      defaults: {
+        title: "Visão geral",
+        description: "Acompanhe os resultados do evento.",
+        loading: false,
+        error: false,
+      },
+      controls: [
+        text("title", "Título"),
+        text("description", "Descrição"),
+        text("loading", "Carregando"),
+        text("error", "Simular erro"),
+      ],
+      render: (values, update) => (
+        <PanelExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "DashboardBarList",
+      group: "Dashboard",
+      description:
+        "Ranking com barras proporcionais, valores e percentuais. Útil para canais de venda, status e produtos.",
+      previewSize: { width: 420, height: 250 },
+      defaults: { showPercentage: true, empty: false, loading: false },
+      controls: [
+        text("showPercentage", "Mostrar percentuais"),
+        text("empty", "Sem dados"),
+        text("loading", "Carregando"),
+      ],
+      render: (values, update) => (
+        <BarListExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "GenericChart",
+      group: "Dashboard",
+      description:
+        "Gráfico responsivo de linha, área, barras ou dispersão com séries, eixos, tooltip e formatação.",
+      previewSize: { width: 560, height: 320 },
+      defaults: {
+        type: "line",
+        height: "280",
+        curveStyle: "smooth",
+        multiSeries: true,
+        showPoints: false,
+        empty: false,
+      },
+      controls: [
+        select("type", "Tipo", ["line", "area", "bar", "scatter"]),
+        number("height", "Altura", { min: 120, max: 500 }),
+        select("curveStyle", "Curva", ["smooth", "straight"]),
+        text("multiSeries", "Múltiplas séries"),
+        text("showPoints", "Mostrar pontos"),
+        text("empty", "Sem dados"),
+      ],
+      render: (values, update) => (
+        <ChartExample
+          fallback={<Loading size="sm" tone="muted" />}
+          bare
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
+      name: "ChartCard",
+      group: "Dashboard",
+      description:
+        "Card de gráfico completo com filtros de período e séries, troca de tipo e estados de carregamento, erro ou valores ocultos.",
+      previewSize: { width: 640, height: 500 },
+      defaults: {
+        title: "Resultado por período",
+        type: "area",
+        height: "280",
+        multiSeries: true,
+        showTypeSelector: true,
+        showRangeFilter: true,
+        showSeriesFilter: true,
+        showSearchFilter: false,
+        showPointsToggle: true,
+        loading: false,
+        error: false,
+        empty: false,
+        masked: false,
+      },
+      controls: [
+        text("title", "Título"),
+        select("type", "Tipo", ["line", "area", "bar", "scatter"]),
+        number("height", "Altura", { min: 120, max: 500 }),
+        text("multiSeries", "Múltiplas séries"),
+        text("showTypeSelector", "Seletor de tipo"),
+        text("showRangeFilter", "Filtro de período"),
+        text("showSeriesFilter", "Filtro de séries"),
+        text("showSearchFilter", "Buscar série"),
+        text("showPointsToggle", "Alternar pontos"),
+        text("loading", "Carregando"),
+        text("error", "Simular erro"),
+        text("empty", "Sem dados"),
+        text("masked", "Ocultar valores"),
+      ],
+      render: (values, update) => (
+        <ChartExample
+          fallback={<Loading size="sm" tone="muted" />}
+          values={values}
+          update={update}
+        />
+      ),
+    },
+    {
       name: "Pagination",
       previewSize: { width: 480, height: 120 },
       group: "Navegação",
@@ -1862,6 +2089,8 @@ export function createCatalog(options: {
     },
   ];
   const shapeDefaults: Record<string, Shape> = {
+    DashboardStatCard: "round",
+    ChartCard: "round",
     Checkbox: "soft",
     SearchInput: "soft",
     Button: "soft",

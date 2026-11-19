@@ -1,7 +1,10 @@
+import { dashboardUsage } from "./dashboard-usage";
 import { collectionUsage } from "./collection-usage";
 import type { Values } from "../catalog";
 
 export function usage(name: string, v: Values): string {
+  const dashboard = dashboardUsage(name,v);
+  if (dashboard !== undefined) return dashboard;
   const collection = collectionUsage(name, v);
   if (collection !== undefined) return collection;
   let imports = name;
