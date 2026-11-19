@@ -47,7 +47,7 @@ func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)
 
-		err = pool.Ping(ctx)
+		err = pingOnce(ctx, pool, maxAttempts-attempt+1)
 		if err == nil {
 			log.Printf("database connected on attempt %d\n", attempt)
 			return pool, nil
@@ -58,13 +58,26 @@ func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int
 		select {
 		case <-ctx.Done():
 			pool.Close()
-			return nil, fmt.Errorf("context deadline exceeded after %d attempts", attempt)
+			return nil, fmt.Errorf("gave up after %d attempts: %w", attempt, err)
 		case <-time.After(2 * time.Second):
 		}
 	}
 
 	pool.Close()
-	return nil, fmt.Errorf("failed to connect after %d attempts", maxAttempts)
+	return nil, fmt.Errorf("failed to connect after %d attempts: %w", maxAttempts, err)
+}
+
+// pingOnce gives one ping an even share of what is left of ctx's budget, so a
+// hung first ping can't use it all and leave no room for the retries.
+func pingOnce(ctx context.Context, pool *pgxpool.Pool, attemptsLeft int) error {
+	pingCtx := ctx
+	if deadline, ok := ctx.Deadline(); ok {
+		share := time.Until(deadline) / time.Duration(attemptsLeft)
+		var cancel context.CancelFunc
+		pingCtx, cancel = context.WithTimeout(ctx, share)
+		defer cancel()
+	}
+	return pool.Ping(pingCtx)
 }
 
 // RunMigrations uses pgx/stdlib to provide *sql.DB compatibility for goose
