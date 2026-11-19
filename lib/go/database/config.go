@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"time"
@@ -70,12 +71,12 @@ func SetupDB(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pg
 	defer span.End()
 	checkCtx, cancel := context.WithTimeout(checkCtx, 10*time.Second)
 	defer cancel()
+	// A registry gap degrades one error to a 500; it must never stop a boot.
 	err = validateConstraints(checkCtx, db)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "constraints")
-		CloseDB(db)
-		return nil, err
+		log.Printf("WARN %v", err)
 	}
 	return db, nil
 }

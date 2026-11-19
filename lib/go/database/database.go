@@ -106,9 +106,9 @@ func UseConstraints(constraints ConstraintErrors) {
 	constraintRegistry = constraints
 }
 
-// validateConstraints fails when the schema has a constraint (or a uniq_ or
-// one_ index) the registry has no named error for: a violation of it would
-// answer a generic 500 instead of the error it means.
+// validateConstraints reports a constraint (or a uniq_ or one_ index) the
+// registry has no named error for: a violation of it would answer a generic
+// 500 instead of the error it means. River's leftover tables are skipped.
 func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
 	rows, err := db.Query(ctx, `
 		SELECT con.conname
@@ -117,12 +117,14 @@ func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
 		JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
 		WHERE nsp.nspname = 'public'
 		AND rel.relname != 'goose_db_version'
+		AND rel.relname NOT LIKE 'river\_%'
 		AND con.contype IN ('u', 'c', 'x')
 		UNION
 		SELECT indexname
 		FROM pg_indexes
 		WHERE schemaname = 'public'
 		AND tablename != 'goose_db_version'
+		AND tablename NOT LIKE 'river\_%'
 		AND (indexname LIKE 'uniq_%' OR indexname LIKE 'one_%')
 	`)
 	if err != nil {
