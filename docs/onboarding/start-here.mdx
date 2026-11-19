@@ -1,9 +1,9 @@
 # Start here
 
 - **Order:** 1
-- **Summary:** What TrieOH is, and the order to read these docs in.
+- **Summary:** What TrieOH is, how to contribute, and the order to read these docs in.
 
-TrieOH builds four products. They share one repo, TheTree, because they share code and use each other.
+TrieOH builds four products. They live in one repo, TheTree, because they share code and depend on each other.
 
 | Product | What it does |
 | --- | --- |
@@ -12,25 +12,38 @@ TrieOH builds four products. They share one repo, TheTree, because they share co
 | Informd | Forms and their responses |
 | Univents | Events: tickets, check-in, badges and certificates |
 
-Each product is a Go API and a web app. Every app signs in through IdentityX, and Univents takes payments through Payssage.
+Each product is a Go API plus a web app. Every app signs in through IdentityX, and Univents takes payments through Payssage.
 
-You're reading the portal, `portal.trieoh.com`. It holds the team's docs, issues, deploys and metrics.
+You're reading the dev portal. It shows our docs, issues, deploys and metrics, and anyone can read it. We work in the open.
 
 ## Read these in order
 
 <Cards>
-  <Card title="1. Repo tour" href="/docs/onboarding/repo-tour">Where everything lives in TheTree.</Card>
+  <Card title="1. Access" href="/docs/onboarding/access">What you need to contribute, and what only the team has.</Card>
   <Card title="2. Local setup" href="/docs/onboarding/local-setup">Run the APIs and an app on your machine.</Card>
-  <Card title="3. Architecture" href="/docs/onboarding/architecture">How a request travels in production.</Card>
-  <Card title="4. Writing docs" href="/docs/onboarding/writing-docs">How to add a page like this one.</Card>
+  <Card title="3. Repo tour" href="/docs/onboarding/repo-tour">Where everything lives in TheTree.</Card>
+  <Card title="4. Your first change" href="/docs/onboarding/first-change">Add an endpoint, from the spec to a pull request.</Card>
+  <Card title="5. How we ship" href="/docs/onboarding/shipping">Commits, branches, pull requests and deploys.</Card>
+  <Card title="6. Architecture" href="/docs/onboarding/architecture">How a request travels in production.</Card>
+  <Card title="7. Fronts" href="/docs/onboarding/fronts">How the apps talk to the APIs.</Card>
+  <Card title="8. Writing docs" href="/docs/onboarding/writing-docs">How to add a page like this one.</Card>
 </Cards>
+
+## How contributing works
+
+1. Pick an issue from the Issues page, or open one on GitHub for a bug or an idea.
+2. Fork TheTree, make the change on a branch, and open a pull request.
+3. Someone on the team reviews it. Once it's merged, the team ships it.
+
+You don't need any account other than GitHub. Everything runs on your machine.
 
 ## Two rules to know on day one
 
-1. Pushing a tag deploys to production. A tag looks like `payssage/v0.7.10`. Ask before you push one. Pushing to `main` deploys nothing.
-2. Git hooks check your work when you commit and push. `pnpm install` sets them up. Every commit and push must pass them. When a hook fails, fix what it reports and commit again.
+1. **Git hooks check your work.** `pnpm install` sets them up, and they run when you commit and push. When one fails, fix what it reports and try again. Don't skip them with `--no-verify`.
+2. **Tags deploy to production.** A tag like `payssage/v0.7.10` ships that API. Only the team pushes tags, so you'll never need to. Merging to `main` deploys nothing.
 
-## Where things are tracked
+## Where things are
 
-- Work: Linear, team TRI, with one Linear project per product.
-- Decisions and the reasons behind them: `docs/adr/` in the repo, shown in the portal under Docs, then Decisions.
+- **Work:** the Issues page in this portal. The team tracks it in Linear.
+- **Decisions:** Docs, then Decisions. Each one explains why something is built the way it is.
+- **Words:** `CONTEXT.md` in the repo explains the domain terms, like edition, wallet or actor.

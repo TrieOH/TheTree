@@ -1,6 +1,6 @@
 # Repo tour
 
-- **Order:** 2
+- **Order:** 3
 - **Summary:** The folders in TheTree, and what is inside an API.
 
 ## Top level
