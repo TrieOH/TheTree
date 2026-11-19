@@ -100,15 +100,15 @@ KEY=<payssage api key>
 API=http://localhost:8082
 
 # Create the wallet. Its ID is in the response.
-curl -s -X POST $API/wallets -H "X-API-Key: $KEY" -d '{"name":"Platform Wallet"}'
+curl -s -X POST $API/wallets -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{"name":"Platform Wallet"}'
 WALLET=<wallet id>
 
 # Use test payments, and take a 5% fee.
-curl -s -X PATCH $API/wallets/$WALLET/sandbox -H "X-API-Key: $KEY" -d '{"sandbox":true}'
-curl -s -X PATCH $API/wallets/$WALLET/fee -H "X-API-Key: $KEY" -d '{"fee_bps":500}'
+curl -s -X PATCH $API/wallets/$WALLET/sandbox -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{"sandbox":true}'
+curl -s -X PATCH $API/wallets/$WALLET/fee -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{"fee_bps":500}'
 
 # Send payment events to Univents. The secret is in the response.
-curl -s -X POST $API/wallets/$WALLET/webhooks/endpoints -H "X-API-Key: $KEY" \
+curl -s -X POST $API/wallets/$WALLET/webhooks/endpoints -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
   -d '{"name":"univents","url":"http://univents:8080/webhooks/payssage"}'
 ```
 
