@@ -47,7 +47,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			Authz:    authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
 			Notifier: emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
 		}),
-		Tx: nopTxRunner{},
+		Tx: database.NoTx{},
 	})
 	st := completedSetup()
 	server := newServer(operations{authn: ops}, st)

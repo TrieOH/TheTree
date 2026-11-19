@@ -19,7 +19,7 @@ func Module(cfg libconfig.Postgres, constraints database.ConstraintErrors) backe
 	return backend.Module{
 		Name: "postgres",
 		Open: func(ctx context.Context, d *backend.Deps) (backend.Close, error) {
-			pool, err := database.SetupDBWithoutMigrations(ctx, libconfig.DBConnectionConfig(cfg), constraints)
+			pool, err := database.SetupDB(ctx, libconfig.DBConnectionConfig(cfg), constraints)
 			if err != nil {
 				return nil, err
 			}

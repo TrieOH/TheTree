@@ -235,10 +235,10 @@ func TestBindingErrorsNameTheField(t *testing.T) {
 		field string
 	}{
 		{"missing param", func(w http.ResponseWriter, r *http.Request) {
-			ParamBindingErrorHandler()(w, r, &RequiredParamError{ParamName: "project_id"})
+			WriteParamError(w, r, &RequiredParamError{ParamName: "project_id"})
 		}, "project_id"},
 		{"bad body", func(w http.ResponseWriter, r *http.Request) {
-			StrictRequestErrorHandler()(w, r, errors.New("unexpected EOF"))
+			WriteBodyError(w, r, errors.New("unexpected EOF"))
 		}, "body"},
 	}
 	for _, tc := range cases {

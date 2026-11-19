@@ -111,7 +111,7 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 		Tos:         newTosOps(),
 		Client:      resty.New(),
 		Meta:        testProviderMeta(t),
-		Tx:          nopTxRunner{},
+		Tx:          database.NoTx{},
 		Vault:       testVault,
 	})
 	return ops, r

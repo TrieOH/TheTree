@@ -2,6 +2,7 @@ package events_test
 
 import (
 	"context"
+	"lib/database"
 	"testing"
 	"uuid"
 
@@ -28,7 +29,7 @@ func TestAddMember_StaffForbidden(t *testing.T) {
 		Events: repo,
 		Authz:  authzSvc,
 		Badges: mock.Mock[ports.BadgeStaffOps](),
-		Tx:     nopTxRunner{},
+		Tx:     database.NoTx{},
 	})
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
@@ -66,7 +67,7 @@ func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 		Events: repo,
 		Authz:  authzSvc,
 		Badges: mock.Mock[ports.BadgeStaffOps](),
-		Tx:     nopTxRunner{},
+		Tx:     database.NoTx{},
 	})
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
@@ -107,7 +108,7 @@ func TestAddMember_NoIdentity(t *testing.T) {
 		Events: repo,
 		Authz:  authzSvc,
 		Badges: mock.Mock[ports.BadgeStaffOps](),
-		Tx:     nopTxRunner{},
+		Tx:     database.NoTx{},
 	})
 
 	// The event loads before the access check finds no caller.

@@ -17,24 +17,16 @@ type TxKey struct{}
 var TxKeyValue = TxKey{}
 
 type PgxTxRunner struct {
-	pool *pgxpool.Pool // Changed from *sql.DB
+	pool *pgxpool.Pool
 }
 
 func NewPGXTxRunner(pool *pgxpool.Pool) TxRunner { //nolint:ireturn
 	return &PgxTxRunner{pool: pool}
 }
 
-// WithinTx executes fn inside a transaction using default options
-// (serializable isolation, read-write).
-func (r *PgxTxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	return r.WithinTxWithOptions(ctx, TxOptions{}, fn)
-}
-
-func (r *PgxTxRunner) WithinTxWithOptions(
-	ctx context.Context,
-	opts TxOptions,
-	fn func(ctx context.Context) error,
-) (err error) {
+// WithinTx executes fn inside a transaction with the database's default
+// isolation, read-write.
+func (r *PgxTxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) (err error) {
 	if ctx == nil {
 		return errors.New("transaction had nil context")
 	}
@@ -43,13 +35,8 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		return errors.New("nested transactions not allowed")
 	}
 
-	pgxOpts := pgx.TxOptions{
-		IsoLevel:   opts.Isolation,
-		AccessMode: opts.ReadOnly,
-	}
-
 	var tx pgx.Tx
-	tx, err = r.pool.BeginTx(ctx, pgxOpts)
+	tx, err = r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}

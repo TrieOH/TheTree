@@ -37,13 +37,13 @@ func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.
 		})
 	}
 	strict := NewStrictHandlerWithOptions(s, stack, StrictHTTPServerOptions{
-		RequestErrorHandlerFunc:  httpserver.StrictRequestErrorHandler(),
-		ResponseErrorHandlerFunc: httpserver.StrictResponseErrorHandler(),
+		RequestErrorHandlerFunc:  httpserver.WriteBodyError,
+		ResponseErrorHandlerFunc: httpserver.WriteError,
 	})
 	HandlerWithOptions(strict, ChiServerOptions{
 		BaseRouter:       r,
 		Middlewares:      append([]MiddlewareFunc{httpserver.OperationSlot}, mws...),
-		ErrorHandlerFunc: httpserver.ParamBindingErrorHandler(),
+		ErrorHandlerFunc: httpserver.WriteParamError,
 	})
 }
 `

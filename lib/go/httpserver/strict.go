@@ -122,22 +122,20 @@ func StrictStack(chains map[string][]func(http.Handler) http.Handler) []StrictMi
 	}
 }
 
-// ParamBindingErrorHandler returns the error handler for the
-// generated strict server's param-binding failures, unified across the
-// backends to the superset: required params, invalid param formats, and
-// required headers. The generated error classes are oapi-codegen's and
-// identical across the four packages except for their package path, so the
-// harness classifies by type name and reads ParamName by reflection — the
-// generated surface is machine-owned; binding to it by name is the
-// harness's one concession to the codegen.
-func ParamBindingErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
-	return func(w http.ResponseWriter, r *http.Request, err error) {
-		bindErr := paramBindingError(err)
-		if bindErr == nil {
-			bindErr = err // an unknown class: a 500, its cause logged
-		}
-		WriteError(w, r, bindErr)
+// WriteParamError writes the generated strict server's param-binding
+// failures (ChiServerOptions.ErrorHandlerFunc), unified across the backends
+// to the superset: required params, invalid param formats, and required
+// headers. The generated error classes are oapi-codegen's and identical
+// across the four packages except for their package path, so the harness
+// classifies by type name and reads ParamName by reflection — the generated
+// surface is machine-owned; binding to it by name is the harness's one
+// concession to the codegen.
+func WriteParamError(w http.ResponseWriter, r *http.Request, err error) {
+	bindErr := paramBindingError(err)
+	if bindErr == nil {
+		bindErr = err // an unknown class: a 500, its cause logged
 	}
+	WriteError(w, r, bindErr)
 }
 
 // paramBindingError classifies one param-binding error into its named
@@ -216,20 +214,10 @@ func bodyOf(request any) any {
 	return b.Interface()
 }
 
-// StrictRequestErrorHandler returns the error handler for request
-// binding failures, for StrictHTTPServerOptions.RequestErrorHandlerFunc.
-// The decode error is named on the body field.
-func StrictRequestErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
-	return func(w http.ResponseWriter, r *http.Request, err error) {
-		WriteError(w, r, fielderr.On(&InvalidBodyError{Err: err}, "body", err.Error()))
-	}
-}
-
-// StrictResponseErrorHandler returns the error handler for errors
-// returned by strict handlers, for
-// StrictHTTPServerOptions.ResponseErrorHandlerFunc.
-func StrictResponseErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
-	return func(w http.ResponseWriter, r *http.Request, err error) {
-		WriteError(w, r, err)
-	}
+// WriteBodyError writes a request body that does not decode
+// (StrictHTTPServerOptions.RequestErrorHandlerFunc), naming the body field.
+// Errors returned by strict handlers go straight to WriteError
+// (ResponseErrorHandlerFunc).
+func WriteBodyError(w http.ResponseWriter, r *http.Request, err error) {
+	WriteError(w, r, fielderr.On(&InvalidBodyError{Err: err}, "body", err.Error()))
 }

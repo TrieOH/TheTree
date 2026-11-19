@@ -19,17 +19,6 @@ import (
 	"univents/ports"
 )
 
-// noopTxRunner runs fn directly — the repo fakes ignore the tx context, so
-// the tx is simulated. The DB-backed test exercises the real pgx runner.
-type noopTxRunner struct{}
-
-func (noopTxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	return fn(ctx)
-}
-func (noopTxRunner) WithinTxWithOptions(ctx context.Context, _ database.TxOptions, fn func(ctx context.Context) error) error {
-	return fn(ctx)
-}
-
 type notifyCall struct {
 	channel string
 	payload string
@@ -108,7 +97,7 @@ func newHarness(t *testing.T) *harness {
 		Participations: h.participations,
 		Authz:          authz.New(h.events),
 		Notifier:       h.notifier,
-		Tx:             noopTxRunner{},
+		Tx:             database.NoTx{},
 	})
 	return h
 }

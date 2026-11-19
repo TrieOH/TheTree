@@ -57,7 +57,7 @@ func stubRegisterTos(t *testing.T, projectID uuid.UUID, current *models.TermsOfS
 		ActionTokens:  actionMgr(mock.Mock[ports.ActionTokenRepo]()),
 		EmailSender:   sender,
 		Tos:           tosOps,
-		Tx:            nopTxRunner{},
+		Tx:            database.NoTx{},
 	})
 	return ops, tosRepo
 }

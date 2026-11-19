@@ -30,9 +30,6 @@ type Config struct {
 	AppName            string
 	CorsAllowedOrigins string
 	CorsAllowedHeaders string
-	// SkipLogPrefixes are extra request prefixes the request logger should
-	// ignore, on top of the always-skipped /health.
-	SkipLogPrefixes []string
 	// RateLimit configures the per-client rate limiter. The zero value
 	// keeps the historical defaults (400 rps, burst 20).
 	RateLimit RateLimit
@@ -195,7 +192,7 @@ func collectors() (*httpCollectors, error) {
 
 // stack is the standard middleware stack shared by every backend.
 func stack(cfg Config) []func(http.Handler) http.Handler {
-	skipLog := append([]string{"/health", "/docs/openapi.yml"}, cfg.SkipLogPrefixes...)
+	skipLog := []string{"/health", "/docs/openapi.yml"}
 
 	collectors, err := collectors()
 	if err != nil {

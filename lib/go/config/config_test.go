@@ -77,15 +77,15 @@ func TestIdentityXBlock(t *testing.T) {
 }
 
 func TestDBConfigShapesConnections(t *testing.T) {
-	got := DBConfig(Postgres{
+	got := DBConnectionConfig(Postgres{
 		Host: "h", Port: "5433", DB: "db", User: "u", Password: "p",
 		SSLMode: "require", ChannelBinding: "require",
-	}, "./db/migrations")
+	})
 
 	if got.SSLMode != "require" || got.ChannelBinding != "require" {
 		t.Errorf("connection policy drifted: %+v", got)
 	}
-	if got.Host != "h" || got.Port != "5433" || got.MigrationPath != "./db/migrations" {
+	if got.Host != "h" || got.Port != "5433" {
 		t.Errorf("fields not mapped: %+v", got)
 	}
 }

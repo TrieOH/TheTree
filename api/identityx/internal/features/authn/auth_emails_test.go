@@ -31,7 +31,7 @@ func emailOps(t *testing.T, actors ports.ActorRepo, actionTokens *tokens.ActionT
 		ActionTokens:  actionTokens,
 		EmailSender:   mock.Mock[ports.EmailSender](),
 		Tos:           newTestTosOps(t),
-		Tx:            nopTxRunner{},
+		Tx:            database.NoTx{},
 	})
 }
 
@@ -337,6 +337,6 @@ func newOpsWithSender(t *testing.T, actors ports.ActorRepo, sender ports.EmailSe
 		ActionTokens:  actionMgr(repo),
 		EmailSender:   sender,
 		Tos:           newTestTosOps(t),
-		Tx:            nopTxRunner{},
+		Tx:            database.NoTx{},
 	})
 }

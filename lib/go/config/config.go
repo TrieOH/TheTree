@@ -58,15 +58,8 @@ type CORS struct {
 	AllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 }
 
-// DBConfig assembles the service's direct database connection settings.
-func DBConfig(p Postgres, migrationPath string) database.Config {
-	cfg := DBConnectionConfig(p)
-	cfg.MigrationPath = migrationPath
-	return cfg
-}
-
-// DBConnectionConfig assembles database connection settings for a service
-// whose schema lifecycle is managed outside the API process.
+// DBConnectionConfig assembles the service's database connection settings;
+// the schema is migrated outside the API process.
 func DBConnectionConfig(p Postgres) database.Config {
 	return database.Config{
 		Host:           p.Host,
