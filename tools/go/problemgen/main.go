@@ -26,6 +26,9 @@
 // typed parameters, the docs the harness serves at /problems/{slug}, and
 // Mapper.
 //
+// It also writes the route list the Backend's Worker checks before it wakes
+// the container (cloudflare/src/routes.ts, committed; lib/edgeroutes).
+//
 // A problem without members may name its Go error and the error's text:
 // x-problem's error (ErrAddSelf) and message, the detail clients read. The
 // error is generated into the Backend's errs package (errs/errs.gen.go,
@@ -41,6 +44,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"lib/edgeroutes"
 )
 
 func main() {
@@ -89,19 +94,46 @@ func run(specPath, specOut, goOut string) error {
 	if err != nil {
 		return err
 	}
-	errsOut := filepath.Join(filepath.Dir(specPath), errsFile)
-	if errsSrc == nil {
-		err = os.Remove(errsOut) //nolint:gosec // as above
+	err = writeErrs(filepath.Join(filepath.Dir(specPath), errsFile), errsSrc)
+	if err != nil {
+		return err
+	}
+	return writeRoutes(specPath)
+}
+
+// writeErrs writes the generated errs file, or removes it when the Backend
+// declares no errors.
+func writeErrs(path string, src []byte) error {
+	if src == nil {
+		err := os.Remove(path) //nolint:gosec // codegen step; the path is the build's own
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err
 	}
-	err = os.MkdirAll(filepath.Dir(errsOut), 0o750) //nolint:gosec // as above
+	err := os.MkdirAll(filepath.Dir(path), 0o750) //nolint:gosec // as above
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(errsOut, errsSrc, 0o600) //nolint:gosec // as above
+	return os.WriteFile(path, src, 0o600) //nolint:gosec // as above
+}
+
+// writeRoutes renders the route list the Backend's Worker checks before it
+// wakes the container (lib/edgeroutes), when the Backend has a Worker.
+func writeRoutes(specPath string) error {
+	dir := filepath.Dir(specPath)
+	_, err := os.Stat(filepath.Join(dir, filepath.Dir(edgeroutes.FileName))) //nolint:gosec // codegen step; the path is the build's own
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	spec, err := os.ReadFile(specPath) //nolint:gosec // the Backend's own spec
+	if err != nil {
+		return err
+	}
+	return edgeroutes.Write(spec, dir)
 }
 
 // modulePath is the Go module the spec's Backend is, from its go.mod: the

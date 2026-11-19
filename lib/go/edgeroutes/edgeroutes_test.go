@@ -1,11 +1,16 @@
 package edgeroutes
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"lib/httpserver"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const spec = `
@@ -68,21 +73,48 @@ func TestVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Verify([]byte(spec), dir, false)
+	err = Verify([]byte(spec), dir)
 	if err == nil {
 		t.Fatal("want an error when the file is missing")
 	}
-	err = Verify([]byte(spec), dir, true)
+	err = Write([]byte(spec), dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Verify([]byte(spec), dir, false)
+	err = Verify([]byte(spec), dir)
 	if err != nil {
 		t.Fatalf("freshly written file should verify: %v", err)
 	}
 	changed := strings.Replace(spec, "/auth/refresh", "/sessions/refresh", 1)
-	err = Verify([]byte(changed), dir, false)
+	err = Verify([]byte(changed), dir)
 	if err == nil {
 		t.Fatal("want an error after the spec gains a segment")
+	}
+}
+
+// TestServedMatchesTheRouterFrame pins served to what httpserver.NewRouter
+// mounts on every backend outside the spec.
+func TestServedMatchesTheRouterFrame(t *testing.T) {
+	mux, _ := httpserver.NewRouter(httpserver.Config{
+		AppName:     "test",
+		OpenAPISpec: []byte("openapi: 3.1.0"),
+		Problems:    []httpserver.ProblemDoc{{Slug: "internal", Status: 500, Title: "Internal"}},
+	})
+	set := map[string]bool{}
+	err := chi.Walk(mux, func(_, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		first, _, _ := strings.Cut(strings.TrimPrefix(route, "/"), "/")
+		set[first] = true
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	frame := make([]string, 0, len(set))
+	for s := range set {
+		frame = append(frame, s)
+	}
+	slices.Sort(frame)
+	if !slices.Equal(frame, served) {
+		t.Fatalf("router frame serves %v, served lists %v", frame, served)
 	}
 }

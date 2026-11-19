@@ -92,8 +92,9 @@ migrate SVC ACTION="up":
 # in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
 # at generation time here and in the Dockerfiles (OAPI_RUNTIME_VERSION).
 # sqlc for all four backends at once (one root sqlc.yaml), then per backend
-# the oapi-codegen bindings (internal/openapi); then the orval TS clients
-# (see gen-ts).
+# the oapi-codegen bindings (internal/openapi) and the Worker's route list
+# (cloudflare/src/routes.ts, committed: each API's deploy job has no Go);
+# then the orval TS clients (see gen-ts).
 #
 # Generate code for the given backends (default: all).
 gen +SERVICES=services:
@@ -115,7 +116,6 @@ gen +SERVICES=services:
           --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
         go run tools/strictmount internal/openapi/mount.gen.go
         go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
-        UPDATE_ROUTES=1 go test -run TestEdgeRoutesMatchSpec . >/dev/null
       )
     done
     just gen-ts
@@ -134,19 +134,6 @@ gen-ts:
       (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
     done
     pnpm orval
-
-# Committed, unlike the rest: each API's deploy job checks out the repo
-# without Go, so the Worker's route list must already be in the tree. Each
-# service's unit tests fail when its list no longer matches api-spec.yml.
-#
-# Regenerate the API Workers' route lists (api/<svc>/cloudflare/src/routes.ts).
-gen-routes:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for svc in {{services}}; do
-      (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go \
-        && UPDATE_ROUTES=1 go test -run TestEdgeRoutesMatchSpec . >/dev/null)
-    done
 
 # Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and
 # the pinned wrangler, never from a local .env, so every machine gets the same

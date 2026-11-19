@@ -7,7 +7,6 @@ import {
 	containerEnv,
 	deliver,
 	enqueue,
-	isJobsPath,
 	jobsOutbound,
 	periodicJobs,
 	runJobs,
@@ -101,7 +100,6 @@ async function instance(env: Env) {
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
-		if (isJobsPath(pathname)) return new Response("Not Found", { status: 404 });
 		if (!isRoute(pathname, ROUTES)) return notFound();
 		if (!READS.has(request.method)) markWrite(env, ctx);
 		// Payssage caches only its spec and problem docs, which change per

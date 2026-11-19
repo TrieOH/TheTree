@@ -6,7 +6,6 @@ import {
 	backoff,
 	containerEnv,
 	deliver,
-	isJobsPath,
 	jobsOutbound,
 	runJobs,
 } from "@trieoh/container-budget/jobs";
@@ -51,7 +50,6 @@ async function instance(env: Env) {
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
-		if (isJobsPath(pathname)) return new Response("Not Found", { status: 404 });
 		if (!isRoute(pathname, ROUTES)) return notFound();
 		return gateway(request, env, ctx, async () => (await instance(env)).fetch(request), env.JOBS as Queue<PurgeJob>);
 	},
