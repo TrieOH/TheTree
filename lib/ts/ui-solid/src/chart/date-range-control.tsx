@@ -2,7 +2,7 @@ import { createEffect, createSignal } from "solid-js";
 import { Combobox } from "../combobox";
 import { Dialog } from "../dialog";
 import { Button } from "../button";
-import { Field, Input } from "../input";
+import { DatePicker } from "../date-picker";
 import { PRESETS, computeRangeWindow } from "./range";
 import type { CustomRange, RangeKey } from "./types";
 
@@ -116,28 +116,26 @@ export function DateRangeControl(props: {
         }
       >
         <div class="grid min-w-0 grid-cols-1 gap-4">
-          <Field label="De">
-            {(ids) => (
-              <Input
-                id={ids.id}
-                type="date"
-                value={from()}
-                max={to() || undefined}
-                onInput={(event) => setFrom(event.currentTarget.value)}
-              />
-            )}
-          </Field>
-          <Field label="Até">
-            {(ids) => (
-              <Input
-                id={ids.id}
-                type="date"
-                value={to()}
-                min={from() || undefined}
-                onInput={(event) => setTo(event.currentTarget.value)}
-              />
-            )}
-          </Field>
+          <div class="space-y-2">
+            <p class="text-sm font-medium">De</p>
+            <DatePicker
+              ariaLabel="Data inicial"
+              value={parseDate(from())}
+              max={parseDate(to()) ?? undefined}
+              onChange={(date) => setFrom(date ? inputDate(date) : "")}
+              class="w-full"
+            />
+          </div>
+          <div class="space-y-2">
+            <p class="text-sm font-medium">Até</p>
+            <DatePicker
+              ariaLabel="Data final"
+              value={parseDate(to())}
+              min={parseDate(from()) ?? undefined}
+              onChange={(date) => setTo(date ? inputDate(date) : "")}
+              class="w-full"
+            />
+          </div>
         </div>
       </Dialog>
     </>

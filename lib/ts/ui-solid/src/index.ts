@@ -160,8 +160,36 @@ export { DashboardBarList, type DashboardBarListProps, type DashboardBarListItem
 export { GenericChart, type GenericChartProps } from "./generic-chart";
 export { ChartCard, type ChartCardProps } from "./chart/chart-card";
 export type { ChartDatum, ChartType, CurveStyle, SeriesMeta, RangeKey, RangeOption, CustomRange, ChartFilterVisibility } from "./chart/types";
-export { Popover, type PopoverProps, type PopoverTriggerProps } from "./popover";
-export { DropdownMenu, type DropdownMenuProps, type DropdownMenuItem } from "./dropdown-menu";
+export {
+  Popover,
+  type PopoverProps,
+  type PopoverTriggerProps,
+} from "./popover";
+export {
+  DropdownMenu,
+  type DropdownMenuProps,
+  type DropdownMenuItem,
+} from "./dropdown-menu";
+export { DatePicker, type DatePickerProps } from "./date-picker";
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type DateRange,
+} from "./date-range-picker";
+export {
+  FileUpload,
+  type FileUploadProps,
+  type UploadFile,
+  type FileRejection,
+} from "./file-upload";
+export {
+  CommandPalette,
+  type CommandPaletteProps,
+  type CommandItem,
+} from "./command-palette";
+export { Timeline, type TimelineProps, type TimelineItem } from "./timeline";
+
 export { createHotkeys, type HotkeyItem, type CreateHotkeysOptions } from "./hotkeys";
 export { Kbd, type KbdProps } from "./kbd";
+
 export { parseHotkey, hotkeyKeys, type Hotkey, type HotkeyKey, type HotkeyModifier, type HotkeyString, type HotkeyInput } from "./hotkey-definition";
