@@ -7,7 +7,7 @@
 
 | Folder | What's in it |
 | --- | --- |
-| `api/` | The four Go APIs: `identityx`, `payssage`, `informd`, `univents` |
+| `api/` | The four Go APIs: `identityx`, `payssage`, `informd`, `univents`. `api/problems.yml` holds the errors they all share. |
 | `front/` | The web apps, one folder each |
 | `lib/go/` | Go code the APIs share: the HTTP server, database, jobs, telemetry |
 | `lib/ts/` | TypeScript packages the apps share: API clients, UI components |
@@ -26,18 +26,30 @@ Every API has the same layout. Using `api/identityx`:
 
 | Path | What it is |
 | --- | --- |
-| `api-spec.yml` | The OpenAPI spec. Routes, request and response types start here. |
-| `problems.yml` | The errors this API can return |
+| `api-spec.yml` | The OpenAPI spec. It pulls in each feature's `spec.yml`. |
+| `problems.yml` | The errors only this API returns |
 | `cmd/identityx/` | `main`, the entry point |
-| `internal/app/` | Startup: config, wiring, and the error mapper |
+| `internal/app/` | Startup: wiring, auth middleware, and the error mapper |
+| `internal/config/` | The env vars this API reads |
 | `internal/features/<name>/` | One folder per feature, such as `projects` or `api_keys` |
 | `db/migrations/`, `db/queries/` | SQL. sqlc turns the queries into Go. |
-| `models/` | Shared Go types |
-| `errs/` | Errors a client can cause |
+| `models/` | Go types the features share |
+| `ports/` | Interfaces a feature uses to reach another feature's data |
+| `errs/` | Named errors, each mapped to an HTTP problem |
 | `cloudflare/` | The Worker that runs this API in production |
 | `Dockerfile` | The image the Worker runs |
 
-A feature folder holds `handlers.go`, its database code in `repo.go`, and a `service/` folder with one file per operation. A file named after the feature, such as `projects.go`, connects them.
+A feature folder, using `internal/features/projects`:
+
+| File | What it is |
+| --- | --- |
+| `spec.yml` | The routes this feature serves, and the types and errors only it uses |
+| `handlers.go` | HTTP in and out |
+| `repo.go` | Database calls |
+| `service/` | The logic, one file per operation, like `create.go` |
+| `projects.go` | Connects the three, so the app can build the feature |
+
+To find the code for a route, find the route in a feature's `spec.yml`. The handler and the service file are right next to it.
 
 ## Inside `front/`
 
@@ -49,6 +61,7 @@ A feature folder holds `handlers.go`, its database code in `repo.go`, and a `ser
 | `portal` | This portal | Solid |
 | `trieoh` | The TrieOH company site | Solid |
 | `trieoh-style-guide` | The design system, at `styles.trieoh.com` | Solid |
+| `trieoh-components` | A catalog of the shared UI components | Solid |
 
 The pnpm package for `front/univents-solid` is named `univents`, so `pnpm univents dev` runs the Solid app.
 
