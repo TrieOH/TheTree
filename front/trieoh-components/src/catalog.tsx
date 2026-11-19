@@ -1,3 +1,4 @@
+import { interactionEntries } from "./examples/interaction-entries";
 import { clientOnly } from "@solidjs/web";
 import {
   PaginationExample,
@@ -260,6 +261,7 @@ export function createCatalog(options: {
     },
   ];
   const entries: Entry[] = [
+    ...interactionEntries.map(entry => ({ ...entry, defaults: { ...entry.defaults }, controls: [...entry.controls] })),
     {
       name: "Loading",
       group: "Feedback",
@@ -2089,6 +2091,11 @@ export function createCatalog(options: {
     },
   ];
   const shapeDefaults: Record<string, Shape> = {
+    DropdownMenu: "round",
+    Popover: "round",
+    DatePicker: "soft",
+    DateRangePicker: "soft",
+    FileUpload: "round",
     DashboardStatCard: "round",
     ChartCard: "round",
     Checkbox: "soft",

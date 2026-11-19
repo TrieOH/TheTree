@@ -1,8 +1,11 @@
+import { interactionUsage } from "./interaction-usage";
 import { dashboardUsage } from "./dashboard-usage";
 import { collectionUsage } from "./collection-usage";
 import type { Values } from "../catalog";
 
 export function usage(name: string, v: Values): string {
+  const interaction = interactionUsage(name, v);
+  if (interaction !== undefined) return interaction;
   const dashboard = dashboardUsage(name,v);
   if (dashboard !== undefined) return dashboard;
   const collection = collectionUsage(name, v);
