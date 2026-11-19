@@ -11,7 +11,7 @@ TheTree is TrieOH's monorepo. It holds four products, the code they share, and t
 
 Each product is a Go API plus a web app. Every app signs in through IdentityX, and Univents takes payments through Payssage. The APIs run on Cloudflare Containers and the apps on Cloudflare Workers.
 
-New here? Read [`docs/onboarding/`](docs/onboarding/), starting with [Start here](docs/onboarding/start-here.mdx).
+New here? Start with the [onboarding docs](https://portal.trieoh.com/docs/onboarding/start-here) on the dev portal.
 
 ## What's where
 
@@ -25,7 +25,7 @@ docs/         ADRs, onboarding docs, plans
 e2e/          End-to-end tests
 ```
 
-A TypeScript package's name says which framework it may use: `-react`, `-solid`, or no suffix for neither. `pnpm check:boundaries` fails when one imports across that line. The [repo tour](docs/onboarding/repo-tour.md) has the rest.
+A TypeScript package's name says which framework it may use: `-react`, `-solid`, or no suffix for neither. `pnpm check:boundaries` fails when one imports across that line. The [repo tour](https://portal.trieoh.com/docs/onboarding/repo-tour) has the rest.
 
 ## Running it
 
@@ -43,7 +43,7 @@ just up         # databases, the four APIs, file storage, Mailpit
 pnpm univents dev
 ```
 
-The env files need a few values filled in first. [Local setup](docs/onboarding/local-setup.mdx) lists them, along with the ports.
+The env files need a few values filled in first. [Local setup](https://portal.trieoh.com/docs/onboarding/local-setup) lists them, along with the ports.
 
 ## Everyday commands
 
@@ -93,5 +93,5 @@ Tags are for people only. Agents never push them.
 ## More docs
 
 - [`CONTEXT.md`](CONTEXT.md): what the domain words mean
-- [`docs/adr/`](docs/adr/): why things are the way they are
-- [`docs/onboarding/`](docs/onboarding/): the guides, also shown in the dev portal
+- [Decisions](https://portal.trieoh.com/docs/decisions): why things are the way they are
+- [Dev portal](https://portal.trieoh.com): docs, issues, deploys and metrics
