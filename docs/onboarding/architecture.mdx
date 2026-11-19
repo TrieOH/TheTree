@@ -19,8 +19,14 @@ A Worker is a small program Cloudflare runs close to the user.
 
 1. The browser loads an app from its app Worker. The app's server code calls the APIs, so the browser never calls them directly.
 2. Each API has an API Worker in front of it. Its code is in `api/<api>/cloudflare`.
-3. The API Worker passes the request to a container, which runs the same Go image you run locally.
+3. The API Worker answers what it can at the edge (see Cached reads below) and passes the rest to a container, which runs the same Go image you run locally.
 4. The container reads and writes Postgres on Neon.
+
+## Cached reads
+
+Some public reads, like a published event, are the same for everyone. A route marked `x-cache: shared` in the spec is kept in Cloudflare's cache, so the next request is answered without waking the container. When a write changes that data, the API purges the matching cache entries.
+
+Everything else is private and never cached. ADR-0020 has the details.
 
 ## Where it runs
 
@@ -35,7 +41,9 @@ A Worker is a small program Cloudflare runs close to the user.
 
 A container stops after two minutes without requests. The next request wakes it again, which is called a cold start and makes that request slower.
 
-The four containers share a monthly limit of awake time. When it runs out, no container starts until the next billing cycle. The portal's Metrics page shows how much is left. This is also why the portal never calls the APIs: each call would wake a container.
+The four containers share a monthly budget of awake time, sized to what Cloudflare's paid plan includes. Cloudflare has no spending cap, so `lib/ts/container-budget` enforces one: when the budget runs out, no container starts until the next billing cycle. The portal's Metrics page shows how much is left.
+
+This is also why nothing calls the APIs just to check on them, not the portal and not an uptime ping: each call would wake a container.
 
 ## Background jobs
 
@@ -55,4 +63,12 @@ The APIs send traces, metrics and logs to Grafana Cloud.
 
 ## Why it's built this way
 
-Each choice has a decision record in `docs/adr/`, shown in the portal under Docs, then Decisions. ADR-0011 explains why the APIs run on Cloudflare Containers. Start there.
+Each choice has a decision record under Docs, then Decisions. Good ones to start with:
+
+| ADR | What it decides |
+| --- | --- |
+| ADR-0011 | The APIs run on Cloudflare Containers, and jobs travel over HTTP |
+| ADR-0015 | How a feature is built and wired |
+| ADR-0019 | Errors are RFC 9457 problems, declared in the spec |
+| ADR-0020 | Public reads are cached at the edge until a write purges them |
+| ADR-0021 | A feature's spec lives in its folder |
