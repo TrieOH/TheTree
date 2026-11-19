@@ -1,4 +1,4 @@
-import { Container } from "@cloudflare/containers";
+import { Container, type StopParams } from "@cloudflare/containers";
 
 // Keeps the four API containers inside the Workers Paid plan's included
 // usage. Cloudflare has no spending cap, so the cut lives here: every
@@ -155,8 +155,36 @@ export abstract class BudgetedContainer<Env extends BudgetEnv> extends Container
 		await this.schedule(new Date(Date.now() + WATCHDOG_MS), "watchdog");
 	}
 
-	override async onStop(): Promise<void> {
+	// Every stop is logged with its exit code; a non-zero exit is an error, so
+	// a crash says how the process ended, not only that the port never opened.
+	override async onStop(params: StopParams): Promise<void> {
+		const booting = this.boot !== undefined && this.boot.readyAt === undefined;
+		const line = JSON.stringify({
+			message: `${this.app} container stopped: exit ${params.exitCode} (${params.reason})${booting ? " during boot" : ""}`,
+			event: "container_stopped",
+			app: this.app,
+			exit_code: params.exitCode,
+			reason: params.reason,
+			during_boot: booting,
+		});
+		if (params.exitCode !== 0) console.error(line);
+		else console.log(line);
 		await this.flush(true);
+	}
+
+	// The library's default logs "Container error:" and rethrows; this keeps
+	// the rethrow but logs which app failed and whether it was still booting.
+	override onError(error: unknown): unknown {
+		const booting = this.boot !== undefined && this.boot.readyAt === undefined;
+		console.error(
+			JSON.stringify({
+				message: `${this.app} container error${booting ? " during boot" : ""}: ${error instanceof Error ? error.message : String(error)}`,
+				event: "container_error",
+				app: this.app,
+				during_boot: booting,
+			}),
+		);
+		throw error;
 	}
 
 	private async overBudget(): Promise<boolean> {
