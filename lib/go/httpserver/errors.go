@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	"lib/authz"
 	"lib/fielderr"
+	"lib/openapispec"
 	"lib/telemetry"
 
 	fp "github.com/MintzyG/problematic"
@@ -55,14 +55,14 @@ func UseProblems(m fp.ErrorMapper, baseURL string) {
 // strict makes an unlisted problem panic (tests and DEBUG_MODE always are);
 // otherwise it is a warning and a span attribute, and the response stands.
 func UseOperationProblems(spec []byte, strict bool) error {
-	ops, err := authz.SpecOperations(spec)
+	ops, err := openapispec.Operations(spec)
 	if err != nil {
 		return err
 	}
 	listed := make(map[string][]string, len(ops))
 	for _, op := range ops {
 		if op.Problems != nil {
-			listed[authz.GeneratedOperationID(op.OperationID)] = op.Problems
+			listed[openapispec.GeneratedID(op.OperationID)] = op.Problems
 		}
 	}
 	problemsMu.Lock()

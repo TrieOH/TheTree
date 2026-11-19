@@ -177,20 +177,6 @@ func mustResolver(t *testing.T, spec string, primitives Primitives, opts Options
 	return r
 }
 
-func TestGeneratedOperationID(t *testing.T) {
-	cases := []struct{ spec, want string }{
-		{"listActors", "ListActors"},
-		{"getSetup", "GetSetup"},
-		{"", ""},
-		{"x", "X"},
-	}
-	for _, c := range cases {
-		if got := GeneratedOperationID(c.spec); got != c.want {
-			t.Fatalf("GeneratedOperationID(%q) = %q, want %q", c.spec, got, c.want)
-		}
-	}
-}
-
 func TestResolverDefaultSecurityAndOverrides(t *testing.T) {
 	r := mustResolver(t, specWithDefault, testPrimitives, Options{})
 
