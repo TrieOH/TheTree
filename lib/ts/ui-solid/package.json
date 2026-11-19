@@ -26,6 +26,8 @@
   "devDependencies": {
     "@iconify-json/lucide": "catalog:",
     "@solidjs/web": "catalog:solid",
+    "@types/d3-scale": "catalog:",
+    "@types/d3-shape": "catalog:",
     "@types/node": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
@@ -36,6 +38,9 @@
     "unplugin-icons": "catalog:"
   },
   "dependencies": {
+    "@tanstack/charts": "catalog:",
+    "d3-scale": "catalog:",
+    "d3-shape": "catalog:",
     "prettier": "3.8.3"
   }
 }

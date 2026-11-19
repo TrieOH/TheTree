@@ -1779,6 +1779,15 @@ importers:
 
   lib/ts/ui-solid:
     dependencies:
+      d3-shape:
+        specifier: 'catalog:'
+        version: 3.2.0
+      d3-scale:
+        specifier: 'catalog:'
+        version: 4.0.2
+      '@tanstack/charts':
+        specifier: 'catalog:'
+        version: 0.14.0(preact@10.29.8)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@2.0.0-rc.17)(vue@3.5.44(typescript@7.0.2))
       prettier:
         specifier: 3.8.3
         version: 3.8.3
@@ -1798,6 +1807,12 @@ importers:
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
+      '@types/d3-scale':
+        specifier: 'catalog:'
+        version: 4.0.9
+      '@types/d3-shape':
+        specifier: 'catalog:'
+        version: 3.2.0
       oxlint:
         specifier: 'catalog:'
         version: 1.79.0

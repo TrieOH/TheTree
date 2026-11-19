@@ -151,3 +151,12 @@ export { CollectionToolbar, type CollectionToolbarProps } from "./collection-too
 export { FilterBar, type FilterBarProps, type ActiveFilter } from "./filter-bar";
 export { BulkActions, type BulkActionsProps, type BulkAction } from "./bulk-actions";
 export { DataTable, type DataTableProps, type DataTableColumn, type DataTableSort } from "./data-table";
+
+export { MetricDelta, type MetricDeltaProps } from "./metric-delta";
+export { Sparkline, type SparklineProps } from "./sparkline";
+export { DashboardStatCard, type DashboardStatCardProps } from "./dashboard-stat-card";
+export { DashboardPanel, type DashboardPanelProps } from "./dashboard-panel";
+export { DashboardBarList, type DashboardBarListProps, type DashboardBarListItem } from "./dashboard-bar-list";
+export { GenericChart, type GenericChartProps } from "./generic-chart";
+export { ChartCard, type ChartCardProps } from "./chart/chart-card";
+export type { ChartDatum, ChartType, CurveStyle, SeriesMeta, RangeKey, RangeOption, CustomRange, ChartFilterVisibility } from "./chart/types";
