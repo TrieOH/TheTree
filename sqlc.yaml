@@ -1,0 +1,44 @@
+version: "2"
+
+# One config for the four backends. `just gen`, CI and the Dockerfiles run
+# `sqlc generate` from the repo root, so every service is generated at once.
+
+# Only the types where sqlc's default isn't what the repos want. Everything
+# else (text, varchar, bool, int8, ...) already maps to the plain Go type,
+# and a nullable column to a pointer, through emit_pointers_for_null_types.
+overrides:
+  go:
+    overrides:
+      - { db_type: "uuid", nullable: false, go_type: { import: "uuid", type: "UUID" } }
+      - { db_type: "uuid", nullable: true, go_type: { import: "uuid", type: "UUID", pointer: true } }
+      - { db_type: "pg_catalog.int4", nullable: false, go_type: { type: "int" } }
+      - { db_type: "pg_catalog.int4", nullable: true, go_type: { type: "int", pointer: true } }
+      - { db_type: "timestamptz", nullable: false, go_type: { import: "time", type: "Time" } }
+      - { db_type: "timestamptz", nullable: true, go_type: { import: "time", type: "Time", pointer: true } }
+      - { db_type: "jsonb", nullable: false, go_type: { import: "encoding/json", type: "RawMessage" } }
+      - { db_type: "jsonb", nullable: true, go_type: { import: "encoding/json", type: "RawMessage", pointer: true } }
+
+sql:
+  - engine: "postgresql"
+    schema: "api/identityx/db/migrations"
+    queries: "api/identityx/db/queries/*.sql"
+    gen:
+      # The other services reuse these options (<<: *go) and set only out.
+      go: &go
+        package: "sqlc"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_pointers_for_null_types: true
+        out: "api/identityx/internal/sqlc"
+  - engine: "postgresql"
+    schema: "api/informd/db/migrations"
+    queries: "api/informd/db/queries/*.sql"
+    gen: { go: { <<: *go, out: "api/informd/internal/sqlc" } }
+  - engine: "postgresql"
+    schema: "api/payssage/db/migrations"
+    queries: "api/payssage/db/queries/*.sql"
+    gen: { go: { <<: *go, out: "api/payssage/internal/sqlc" } }
+  - engine: "postgresql"
+    schema: "api/univents/db/migrations"
+    queries: "api/univents/db/queries/*.sql"
+    gen: { go: { <<: *go, out: "api/univents/internal/sqlc" } }

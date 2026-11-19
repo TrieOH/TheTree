@@ -26,11 +26,18 @@ COPY lib/go/ ./lib/go/
 COPY sdk/go/IdentityX/ ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/ ./sdk/go/Payssage/
 COPY tools/go/ ./tools/go/
+# sqlc.yaml covers all four backends, so it needs every schema and query;
+# the other services' output is deleted right after generating.
+COPY sqlc.yaml ./
+COPY api/identityx/db/ ./api/identityx/db/
+COPY api/payssage/db/ ./api/payssage/db/
+COPY api/univents/db/ ./api/univents/db/
 COPY api/informd/ ./api/informd/
 COPY api/problems.yml ./api/problems.yml
 WORKDIR /app/api/informd
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
-    sqlc generate && \
+    sqlc generate -f /app/sqlc.yaml && \
+    rm -rf /app/api/identityx/db /app/api/identityx/internal /app/api/payssage/db /app/api/payssage/internal /app/api/univents/db /app/api/univents/internal && \
     go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go && \
     oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml && \
     oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml && \

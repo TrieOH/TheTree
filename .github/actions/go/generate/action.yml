@@ -15,7 +15,8 @@ runs:
       working-directory: ${{ inputs.dir }}
       run: |
         set -euo pipefail
-        sqlc generate
+        # One root sqlc.yaml for all four backends; it generates them all.
+        sqlc generate -f "$GITHUB_WORKSPACE/sqlc.yaml"
         go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
         oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml
         oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
