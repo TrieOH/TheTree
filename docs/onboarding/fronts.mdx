@@ -1,0 +1,49 @@
+# Fronts
+
+- **Order:** 8
+- **Summary:** How the apps are built, and how they talk to the APIs.
+
+Every app in `front/` runs on a Cloudflare Worker. The IdentityX, Payssage and Informd apps are React with TanStack Start. Univents and the portal are Solid with TanStack Router. The company site, the style guide and the component catalog are smaller Solid sites.
+
+## How an app calls an API
+
+You don't write fetch calls by hand. `just gen` turns each API's spec into a TypeScript client, in `lib/ts/<api>/client/`, imported as `@trieoh/<api>-api`. It has one plain function per route, like `listProjects()`, typed from the spec.
+
+Every client sends its requests through `@trieoh/api-client`, which hands back the response body and throws an `ApiError` on failure. Requests take one of two paths:
+
+| Request | Path |
+| --- | --- |
+| Signed in | Browser → the app's own Worker → the API. The Worker keeps the session in a cookie and adds the token, so the browser never sees it. This is the BFF, short for backend for frontend. |
+| Public, called with `{ public: true }` | Browser → the API directly. These are often cached at the edge. |
+
+The BFF lives in `lib/ts/front-core`, so every app gets it for free.
+
+## Inside an app
+
+Apps are split by feature, the same way the APIs are. Using `front/identityx/src/`:
+
+| Folder | What it is |
+| --- | --- |
+| `routes/` | One file per page. TanStack builds the route tree from these. |
+| `features/<name>/` | A feature's `api/` (queries and mutations), `model/` (its types) and `ui/` (its components) |
+| `widgets/` | Larger pieces built from several features |
+| `shared/` | Small things every feature uses |
+
+The data hooks are written per app: React Query in the React apps, plain query options in the Solid one. The generated clients stay framework-free, so any app can import them.
+
+## Shared packages
+
+A package's name says which framework it may use: `-react`, `-solid`, or no suffix for neither. `pnpm check:boundaries` fails when one breaks the rule.
+
+| Package | What it is |
+| --- | --- |
+| `@trieoh/<api>-api` | The generated client for that API |
+| `@trieoh/api-client` | The fetch code every client goes through |
+| `@trieoh/front-core` | Auth, the BFF and tracing, with `-react` and `-solid` bindings |
+| `@trieoh/ui-react`, `@trieoh/ui-solid` | UI components. Browse them in `front/trieoh-components`. |
+
+## Env vars
+
+Each app reads its settings from `.env` locally and from its `wrangler.jsonc` in production. A Worker only sees the variables its `wrangler.jsonc` lists, even in dev, so a new one goes in both places.
+
+`VITE_*` variables are built into the browser bundle. Never put a secret in one.

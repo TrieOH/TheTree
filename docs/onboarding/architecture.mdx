@@ -17,7 +17,7 @@ flowchart LR
 
 A Worker is a small program Cloudflare runs close to the user.
 
-1. The browser loads an app from its app Worker. The app's server code calls the APIs, so the browser never calls them directly.
+1. The browser loads an app from its app Worker. Signed-in requests go through that Worker, which holds the session and adds the token. Public reads go straight to the API.
 2. Each API has an API Worker in front of it. Its code is in `api/<api>/cloudflare`.
 3. The API Worker answers what it can at the edge (see Cached reads below) and passes the rest to a container, which runs the same Go image you run locally.
 4. The container reads and writes Postgres on Neon.
