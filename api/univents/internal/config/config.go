@@ -18,9 +18,6 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
 
-	// Profiling
-	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
-
 	// Feature fields
 	AppURL string `env:"APP_URL,required"`
 

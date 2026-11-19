@@ -19,8 +19,7 @@ type Config struct {
 	Postgres libconfig.Postgres `envPrefix:"IDX_"`
 
 	// Server extras
-	AppURL      string `env:"APP_URL,required"`
-	ProfilePort string `env:"PROFILE_PORT"     envDefault:"6060"`
+	AppURL string `env:"APP_URL,required"`
 
 	// Email over SMTP (mailpit locally, any SMTP relay when deployed).
 	EmailFrom    string `env:"EMAIL_FROM,required"`

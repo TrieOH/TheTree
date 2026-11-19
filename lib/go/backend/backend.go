@@ -7,7 +7,8 @@
 //	errx.Exit(backend.Run(backend.App{
 //		Name:    "payssage",
 //		Spec:    spec.OpenAPISpec,
-//		Server:  cfg.Server(),
+//		Server:  cfg.Server,
+//		CORS:    cfg.CORS,
 //		Modules: []backend.Module{postgres.Module(...), identityx.Module(...), jobs.Module(...)},
 //		Build:   build(cfg),
 //	}), "payssage exited with error")
@@ -23,6 +24,7 @@ import (
 	"net/http"
 	"slices"
 
+	libconfig "lib/config"
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
@@ -43,9 +45,11 @@ import (
 
 // App is what a Backend declares about itself.
 type App struct {
-	Name    string
-	Spec    []byte
-	Server  Server
+	Name   string
+	Spec   []byte
+	Server libconfig.Server
+	CORS   libconfig.CORS
+	// Modules open in the listed order and close in reverse.
 	Modules []Module
 	Build   BuildFunc
 	// Errors answers every error with its problem (ADR-0019): the
@@ -55,22 +59,6 @@ type App struct {
 	// Problems documents the Backend's problem types (its generated
 	// problems.Docs), served at GET /problems/{slug}.
 	Problems []httpserver.ProblemDoc
-}
-
-// Server is the process-level HTTP settings.
-type Server struct {
-	Port string
-	// APIURL is the Backend's public base URL (API_URL); problem types
-	// resolve against it.
-	APIURL      string
-	ProfilePort string
-	// CorsAllowedOrigins and CorsAllowedHeaders are comma-separated.
-	CorsAllowedOrigins string
-	CorsAllowedHeaders string
-	RateLimit          httpserver.RateLimit
-	// DebugMode (DEBUG_MODE) makes a problem its operation's x-problems
-	// doesn't list panic instead of warn.
-	DebugMode bool
 }
 
 // BuildFunc wires the Backend's own code: repos, services, handlers,
@@ -167,29 +155,37 @@ func start(ctx context.Context, app App, ops []openapispec.Operation) (http.Hand
 		return nil, nil, err
 	}
 
-	var buildErr error
-	handler := httpserver.NewRouter(httpserver.Config{
+	mux, handler := httpserver.NewRouter(httpserver.Config{
 		AppName:            app.Name,
-		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.CORS.AllowedOrigins,
+		CorsAllowedHeaders: app.CORS.AllowedHeaders,
 		OpenAPISpec:        app.Spec,
 		Problems:           app.Problems,
-		RateLimit:          app.Server.RateLimit,
-		Routes: func(r *chi.Mux) {
-			buildCtx, span := telemetry.StartSpan(ctx, "boot.build")
-			defer span.End()
-			buildErr = app.Build(buildCtx, d, r)
-			if buildErr == nil {
-				buildErr = mountJobs(d, r)
-			}
-			endBootStep(span, buildErr)
+		RateLimit: httpserver.RateLimit{
+			Disabled: app.Server.DisableRateLimit,
+			RPS:      app.Server.RateLimitRPS,
+			Burst:    app.Server.RateLimitBurst,
 		},
 	})
-	if buildErr != nil {
+	err = build(ctx, app, d, mux)
+	if err != nil {
 		_ = closeAll(ctx)
-		return nil, nil, fmt.Errorf("build: %w", buildErr)
+		return nil, nil, fmt.Errorf("build: %w", err)
 	}
 	return handler, closeAll, nil
+}
+
+// build runs the Backend's Build under its own boot span, then mounts the
+// jobs endpoint.
+func build(ctx context.Context, app App, d *Deps, r chi.Router) error {
+	ctx, span := telemetry.StartSpan(ctx, "boot.build")
+	defer span.End()
+	err := app.Build(ctx, d, r)
+	if err == nil {
+		err = mountJobs(d, r)
+	}
+	endBootStep(span, err)
+	return err
 }
 
 // openModules opens each module in the listed order. If one fails, the ones

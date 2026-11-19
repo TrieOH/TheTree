@@ -15,7 +15,7 @@ import (
 )
 
 // Server is the process-level block, unprefixed in every backend: PORT,
-// APP_NAME, API_URL, DEBUG_MODE, and the rate limit knobs.
+// APP_NAME, API_URL, DEBUG_MODE, PROFILE_PORT, and the rate limit knobs.
 type Server struct {
 	Port    string `env:"PORT"              envDefault:"8080"`
 	AppName string `env:"APP_NAME,required"`
@@ -26,6 +26,8 @@ type Server struct {
 	DisableRateLimit bool    `env:"DISABLE_RATE_LIMIT"`
 	RateLimitRPS     float64 `env:"RATE_LIMIT_RPS"     envDefault:"400"`
 	RateLimitBurst   int     `env:"RATE_LIMIT_BURST"   envDefault:"20"`
+	// ProfilePort serves pprof when set; empty leaves it off.
+	ProfilePort string `env:"PROFILE_PORT"`
 }
 
 // Postgres is the backend's own database, configured by POSTGRES_* in the
@@ -52,7 +54,7 @@ type IdentityX struct {
 	ProjectID uuid.UUID `env:"IDENTITY_X_PROJECT_ID,required"`
 }
 
-// CORS is the CORS pair, unprefixed.
+// CORS is the CORS pair, unprefixed. Both are comma-separated.
 type CORS struct {
 	AllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
 	AllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`

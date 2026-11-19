@@ -41,9 +41,6 @@ type Config struct {
 	// Problems documents the Backend's problem types, served at
 	// GET /problems/{slug} (ADR-0019).
 	Problems []ProblemDoc
-	// Routes receives the chi router and registers the backend's feature
-	// routes, auth middlewares, and any extra mounts (websockets).
-	Routes func(r *chi.Mux)
 }
 
 // RateLimit is the per-client (real IP) token bucket. It limits per process:
@@ -113,9 +110,10 @@ func spanRouteNameMiddleware(next http.Handler) http.Handler {
 }
 
 // NewRouter builds the standard router skeleton: chi with the standard
-// middleware stack, the backend's routes, /health, wrapped in OpenTelemetry
-// instrumentation that skips /health and OPTIONS.
-func NewRouter(cfg Config) http.Handler {
+// middleware stack and /health, /problems and /docs. The backend mounts its
+// own routes on the returned mux; the returned handler serves the mux
+// wrapped in OpenTelemetry instrumentation that skips /health and OPTIONS.
+func NewRouter(cfg Config) (*chi.Mux, http.Handler) {
 	r := chi.NewRouter()
 
 	r.Use(spanRouteNameMiddleware)
@@ -123,9 +121,6 @@ func NewRouter(cfg Config) http.Handler {
 		r.Use(mw)
 	}
 
-	if cfg.Routes != nil {
-		cfg.Routes(r)
-	}
 	r.Get("/health", health(cfg.AppName))
 	if len(cfg.Problems) > 0 {
 		r.Get("/problems/{slug}", serveProblemDocs(cfg.Problems))
@@ -161,7 +156,7 @@ func NewRouter(cfg Config) http.Handler {
 	// histogram: their "duration" is how long the client stayed connected.
 	unmeasured := otelhttp.NewHandler(r, "http.server",
 		append(slices.Clip(opts), otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	return r, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if realtime(req) {
 			unmeasured.ServeHTTP(w, req)
 			return
