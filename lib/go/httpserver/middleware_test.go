@@ -30,7 +30,7 @@ func TestRealIPUsesCloudflareClientIP(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var got string
-			h := realIP(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { got = r.RemoteAddr }))
+			h := realIP("")(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { got = r.RemoteAddr }))
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.RemoteAddr = tc.peer
 			if tc.cf != "" {
@@ -42,6 +42,38 @@ func TestRealIPUsesCloudflareClientIP(t *testing.T) {
 			h.ServeHTTP(httptest.NewRecorder(), req)
 			if got != tc.want {
 				t.Fatalf("RemoteAddr = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRealIPTrustsXClientIPOnlyWithTheSecret(t *testing.T) {
+	const secret = "s3cret-s3cret-s3cret-s3cret-s3cret"
+	cases := []struct {
+		name, sent, want string
+	}{
+		{"right secret: the front's user", secret, "198.51.100.9"},
+		{"wrong secret: Cloudflare's client", "guess", "203.0.113.1"},
+		{"no secret: Cloudflare's client", "", "203.0.113.1"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got, leaked string
+			h := realIP(secret)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				got, leaked = r.RemoteAddr, r.Header.Get(clientIPSecretHeader)
+			}))
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+			req.Header.Set("CF-Connecting-IP", "203.0.113.1")
+			req.Header.Set(clientIPHeader, "198.51.100.9")
+			if tc.sent != "" {
+				req.Header.Set(clientIPSecretHeader, tc.sent)
+			}
+			h.ServeHTTP(httptest.NewRecorder(), req)
+			if got != tc.want {
+				t.Fatalf("RemoteAddr = %q, want %q", got, tc.want)
+			}
+			if leaked != "" {
+				t.Fatal("the secret header reached the handler")
 			}
 		})
 	}

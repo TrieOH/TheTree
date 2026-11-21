@@ -33,6 +33,11 @@ type Server struct {
 	RateLimitBurst   int     `env:"RATE_LIMIT_BURST"   envDefault:"20"`
 	// ProfilePort serves pprof when set; empty leaves it off.
 	ProfilePort string `env:"PROFILE_PORT"`
+	// ClientIPSecret is shared with our front Workers. A request carrying it
+	// in X-Client-IP-Secret is trusted to name its user's IP in X-Client-IP,
+	// so a front's server-side calls are rate limited per user instead of
+	// all sharing the Worker's egress address. Empty: never trusted.
+	ClientIPSecret string `env:"CLIENT_IP_SECRET"`
 }
 
 // Postgres is the backend's own database, configured by POSTGRES_* in the

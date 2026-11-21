@@ -5,6 +5,9 @@ export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
     AUTH_SESSION_PASSWORD: z.string().min(32),
+    // Shared with the APIs so they rate limit per user (front-core BFF).
+    // Optional: unset, the BFF sends no client IP.
+    CLIENT_IP_SECRET: z.string().min(32).optional(),
   },
 
   /**
@@ -28,6 +31,7 @@ export const env = createEnv({
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
     AUTH_SESSION_PASSWORD: process.env.AUTH_SESSION_PASSWORD,
+    CLIENT_IP_SECRET: process.env.CLIENT_IP_SECRET,
   },
 
   /**

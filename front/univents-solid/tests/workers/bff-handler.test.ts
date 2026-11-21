@@ -241,3 +241,45 @@ describe("BFF handler", () => {
     expect(second.headers.get("Set-Cookie")).toContain("univents-solid-auth=");
   });
 });
+
+describe("BFF client IP", () => {
+  const secret = "c".repeat(40);
+  const sent: Headers[] = [];
+  const stub = () => {
+    sent.length = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+        sent.push(new Headers(init?.headers));
+        return Response.json(tokens);
+      }),
+    );
+  };
+  const login = (withSecret: boolean) =>
+    createBffHandler({
+      identityX: { baseURL: "https://identityx.test", projectId: "project-1" },
+      apiBaseURL: "https://api.test",
+      session: { name: "univents-solid-auth", password: PASSWORD, secure: true },
+      ...(withSecret ? { clientIPSecret: secret } : {}),
+    })(
+      new Request(`https://app.test${BFF_PATH}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "CF-Connecting-IP": "198.51.100.9" },
+        body: JSON.stringify({ op: "login", input: { email: "someone@example.test", password: "secret" } }),
+      }),
+    );
+
+  it("names the user's IP to the API when it has the shared secret", async () => {
+    stub();
+    await login(true);
+    expect(sent[0]?.get("X-Client-IP")).toBe("198.51.100.9");
+    expect(sent[0]?.get("X-Client-IP-Secret")).toBe(secret);
+  });
+
+  it("sends neither header without the secret", async () => {
+    stub();
+    await login(false);
+    expect(sent[0]?.has("X-Client-IP")).toBe(false);
+    expect(sent[0]?.has("X-Client-IP-Secret")).toBe(false);
+  });
+});

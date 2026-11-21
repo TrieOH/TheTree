@@ -25,6 +25,8 @@ export interface TanStackIdentityXBffConfig {
   };
   runtime?: TanStackIdentityXBffRuntime;
   apiBaseURL: string;
+  /** See `IdentityXBffConfig.clientIPSecret`. */
+  clientIPSecret?: string;
   observability?: {
     log?: (event: IdentityXTransportLogEvent) => void;
     logSuccesses?: boolean;
@@ -56,6 +58,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
   return createIdentityXBff({
     identityX: config.identityX,
     apiBaseURL: config.apiBaseURL,
+    clientIPSecret: config.clientIPSecret,
     observability: config.observability,
     request: () => config.runtime?.getRequest?.() ?? getRequest(),
     session: async (): Promise<BffSession> => {

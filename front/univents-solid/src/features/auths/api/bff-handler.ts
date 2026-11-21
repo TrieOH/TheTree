@@ -1,4 +1,5 @@
 import { BFF_PATH } from "@trieoh/front-core/auth/bff/constants";
+import { clientIPSecret } from "@trieoh/front-core/auth/bff/core";
 import { createBffHandler } from "@trieoh/front-core/auth/bff/handler";
 import { emitServerSpan } from "@trieoh/front-core/tracing/server";
 
@@ -20,6 +21,7 @@ export function handleBffRequest(
       projectId: env.VITE_TRIEOH_AUTH_PROJECT_ID,
     },
     apiBaseURL: env.VITE_API_URL,
+    clientIPSecret: clientIPSecret(env),
     session: {
       name: "univents-solid-auth",
       password: env.AUTH_SESSION_PASSWORD,

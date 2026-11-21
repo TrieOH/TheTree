@@ -161,6 +161,7 @@ func start(ctx context.Context, app App, ops []openapispec.Operation) (http.Hand
 		CorsAllowedHeaders: app.CORS.AllowedHeaders,
 		OpenAPISpec:        app.Spec,
 		Problems:           app.Problems,
+		ClientIPSecret:     app.Server.ClientIPSecret,
 		RateLimit: httpserver.RateLimit{
 			Disabled: app.Server.DisableRateLimit,
 			RPS:      app.Server.RateLimitRPS,

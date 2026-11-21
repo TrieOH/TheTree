@@ -3,6 +3,7 @@ package httpserver
 import (
 	"bufio"
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -34,22 +35,44 @@ func RequestIDFromCtx(ctx context.Context) string {
 	return v
 }
 
-// realIP sets r.RemoteAddr to the client's bare IP: CF-Connecting-IP when
-// present, else the peer's IP with its port stripped, so the rate limiter
-// keys per client and not per connection. Backends run as Cloudflare
-// Containers reached only through their Worker, and Cloudflare's edge
-// overwrites CF-Connecting-IP on every request, so a client cannot pick
-// it. X-Forwarded-For is never read: Cloudflare doesn't send it and any
-// value would come from the client.
-func realIP(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if ip, ok := parseIP(r.Header.Get("CF-Connecting-IP")); ok {
-			r.RemoteAddr = ip.String()
-		} else if ip, ok := peerAddr(r.RemoteAddr); ok {
-			r.RemoteAddr = ip.String()
-		}
-		next.ServeHTTP(w, r)
-	})
+// Headers a trusted front uses to name its user's IP (see realIP).
+const (
+	clientIPHeader       = "X-Client-IP"
+	clientIPSecretHeader = "X-Client-IP-Secret" //nolint:gosec // a header name, not a credential
+)
+
+// realIP sets r.RemoteAddr to the client's bare IP, so the rate limiter keys
+// per client and not per connection:
+//
+//   - X-Client-IP, when the request also carries clientIPSecret in
+//     X-Client-IP-Secret. A front's server side (the BFF) calls the API from
+//     Cloudflare's Worker egress, so without it every user of that front
+//     would share one address.
+//   - else CF-Connecting-IP. Backends run as Cloudflare Containers reached
+//     only through their Worker, and Cloudflare's edge overwrites it on
+//     every request, so a client cannot pick it.
+//   - else the peer's IP with its port stripped.
+//
+// X-Forwarded-For is never read: Cloudflare doesn't send it and any value
+// would come from the client. Both client-IP headers are removed before the
+// request goes on, so nothing downstream logs the secret.
+func realIP(clientIPSecret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			trusted := clientIPSecret != "" &&
+				subtle.ConstantTimeCompare([]byte(r.Header.Get(clientIPSecretHeader)), []byte(clientIPSecret)) == 1
+			if ip, ok := parseIP(r.Header.Get(clientIPHeader)); trusted && ok {
+				r.RemoteAddr = ip.String()
+			} else if ip, ok := parseIP(r.Header.Get("CF-Connecting-IP")); ok {
+				r.RemoteAddr = ip.String()
+			} else if ip, ok := peerAddr(r.RemoteAddr); ok {
+				r.RemoteAddr = ip.String()
+			}
+			r.Header.Del(clientIPHeader)
+			r.Header.Del(clientIPSecretHeader)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func peerAddr(remoteAddr string) (netip.Addr, bool) {

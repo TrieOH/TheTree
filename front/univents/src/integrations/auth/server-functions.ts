@@ -17,6 +17,7 @@ const bff = createTanStackIdentityXBff({
     secure: import.meta.env.PROD,
   },
   apiBaseURL: env.VITE_API_URL,
+  clientIPSecret: env.CLIENT_IP_SECRET,
 });
 
 export const loginServerFn = createServerFn({ method: "POST" })

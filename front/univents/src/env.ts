@@ -6,6 +6,9 @@ export const env = createEnv({
     SERVER_URL: z.url().optional(),
     IDENTITYX_ACCESS_API_KEY: z.string(),
     AUTH_SESSION_PASSWORD: z.string().min(32),
+    // Shared with the APIs so they rate limit per user (front-core BFF).
+    // Optional: unset, the BFF sends no client IP.
+    CLIENT_IP_SECRET: z.string().min(32).optional(),
 
     STORAGE_IMAGE_ALLOWED_TYPES: z.string().optional(),
     STORAGE_IMAGE_MAX_SIZE_BYTES: z.string().optional(),
@@ -57,6 +60,7 @@ export const env = createEnv({
     SERVER_URL: process.env.SERVER_URL,
     IDENTITYX_ACCESS_API_KEY: process.env.IDENTITYX_ACCESS_API_KEY,
     AUTH_SESSION_PASSWORD: process.env.AUTH_SESSION_PASSWORD,
+    CLIENT_IP_SECRET: process.env.CLIENT_IP_SECRET,
     STORAGE_IMAGE_ALLOWED_TYPES: process.env.STORAGE_IMAGE_ALLOWED_TYPES,
     STORAGE_IMAGE_MAX_SIZE_BYTES: process.env.STORAGE_IMAGE_MAX_SIZE_BYTES,
     STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS:

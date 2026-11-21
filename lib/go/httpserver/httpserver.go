@@ -33,6 +33,9 @@ type Config struct {
 	// RateLimit configures the per-client rate limiter. The zero value
 	// keeps the historical defaults (400 rps, burst 20).
 	RateLimit RateLimit
+	// ClientIPSecret lets a trusted front name its user's IP (see realIP).
+	// Empty: X-Client-IP is never read.
+	ClientIPSecret string
 	// OpenAPISpec, when set, is served at GET /docs/openapi.yml — the
 	// service's OpenAPI 3.1 specification (the same content as
 	// api/<svc>/api-spec.yml), for docs tooling to fetch and render.
@@ -189,7 +192,7 @@ func stack(cfg Config) []func(http.Handler) http.Handler {
 	}
 
 	mwStack := []func(http.Handler) http.Handler{
-		realIP,
+		realIP(cfg.ClientIPSecret),
 		requestID,
 		logs(telemetry.Log(), skipLog),
 		metrics(collectors, []string{"/health"}),
