@@ -1,4 +1,4 @@
-package api_keys
+package apikeys
 
 import (
 	"crypto/hmac"

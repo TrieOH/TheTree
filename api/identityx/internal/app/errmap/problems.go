@@ -1,4 +1,7 @@
-package app
+// Package errmap is IdentityX's problem switch (ADR-0019). It sits apart
+// from internal/app, which wires the features, so a feature's tests can
+// check what status an error answers with without an import cycle.
+package errmap
 
 import (
 	"errors"

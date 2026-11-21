@@ -3,6 +3,7 @@ package main
 import (
 	spec "Informd"
 	"Informd/internal/app"
+	"Informd/internal/app/errmap"
 	"Informd/internal/config"
 	"Informd/internal/problems"
 	"lib/backend"
@@ -20,10 +21,10 @@ func main() {
 		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
-			identityx.Module(cfg.IdentityX, identityx.Debug(true)),
+			identityx.Module(cfg.IdentityX),
 		},
 		Build:    app.Build,
-		Errors:   problems.Mapper(app.Problem),
+		Errors:   problems.Mapper(errmap.Problem),
 		Problems: problems.Docs,
 	}), "informd exited with error")
 }

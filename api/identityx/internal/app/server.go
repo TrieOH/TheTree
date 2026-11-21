@@ -12,7 +12,6 @@ import (
 	"IdentityX/internal/features/profiles"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/tos"
-	"IdentityX/internal/openapi"
 	"IdentityX/internal/setup"
 )
 
@@ -32,53 +31,18 @@ type operations struct {
 	tos            *tos.Operations
 }
 
-// server implements openapi.StrictServerInterface by embedding every
-// feature's Handlers: method promotion satisfies the generated interface
-// with no delegation glue. The aliases only give each embedded field its
-// own name — embedding two *X.Handlers directly would collide on
-// "Handlers".
-type (
-	actorHandlers         = actors.Handlers
-	apiKeyHandlers        = api_keys.Handlers
-	authnHandlers         = authn.Handlers
-	capabilityHandlers    = capabilities.Handlers
-	emailTemplateHandlers = email_templates.Handlers
-	oauthProviderHandlers = oauth_providers.Handlers
-	organizationHandlers  = organizations.Handlers
-	profileSchemaHandlers = profile_schemas.Handlers
-	profileHandlers       = profiles.Handlers
-	projectHandlers       = projects.Handlers
-	tosHandlers           = tos.Handlers
-)
-
-type server struct {
-	*actorHandlers
-	*apiKeyHandlers
-	*authnHandlers
-	*capabilityHandlers
-	*emailTemplateHandlers
-	*oauthProviderHandlers
-	*organizationHandlers
-	*profileSchemaHandlers
-	*profileHandlers
-	*projectHandlers
-	*tosHandlers
-}
-
-var _ openapi.StrictServerInterface = (*server)(nil)
-
 func newServer(ops operations, st *setup.State) *server {
 	return &server{
-		actorHandlers:         actors.NewHandlers(ops.actors),
-		apiKeyHandlers:        api_keys.NewHandlers(ops.apiKeys),
-		authnHandlers:         authn.NewHandlers(ops.authn, st),
-		capabilityHandlers:    capabilities.NewHandlers(ops.capabilities),
-		emailTemplateHandlers: email_templates.NewHandlers(ops.emailTemplates),
-		oauthProviderHandlers: oauth_providers.NewHandlers(ops.oauthProviders),
-		organizationHandlers:  organizations.NewHandlers(ops.organizations),
-		profileSchemaHandlers: profile_schemas.NewHandlers(ops.profileSchemas),
-		profileHandlers:       profiles.NewHandlers(ops.profiles),
-		projectHandlers:       projects.NewHandlers(ops.projects),
-		tosHandlers:           tos.NewHandlers(ops.tos),
+		actorsHandlers:         actors.NewHandlers(ops.actors),
+		apiKeysHandlers:        api_keys.NewHandlers(ops.apiKeys),
+		authnHandlers:          authn.NewHandlers(ops.authn, st),
+		capabilitiesHandlers:   capabilities.NewHandlers(ops.capabilities),
+		emailTemplatesHandlers: email_templates.NewHandlers(ops.emailTemplates),
+		oauthProvidersHandlers: oauth_providers.NewHandlers(ops.oauthProviders),
+		organizationsHandlers:  organizations.NewHandlers(ops.organizations),
+		profileSchemasHandlers: profile_schemas.NewHandlers(ops.profileSchemas),
+		profilesHandlers:       profiles.NewHandlers(ops.profiles),
+		projectsHandlers:       projects.NewHandlers(ops.projects),
+		tosHandlers:            tos.NewHandlers(ops.tos),
 	}
 }

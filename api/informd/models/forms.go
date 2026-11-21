@@ -28,22 +28,6 @@ type Form struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewForm(namespaceID *uuid.UUID, ownerID, createdBy uuid.UUID, title string) (*Form, error) {
-	f := &Form{
-		NamespaceID: namespaceID,
-		OwnerID:     ownerID,
-		CreatedBy:   createdBy,
-		Title:       title,
-		Status:      FormStatusDraft,
-	}
-	err := validate.Struct(f)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
-}
-
 type FormMemberRole string
 
 const (

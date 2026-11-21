@@ -1,10 +1,16 @@
-// Command strictmount writes mount.gen.go into a Backend's generated openapi
-// package: the one Mount function that serves the strict server through the
-// harness's strict stack (httpserver.StrictStack). The option structs and
-// the strict function types it fills are generated per package, so the glue
-// cannot live in lib/httpserver; generating it keeps one copy of it in the
-// repo. It runs after oapi-codegen, from the Backend's directory:
-// go run tools/strictmount internal/openapi/mount.gen.go
+// Command strictmount writes the strict server's glue into a Backend:
+//
+//   - mount.gen.go in the generated openapi package: the one Mount function
+//     that serves the strict server through the harness's strict stack
+//     (httpserver.StrictStack). The option structs and the strict function
+//     types it fills are generated per package, so the glue cannot live in
+//     lib/httpserver; generating it keeps one copy of it in the repo.
+//   - server.gen.go in internal/app: the server type that embeds the
+//     Handlers of every feature folder that declares one, so adding a
+//     feature doesn't mean editing a list.
+//
+// It runs after oapi-codegen, from the Backend's directory:
+// go run tools/strictmount internal/openapi/mount.gen.go internal/app/server.gen.go
 package main
 
 import (
@@ -49,11 +55,14 @@ func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.
 `
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: strictmount <output file>")
+	if len(os.Args) != 3 {
+		fmt.Fprintln(os.Stderr, "usage: strictmount <mount output> <server output>")
 		os.Exit(2)
 	}
 	err := os.WriteFile(os.Args[1], []byte(source), 0o600) //nolint:gosec // codegen step run by just gen and the Dockerfiles; the path is the build's own, not untrusted input
+	if err == nil {
+		err = writeServer(os.Args[2])
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "strictmount:", err)
 		os.Exit(1)

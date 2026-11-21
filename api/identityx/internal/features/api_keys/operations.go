@@ -10,7 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"lib/api_keys"
+	"lib/apikeys"
 	"lib/telemetry"
 	"log/slog"
 	"time"
@@ -37,7 +37,7 @@ func New(d Deps) *Operations { return &Operations{Deps: d} }
 // one module and the capability format (resource:action pairs on the
 // identity's subject) has a single home.
 func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.Identity, error) {
-	key, err := api_keys.ParseAPIKey(rawKey)
+	key, err := apikeys.ParseAPIKey(rawKey)
 	if err != nil {
 		telemetry.Log().Warn("api key parse failed", telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
@@ -49,7 +49,7 @@ func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.I
 		return nil, errs.ErrInvalidAPIKey
 	}
 
-	if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash, o.HmacSecret) {
+	if !apikeys.VerifyAPIKey(rawKey, apiKey.KeyHash, o.HmacSecret) {
 		telemetry.Log().Warn("api key hmac mismatch", slog.String("prefix", key.DisplayPrefix))
 		return nil, errs.ErrInvalidAPIKey
 	}
@@ -108,7 +108,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInpu
 	return created, generated.Raw, nil
 }
 
-func (o *Operations) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *api_keys.GeneratedAPIKey, error) {
+func (o *Operations) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *apikeys.GeneratedAPIKey, error) {
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -138,8 +138,8 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 		}
 	}
 
-	var generated *api_keys.GeneratedAPIKey
-	generated, err = api_keys.GenerateAPIKey(project.BrandSlug, payload.Env, o.HmacSecret)
+	var generated *apikeys.GeneratedAPIKey
+	generated, err = apikeys.GenerateAPIKey(project.BrandSlug, payload.Env, o.HmacSecret)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate api key: %w", err)
 	}

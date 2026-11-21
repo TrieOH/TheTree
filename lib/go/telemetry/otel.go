@@ -90,7 +90,11 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 		if err != nil {
 			return fail(fmt.Errorf("trace exporter: %w", err))
 		}
-		tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter), sdktrace.WithResource(res))
+		tp := sdktrace.NewTracerProvider(
+			sdktrace.WithSpanProcessor(ipMasker{}),
+			sdktrace.WithBatcher(exporter),
+			sdktrace.WithResource(res),
+		)
 		otel.SetTracerProvider(tp)
 		shutdowns = append(shutdowns, tp.Shutdown)
 	}

@@ -68,37 +68,37 @@ func Build(cfg config.Config) backend.BuildFunc {
 		}), jobs.Periodic()...)
 
 		srv := &server{
-			orgHandlers: orgs.NewHandlers(orgs.New(orgs.Deps{
+			orgsHandlers: orgs.NewHandlers(orgs.New(orgs.Deps{
 				Orgs: orgsRepo, IDX: d.IDX.Client, Authz: az, Tx: d.Tx,
 			})),
-			walletHandlers: wallets.NewHandlers(wallets.New(wallets.Deps{
+			walletsHandlers: wallets.NewHandlers(wallets.New(wallets.Deps{
 				Wallets: walletsRepo, Orgs: orgsRepo, Authz: az,
 			})),
 			oauthHandlers: oauth.NewHandlers(oauth.New(oauth.Deps{
 				Wallets: walletsRepo, Orgs: orgsRepo, OAuth: oauthRepo, Collectors: collectorsRepo,
 				Sellers: sellersRepo, Authz: az, Registry: registry,
 			})),
-			collectorHandlers: collectors.NewHandlers(collectors.New(collectors.Deps{
+			collectorsHandlers: collectors.NewHandlers(collectors.New(collectors.Deps{
 				Collectors: collectorsRepo, Orgs: orgsRepo, Authz: az,
 			})),
-			sellerHandlers: sellers.NewHandlers(sellers.New(sellers.Deps{
+			sellersHandlers: sellers.NewHandlers(sellers.New(sellers.Deps{
 				Sellers: sellersRepo, Wallets: walletsRepo, Orgs: orgsRepo, Authz: az,
 			})),
-			intentHandlers: intents.NewHandlers(intents.New(intents.Deps{
+			intentsHandlers: intents.NewHandlers(intents.New(intents.Deps{
 				Intents: intentsRepo, Wallets: walletsRepo, Orgs: orgsRepo, Collectors: collectorsRepo,
 				Sellers: sellersRepo, Authz: az, Registry: registry, TestMode: cfg.TestMode,
 			})),
-			webhookHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
+			webhooksHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
 				Jobs: d.Jobs, Events: eventsRepo, Endpoints: endpointsRepo, Deliveries: deliveriesRepo,
 				Authz: az, Registry: registry, Tx: d.Tx,
 			})),
-			webhookEndpointHandlers: webhook_endpoints.NewHandlers(webhook_endpoints.New(webhook_endpoints.Deps{
+			webhookEndpointsHandlers: webhook_endpoints.NewHandlers(webhook_endpoints.New(webhook_endpoints.Deps{
 				Endpoints: endpointsRepo, Wallets: walletsRepo, Orgs: orgsRepo, Authz: az,
 			})),
-			webhookEventHandlers: webhook_events.NewHandlers(webhook_events.New(webhook_events.Deps{
+			webhookEventsHandlers: webhook_events.NewHandlers(webhook_events.New(webhook_events.Deps{
 				Events: eventsRepo, Wallets: walletsRepo, Orgs: orgsRepo, Authz: az,
 			})),
-			webhookDeliveryHandlers: webhook_deliveries.NewHandlers(webhook_deliveries.New(webhook_deliveries.Deps{
+			webhookDeliveriesHandlers: webhook_deliveries.NewHandlers(webhook_deliveries.New(webhook_deliveries.Deps{
 				Deliveries: deliveriesRepo, Endpoints: endpointsRepo, Wallets: walletsRepo, Orgs: orgsRepo, Authz: az,
 			})),
 		}

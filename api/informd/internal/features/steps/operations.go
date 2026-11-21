@@ -8,6 +8,7 @@ import (
 	"Informd/models"
 	"Informd/ports"
 	"context"
+	"lib/validator"
 	"lib/xslices"
 	"uuid"
 )
@@ -40,7 +41,13 @@ func (o *Operations) BulkEdit(ctx context.Context, formID uuid.UUID, payload []m
 }
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateFormStepInput) (*models.Step, error) {
-	step, err := models.NewStep(payload.FormID, payload.Title, payload.Description, payload.PositionHint)
+	step := &models.Step{
+		FormID:       payload.FormID,
+		Title:        payload.Title,
+		Description:  payload.Description,
+		PositionHint: payload.PositionHint,
+	}
+	err := validator.Validate(step)
 	if err != nil {
 		return nil, err
 	}

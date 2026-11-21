@@ -12,7 +12,7 @@ import (
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
-	"lib/api_keys"
+	"lib/apikeys"
 	"lib/database"
 
 	"github.com/ovechkin-dm/mockio/mock"
@@ -55,7 +55,7 @@ func newAuthTestOps(t *testing.T, secret []byte) *authTestOps {
 // string plus the stored row shape Authenticate looks up by prefix.
 func mintedKey(t *testing.T, secret []byte, expiresAt *time.Time) (string, models.APIKey, models.Actor) {
 	t.Helper()
-	generated, err := api_keys.GenerateAPIKey("acme", "prod", secret)
+	generated, err := apikeys.GenerateAPIKey("acme", "prod", secret)
 	if err != nil {
 		t.Fatalf("GenerateAPIKey: %v", err)
 	}
@@ -129,13 +129,13 @@ func TestAuthenticateHmacMismatchRejected(t *testing.T) {
 	secret := []byte("test-hmac-secret")
 	raw, _, actor := mintedKey(t, secret, nil)
 	o := newAuthTestOps(t, secret)
-	parsed, err := api_keys.ParseAPIKey(raw)
+	parsed, err := apikeys.ParseAPIKey(raw)
 	if err != nil {
 		t.Fatalf("ParseAPIKey: %v", err)
 	}
 	// The stored row is keyed by the raw key's own prefix, but its hash was
 	// computed with a different secret, so verification must fail.
-	other, err := api_keys.GenerateAPIKey("acme", "prod", []byte("other-secret"))
+	other, err := apikeys.GenerateAPIKey("acme", "prod", []byte("other-secret"))
 	if err != nil {
 		t.Fatalf("GenerateAPIKey: %v", err)
 	}

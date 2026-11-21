@@ -1,4 +1,4 @@
-package app
+package errmap
 
 import (
 	"errors"
@@ -13,6 +13,7 @@ import (
 	"lib/database"
 	"lib/httpserver"
 	"payssage/errs"
+	"payssage/internal/app"
 	"payssage/internal/problems"
 
 	idx "sdk/identityx"
@@ -23,7 +24,7 @@ import (
 // unique violation is a 409, a check a 400.
 func TestConstraintErrorsAreMapped(t *testing.T) {
 	m := problems.Mapper(Problem)
-	for name, named := range Constraints() {
+	for name, named := range app.Constraints() {
 		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if strings.HasPrefix(name, "uniq_") {
 			class, want = database.ErrUniqueViolation, http.StatusConflict

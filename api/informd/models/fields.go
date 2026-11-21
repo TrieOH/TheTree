@@ -62,60 +62,11 @@ type Field struct {
 	UpdatedAt    time.Time        `json:"updated_at"`
 }
 
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewField(
-	stepID uuid.UUID,
-	key, title string,
-	description *string,
-	positionHint int,
-	required bool,
-	fieldType FieldType,
-	placeholder, defaultValue, config *json.RawMessage,
-) (*Field, error) {
-	f := &Field{
-		StepID:       stepID,
-		Key:          key,
-		Title:        title,
-		Description:  description,
-		PositionHint: positionHint,
-		Required:     required,
-		Type:         fieldType,
-		Placeholder:  placeholder,
-		DefaultValue: defaultValue,
-		Config:       config,
-	}
-	err := validate.Struct(f)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
-}
-
 type FieldSelectConfig struct {
 	FieldID   uuid.UUID       `json:"field_id"`
 	Behaviour SelectBehaviour `json:"behaviour"  validate:"required"`
 	ValueType SelectValueType `json:"value_type" validate:"required"`
 	Options   json.RawMessage `json:"options"    validate:"required"`
-}
-
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewFieldSelectConfig(
-	fieldID uuid.UUID,
-	behaviour SelectBehaviour,
-	valueType SelectValueType,
-	options json.RawMessage,
-) (*FieldSelectConfig, error) {
-	c := &FieldSelectConfig{
-		FieldID:   fieldID,
-		Behaviour: behaviour,
-		ValueType: valueType,
-		Options:   options,
-	}
-	err := validate.Struct(c)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 // CreateFieldRequest is the HTTP request body for creating a field.

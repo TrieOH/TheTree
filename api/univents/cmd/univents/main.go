@@ -23,9 +23,7 @@ func main() {
 		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
-			identityx.Module(cfg.IdentityX,
-				identityx.Debug(cfg.DebugMode),
-				identityx.RequireVerifiedEmail(cfg.RequireVerifiedEmail)),
+			identityx.Module(cfg.IdentityX, identityx.RequireVerifiedEmail(cfg.RequireVerifiedEmail)),
 			email.Module(cfg.SMTP),
 			jobs.Module(cfg.JobsURL),
 		},

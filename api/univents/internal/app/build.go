@@ -95,49 +95,49 @@ func Build(cfg config.Config) backend.BuildFunc {
 		wsOps := ws.New(ws.Deps{Tokens: wsTokensRepo, Purchases: purchasesRepo, Intents: pay, Notifier: notifier})
 
 		srv := &server{
-			eventHandlers: events.NewHandlers(events.New(events.Deps{
+			eventsHandlers: events.NewHandlers(events.New(events.Deps{
 				Events: eventsRepo, Obj: storage, IDX: d.IDX.Client, Authz: az, Badges: badgesOps, Tx: d.Tx,
 			})),
-			editionHandlers: editions.NewHandlers(editions.New(editions.Deps{
+			editionsHandlers: editions.NewHandlers(editions.New(editions.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Authz: az, Badges: badgesOps,
 			})),
-			ticketTypeHandlers: ticket_types.NewHandlers(ticket_types.New(ticket_types.Deps{
+			ticketTypesHandlers: ticket_types.NewHandlers(ticket_types.New(ticket_types.Deps{
 				Events: eventsRepo, Editions: editionsRepo, TicketTypes: ticketTypesRepo, Authz: az,
 			})),
-			productHandlers: products.NewHandlers(products.New(products.Deps{
+			productsHandlers: products.NewHandlers(products.New(products.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Products: productsRepo, Authz: az, Tx: d.Tx,
 			})),
-			programHandlers: programs.NewHandlers(programs.New(programs.Deps{
+			programsHandlers: programs.NewHandlers(programs.New(programs.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Programs: programsRepo, Occurrences: programsRepo,
 				Registrations: registrationsRepo, TicketTypes: ticketTypesRepo, Participations: programsRepo,
 				Authz: az, Notifier: notifier, Tx: d.Tx,
 			})),
-			badgeHandlers: badges.NewHandlers(badgesOps),
-			signatureHandlers: signatures.NewHandlers(signatures.New(signatures.Deps{
+			badgesHandlers: badges.NewHandlers(badgesOps),
+			signaturesHandlers: signatures.NewHandlers(signatures.New(signatures.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Signatures: signaturesRepo, Requests: signaturesRepo,
 				Email: d.Email, HmacSecret: cfg.HmacSecret, Authz: az, AppURL: cfg.AppURL,
 			})),
-			certificationHandlers: certifications.NewHandlers(certifications.New(certifications.Deps{
+			certificationsHandlers: certifications.NewHandlers(certifications.New(certifications.Deps{
 				Events: eventsRepo, Editions: editionsRepo, Certs: certsRepo, Programs: programsRepo,
 				Email: d.Email, Jobs: d.Jobs, Authz: az,
 			})),
-			paymentHandlers: payments.NewHandlers(payments.New(payments.Deps{
+			paymentsHandlers: payments.NewHandlers(payments.New(payments.Deps{
 				Events: eventsRepo, Payssage: pay, Authz: az, WalletID: cfg.PayssageWalletID, AppURL: cfg.AppURL,
 			})),
-			webhookHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
+			webhooksHandlers: webhooks.NewHandlers(webhooks.New(webhooks.Deps{
 				Purchases: purchasesRepo, Registrations: registrationsRepo, ProductPurchases: productsRepo,
 				Participations: programsRepo, Badges: badgesOps, Notifier: notifier, Jobs: d.Jobs, Tx: d.Tx,
 				Secret: cfg.PayssageWebhookSecret,
 			})),
-			checkoutHandlers: checkouts.NewHandlers(checkouts.New(checkouts.Deps{
+			checkoutsHandlers: checkouts.NewHandlers(checkouts.New(checkouts.Deps{
 				Purchases: purchasesRepo, Editions: editionsRepo, Events: eventsRepo, TicketTypes: ticketTypesRepo,
 				Products: productsRepo, Programs: programsRepo, Occurrences: programsRepo,
 				Registrations: registrationsRepo, ProductPurchases: productsRepo, Participations: programsRepo,
 				Badges: badgesOps, Notifier: notifier, Jobs: d.Jobs, Tx: d.Tx, Intents: pay, Payssage: pay,
 				WalletID: cfg.PayssageWalletID, Tokens: wsOps, Actors: actors, Authz: az,
 			})),
-			purchaseHandlers: purchases.NewHandlers(purchases.New(purchases.Deps{Purchases: purchasesRepo})),
-			wsHandlers:       ws.NewHandlers(wsOps),
+			purchasesHandlers: purchases.NewHandlers(purchases.New(purchases.Deps{Purchases: purchasesRepo})),
+			wsHandlers:        ws.NewHandlers(wsOps),
 			storeHandlers: store.NewHandlers(store.New(store.Deps{
 				Avail: purchasesRepo, Editions: editionsRepo, Notifier: notifier,
 			})),

@@ -33,21 +33,21 @@ func Build(_ context.Context, d *backend.Deps, r chi.Router) error {
 	az := authz.New(formsRepo, namespacesRepo)
 
 	srv := &server{
-		namespaceHandlers: namespaces.NewHandlers(namespaces.New(namespaces.Deps{
+		namespacesHandlers: namespaces.NewHandlers(namespaces.New(namespaces.Deps{
 			Namespaces: namespacesRepo, Forms: formsRepo, Steps: stepsRepo, Fields: fieldsRepo,
 			Answers: answersRepo, Responses: responsesRepo, Responders: respondersRepo, Authz: az, Tx: d.Tx,
 		})),
-		formHandlers: forms.NewHandlers(forms.New(forms.Deps{
+		formsHandlers: forms.NewHandlers(forms.New(forms.Deps{
 			Forms: formsRepo, Steps: stepsRepo, Namespaces: namespacesRepo, Fields: fieldsRepo,
 			Answers: answersRepo, Responses: responsesRepo, Responders: respondersRepo, Authz: az, Tx: d.Tx,
 		})),
-		stepHandlers: steps.NewHandlers(steps.New(steps.Deps{
+		stepsHandlers: steps.NewHandlers(steps.New(steps.Deps{
 			Forms: formsRepo, Steps: stepsRepo, Namespaces: namespacesRepo, Authz: az,
 		})),
-		fieldHandlers: fields.NewHandlers(fields.New(fields.Deps{
+		fieldsHandlers: fields.NewHandlers(fields.New(fields.Deps{
 			Forms: formsRepo, Steps: stepsRepo, Fields: fieldsRepo, Namespaces: namespacesRepo, Authz: az, Tx: d.Tx,
 		})),
-		responseHandlers: responses.NewHandlers(responses.New(responses.Deps{
+		responsesHandlers: responses.NewHandlers(responses.New(responses.Deps{
 			Responders: respondersRepo, Responses: responsesRepo, Answers: answersRepo, Forms: formsRepo, Tx: d.Tx,
 		})),
 	}

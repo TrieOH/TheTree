@@ -1,4 +1,4 @@
-package app
+package errmap
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"IdentityX/errs"
+	"IdentityX/internal/app"
 	"IdentityX/internal/problems"
 	"lib/database"
 	"lib/httpserver"
@@ -18,7 +19,7 @@ import (
 // answers would be a generic 500.
 func TestConstraintErrorsAreMapped(t *testing.T) {
 	m := problems.Mapper(Problem)
-	for name, named := range Constraints() {
+	for name, named := range app.Constraints() {
 		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if len(name) >= 5 && name[:5] == "uniq_" {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
