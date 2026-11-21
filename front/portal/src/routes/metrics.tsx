@@ -20,7 +20,7 @@ import { cyclePace, needsAttention, projectedShare, type MetricsTab } from "@/fe
 import { summarize } from "@/features/metrics/cold-starts";
 import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
 import { PLAN, type MetricsPayload, type WorkerStats } from "@/features/metrics/model";
-import { Attention } from "@/features/metrics/ui/Attention";
+import { Attention } from "@/shared/ui/attention";
 import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
 import { ServiceLanes } from "@/features/metrics/ui/ServiceLanes";
 import { UsageBar } from "@/features/metrics/ui/UsageBar";

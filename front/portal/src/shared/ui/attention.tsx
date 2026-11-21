@@ -1,15 +1,23 @@
 import { StatusDot } from "@trieoh/ui-solid";
 import { For, Show } from "solid-js";
-import type { AttentionItem, MetricsTab } from "../attention";
+
+/** One thing on a dashboard worth a look, and the tab that explains it. */
+export interface AttentionItem<Tab extends string = string> {
+  id: string;
+  tone: "warning" | "destructive";
+  /** One plain sentence: what is off, with the numbers. */
+  text: string;
+  tab: Tab;
+}
 
 /**
  * The page's verdict: everything worth a look, in plain sentences, each
  * opening the tab that explains it. When nothing is off it says so in one line.
  */
-export function Attention(props: {
-  items: readonly AttentionItem[];
-  tabLabel: (tab: MetricsTab) => string;
-  onOpen: (tab: MetricsTab) => void;
+export function Attention<Tab extends string>(props: {
+  items: readonly AttentionItem<Tab>[];
+  tabLabel: (tab: Tab) => string;
+  onOpen: (tab: Tab) => void;
 }) {
   return (
     <Show
