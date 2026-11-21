@@ -75,8 +75,7 @@ services:
       CORS_ALLOWED_HEADERS: Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-KEY
       # Every scenario logs in several times from one IP.
       DISABLE_RATE_LIMIT: "true"
-      EMAIL_FROM: noreply@e2e.trieoh.test
+      SMTP_FROM: noreply@e2e.trieoh.test
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
-      SMTP_STARTTLS: "false"

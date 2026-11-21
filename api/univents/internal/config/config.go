@@ -5,7 +5,6 @@ import (
 
 	libconfig "lib/config"
 	"lib/database"
-	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
@@ -17,6 +16,7 @@ type Config struct {
 	libconfig.CORS
 
 	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
+	SMTP     libconfig.SMTP
 
 	// Feature fields
 	AppURL string `env:"APP_URL,required"`
@@ -42,14 +42,6 @@ type Config struct {
 	ObjStorageUseSSL    bool   `env:"OBJECT_STORAGE_USE_SSL"             envDefault:"true"`
 	ObjStorageRegion    string `env:"OBJECT_STORAGE_REGION"              envDefault:"us-east-1"`
 
-	// SMTP / Email
-	SMTPHost     string `env:"SMTP_HOST,required"`
-	SMTPPort     int    `env:"SMTP_PORT"          envDefault:"587"`
-	SMTPUsername string `env:"SMTP_USERNAME"`
-	SMTPPassword string `env:"SMTP_PASSWORD"`
-	SMTPFrom     string `env:"SMTP_FROM,required"`
-	SMTPTLS      bool   `env:"SMTP_TLS"           envDefault:"true"`
-
 	// Webhook HMAC
 	HmacSecret string `env:"HMAC_SECRET,required"`
 
@@ -62,17 +54,6 @@ type Config struct {
 // API process (`just migrate univents`).
 func (cfg Config) ToDBConfig() database.Config {
 	return libconfig.DBConnectionConfig(cfg.Postgres)
-}
-
-func (cfg Config) ToEmailConfig() email.Config {
-	return email.Config{
-		Host:     cfg.SMTPHost,
-		Port:     cfg.SMTPPort,
-		Username: cfg.SMTPUsername,
-		Password: cfg.SMTPPassword,
-		From:     cfg.SMTPFrom,
-		TLS:      cfg.SMTPTLS,
-	}
 }
 
 func Load() Config {

@@ -89,3 +89,18 @@ func TestDBConfigShapesConnections(t *testing.T) {
 		t.Errorf("fields not mapped: %+v", got)
 	}
 }
+
+func TestSMTPDefaults(t *testing.T) {
+	var cfg struct {
+		SMTP SMTP
+	}
+	parse(t, map[string]string{"SMTP_HOST": "mail.example.com", "SMTP_FROM": "noreply@example.com"}, &cfg)
+
+	got := EmailConfig(cfg.SMTP)
+	if got.Host != "mail.example.com" || got.From != "noreply@example.com" {
+		t.Errorf("SMTP fields not parsed: %+v", got)
+	}
+	if got.Port != 587 || !got.TLS {
+		t.Errorf("defaults = port:%d tls:%v, want 587 and true", got.Port, got.TLS)
+	}
+}

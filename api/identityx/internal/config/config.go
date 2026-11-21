@@ -1,12 +1,9 @@
 package config
 
 import (
-	"errors"
-	"strconv"
 	"time"
 
 	libconfig "lib/config"
-	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
@@ -17,18 +14,10 @@ type Config struct {
 	libconfig.CORS
 
 	Postgres libconfig.Postgres `envPrefix:"IDX_"`
+	SMTP     libconfig.SMTP
 
 	// Server extras
 	AppURL string `env:"APP_URL,required"`
-
-	// Email over SMTP (mailpit locally, any SMTP relay when deployed).
-	EmailFrom    string `env:"EMAIL_FROM,required"`
-	SMTPHost     string `env:"SMTP_HOST,required"`
-	SMTPPort     string `env:"SMTP_PORT,required"`
-	SMTPUser     string `env:"SMTP_USERNAME"`
-	SMTPPass     string `env:"SMTP_PASSWORD"`
-	SMTPTLS      bool   `env:"SMTP_TLS"`
-	SMTPStartTLS bool   `env:"SMTP_STARTTLS"`
 
 	// Background jobs. Empty: run them in-process (local compose). Set: POST
 	// them to this queue producer, which delivers them back to /_jobs; the
@@ -60,42 +49,14 @@ type Config struct {
 	EmailResetTokenTTL  time.Duration `env:"EMAIL_RESET_TOKEN_TTL"  envDefault:"10m"`
 }
 
-func (cfg *Config) ToEmailConfig() email.Config {
-	port, err := strconv.Atoi(cfg.SMTPPort)
-	if err != nil {
-		port = 587
-	}
-	return email.Config{
-		Host:     cfg.SMTPHost,
-		Port:     port,
-		Username: cfg.SMTPUser,
-		Password: cfg.SMTPPass,
-		From:     cfg.EmailFrom,
-		TLS:      cfg.SMTPTLS,
-	}
-}
-
-// Validate checks the cross-field rules env tags cannot express.
-func (cfg *Config) Validate() error {
-	_, err := strconv.Atoi(cfg.SMTPPort)
-	if err != nil {
-		return errors.New("SMTP_PORT must be a number")
-	}
-	return nil
-}
-
-// LoadConfig parses the environment and validates it. Secrets arrive as
-// plain environment variables (compose env_file locally, Worker secrets
-// passed into the container on Cloudflare).
+// LoadConfig parses the environment. Secrets arrive as plain environment
+// variables (compose env_file locally, Worker secrets passed into the
+// container on Cloudflare).
 func LoadConfig() Config {
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
 		errx.Exit(err, "error loading config")
-	}
-	err = cfg.Validate()
-	if err != nil {
-		errx.Exit(err, "invalid config")
 	}
 	return cfg
 }
