@@ -32,11 +32,7 @@ func (e *Error) FieldList() []fielderr.Field { return e.Fields }
 //	    return nil, err
 //	}
 func Validate(v any) error {
-	vd := getValidator()
-	if vd == nil {
-		panic("validator: no validator registered — call SetupValidator at startup")
-	}
-	err := vd.Struct(v)
+	err := getValidator().Struct(v)
 	if err != nil {
 		return &Error{Fields: validationErrsToFields(err)}
 	}

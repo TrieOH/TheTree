@@ -4,17 +4,27 @@ import (
 	"lib/errx"
 	"reflect"
 	"strings"
+	"sync"
 	"unicode"
 	"uuid"
 
 	"github.com/go-playground/validator/v10"
 )
 
-// globalValidator is the shared instance used by Validate; registered once
-// at startup via SetupValidator (called by the harness).
-var globalValidator *validator.Validate
+// globalValidator is the shared instance used by Validate. The harness
+// builds it at boot (SetupValidator); anything that validates first, like
+// a test calling an operation directly, builds it on first use.
+var (
+	globalValidator *validator.Validate
+	setupOnce       sync.Once
+)
 
 func getValidator() *validator.Validate {
+	setupOnce.Do(func() {
+		if globalValidator == nil {
+			SetupValidator()
+		}
+	})
 	return globalValidator
 }
 
