@@ -13,6 +13,8 @@ import (
 
 	"lib/jobs"
 	"lib/telemetry"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Options tunes the runner; zero values take the defaults.
@@ -78,8 +80,8 @@ func New(registry *jobs.Registry, opts Options) *Runner {
 }
 
 // Enqueue queues a job without blocking the request path.
-func (r *Runner) Enqueue(_ context.Context, job jobs.Job) error {
-	env, err := jobs.Encode(job)
+func (r *Runner) Enqueue(ctx context.Context, job jobs.Job) error {
+	env, err := jobs.Encode(ctx, job)
 	if err != nil {
 		return err
 	}
@@ -105,12 +107,15 @@ func (r *Runner) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Dura
 	if delay <= 0 {
 		return r.Enqueue(ctx, job)
 	}
-	_, err := jobs.Encode(job)
+	_, err := jobs.Encode(ctx, job)
 	if err != nil {
 		return err
 	}
+	// The runner's context, which outlives the caller's, carrying the
+	// caller's trace so the job still joins it.
+	later := trace.ContextWithSpanContext(r.ctx, trace.SpanContextFromContext(ctx))
 	time.AfterFunc(delay, func() {
-		err := r.Enqueue(r.ctx, job)
+		err := r.Enqueue(later, job)
 		if err != nil && !errors.Is(err, ErrStopped) {
 			telemetry.Log().ErrorContext(ctx, "delayed job not enqueued", slog.String("kind", job.Kind()), telemetry.Err(err))
 		}

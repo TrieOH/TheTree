@@ -24,6 +24,8 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Job is one unit of background work. Implementations are plain structs
@@ -56,15 +58,31 @@ var ErrDelayTooLong = errors.New("job delay over the maximum")
 type Envelope struct {
 	Kind string          `json:"kind"`
 	Args json.RawMessage `json:"args,omitempty"`
+	// Trace is the W3C trace context (traceparent, tracestate) of the code
+	// that enqueued the job, so the job's span joins that trace: a request,
+	// the job it queued and the email the job sent read as one trace. Empty
+	// for a job a scheduler fired.
+	Trace map[string]string `json:"trace,omitempty"`
 }
 
-// Encode wraps a Job in its Envelope.
-func Encode(job Job) (Envelope, error) {
+// traceFormat is the wire format of Envelope.Trace. It's fixed here rather
+// than read from the global propagator: the envelope is a contract between
+// processes.
+var traceFormat = propagation.TraceContext{}
+
+// Encode wraps a Job in its Envelope, with the trace ctx is in.
+func Encode(ctx context.Context, job Job) (Envelope, error) {
 	args, err := json.Marshal(job)
 	if err != nil {
 		return Envelope{}, fmt.Errorf("encode job %s: %w", job.Kind(), err)
 	}
-	return Envelope{Kind: job.Kind(), Args: args}, nil
+	env := Envelope{Kind: job.Kind(), Args: args}
+	carrier := propagation.MapCarrier{}
+	traceFormat.Inject(ctx, carrier)
+	if len(carrier) > 0 {
+		env.Trace = carrier
+	}
+	return env, nil
 }
 
 // Periodic declares a job to run on an interval. The in-process runner runs
@@ -118,13 +136,24 @@ func (r *Registry) Kinds() []string {
 	return kinds
 }
 
-// Dispatch runs the handler for env inside a span named after its kind.
+// Dispatch runs the handler for env inside a span named after its kind. With
+// a trace in env the span is a child of the code that enqueued the job, and
+// links to whatever delivered it (the /_jobs request).
 func (r *Registry) Dispatch(ctx context.Context, env Envelope) error {
 	h, ok := r.handlers[env.Kind]
 	if !ok {
 		return fmt.Errorf("%w: %q", ErrUnknownKind, env.Kind)
 	}
-	ctx, span := telemetry.StartSpan(ctx, "job "+env.Kind)
+	var opts []trace.SpanStartOption
+	parent := trace.SpanContextFromContext(traceFormat.Extract(context.Background(), propagation.MapCarrier(env.Trace)))
+	if parent.IsValid() {
+		delivery := trace.SpanContextFromContext(ctx)
+		if delivery.IsValid() {
+			opts = append(opts, trace.WithLinks(trace.Link{SpanContext: delivery}))
+		}
+		ctx = trace.ContextWithRemoteSpanContext(ctx, parent)
+	}
+	ctx, span := telemetry.StartSpan(ctx, "job "+env.Kind, opts...)
 	defer span.End()
 	span.SetAttributes(attribute.String("job.kind", env.Kind))
 	err := h(ctx, env.Args)

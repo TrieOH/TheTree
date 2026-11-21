@@ -17,7 +17,9 @@ export const JOBS_PATH = "/_jobs";
 // (lib/jobs/httpjobs.DelayHeader).
 export const DELAY_HEADER = "Job-Delay-Seconds";
 
-export type Job = { kind: string; args?: unknown };
+// trace is the W3C trace context of whatever enqueued the job
+// (lib/jobs.Envelope.Trace). The Worker passes it through untouched.
+export type Job = { kind: string; args?: unknown; trace?: Record<string, string> };
 export type JobsEnv = { JOBS: Queue };
 
 // True for the job endpoint, which the public must never reach.

@@ -28,6 +28,8 @@ import (
 
 	"lib/jobs"
 	"lib/telemetry"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Path is where Handler is mounted. It must not collide with any API
@@ -60,7 +62,9 @@ func New(url string) (*Enqueuer, error) {
 	if url == "" {
 		return nil, errors.New("httpjobs: enqueue URL is required")
 	}
-	return &Enqueuer{url: url, client: &http.Client{Timeout: enqueueTimeout}}, nil
+	// otelhttp: the POST is a client span of whatever enqueued the job.
+	client := &http.Client{Timeout: enqueueTimeout, Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	return &Enqueuer{url: url, client: client}, nil
 }
 
 func (e *Enqueuer) Enqueue(ctx context.Context, job jobs.Job) error {
@@ -77,7 +81,7 @@ func (e *Enqueuer) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Du
 }
 
 func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) error {
-	env, err := jobs.Encode(job)
+	env, err := jobs.Encode(ctx, job)
 	if err != nil {
 		return err
 	}
