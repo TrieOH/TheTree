@@ -3,7 +3,9 @@
 //
 //   - Enqueuer POSTs each job's Envelope as JSON to a URL. Whatever answers
 //     there (a queue producer) owns delivery and retries. A delayed job
-//     carries its delay in the DelayHeader, in whole seconds.
+//     carries its delay in the DelayHeader, in whole seconds. A POST that
+//     fails outright or answers 5xx is tried again a couple of times, so a
+//     blip on the way to the queue doesn't lose the job.
 //   - Handler serves Path: it receives one Envelope per POST, from the queue
 //     consumer or a scheduler, and dispatches it. 2xx means done; 5xx means
 //     the job failed and should be retried; 4xx means it never will succeed.
@@ -42,6 +44,10 @@ const maxEnvelopeBytes = 1 << 20
 // enqueueTimeout bounds one enqueue POST.
 const enqueueTimeout = 10 * time.Second
 
+// retryBackoff is the wait before each retry of a failed enqueue POST: three
+// tries in all.
+var retryBackoff = []time.Duration{200 * time.Millisecond, 800 * time.Millisecond}
+
 type Enqueuer struct {
 	url    string
 	client *http.Client
@@ -79,9 +85,28 @@ func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) 
 	if err != nil {
 		return fmt.Errorf("httpjobs: encode envelope: %w", err)
 	}
+	for attempt := 0; ; attempt++ {
+		retry, err := e.send(ctx, body, delay)
+		if err == nil {
+			return nil
+		}
+		if !retry || attempt == len(retryBackoff) {
+			return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, err)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, errors.Join(err, ctx.Err()))
+		case <-time.After(retryBackoff[attempt]):
+		}
+	}
+}
+
+// send makes one enqueue POST. retry reports whether a failure is worth
+// another try: a transport error or a 5xx is, a 4xx never succeeds.
+func (e *Enqueuer) send(ctx context.Context, body []byte, delay time.Duration) (retry bool, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("httpjobs: build request: %w", err)
+		return false, fmt.Errorf("build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if delay > 0 {
@@ -89,14 +114,14 @@ func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) 
 	}
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, err)
+		return ctx.Err() == nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxEnvelopeBytes))
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("httpjobs: enqueue %s: status %d", env.Kind, resp.StatusCode)
+		return resp.StatusCode >= 500, fmt.Errorf("status %d", resp.StatusCode)
 	}
-	return nil
+	return false, nil
 }
 
 // Handler dispatches the posted Envelope into registry.

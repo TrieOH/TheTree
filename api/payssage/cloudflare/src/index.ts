@@ -85,7 +85,14 @@ export class PayssageContainer extends BudgetedContainer<Env> {
 	// Idle time before the container sleeps; the next request cold-starts it.
 	sleepAfter = "2m";
 
-	static outboundByHost = jobsOutbound<Env>();
+	// Assigned in a static block, not declared as a static field: the
+	// containers package registers outbound handlers through the inherited
+	// `outboundByHost` setter, and a class field defines its own property
+	// instead, so the handlers never registered and every enqueue went to
+	// the internet (530).
+	static {
+		this.outboundByHost = jobsOutbound<Env>();
+	}
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);

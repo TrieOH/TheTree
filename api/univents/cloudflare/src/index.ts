@@ -35,7 +35,14 @@ export class UniventsContainer extends BudgetedContainer<Env> {
 	sleepAfter = "2m";
 
 	// Delayed jobs (purchase expiry) keep their delay on the queue.
-	static outboundByHost = jobsOutbound<Env>();
+	// Assigned in a static block, not declared as a static field: the
+	// containers package registers outbound handlers through the inherited
+	// `outboundByHost` setter, and a class field defines its own property
+	// instead, so the handlers never registered and every enqueue went to
+	// the internet (530).
+	static {
+		this.outboundByHost = jobsOutbound<Env>();
+	}
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);
