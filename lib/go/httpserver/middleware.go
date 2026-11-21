@@ -166,15 +166,6 @@ type httpCollectors struct {
 	problems metric.Int64Counter
 }
 
-// durationBuckets are 0.25ms doubling 16 times (~8s).
-var durationBuckets = func() []float64 {
-	b := make([]float64, 16)
-	for i := range b {
-		b[i] = 0.00025 * float64(int(1)<<i)
-	}
-	return b
-}()
-
 // newCollectors creates the HTTP instruments on meter. Names, attributes and
 // buckets are what dashboards query: keep them stable. Names carry their
 // Prometheus suffixes and no unit, so OTLP ingestion stores them as is.
@@ -186,7 +177,7 @@ func newCollectors(meter metric.Meter) (*httpCollectors, error) {
 	}
 	duration, err := meter.Float64Histogram("http_request_duration_seconds",
 		metric.WithDescription("Histogram of HTTP response times."),
-		metric.WithExplicitBucketBoundaries(durationBuckets...))
+		metric.WithExplicitBucketBoundaries(telemetry.DurationBuckets...))
 	if err != nil {
 		return nil, err
 	}
