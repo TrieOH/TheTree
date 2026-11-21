@@ -21,7 +21,7 @@ func main() {
 		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
-			identityx.Module(cfg.IdentityX, identityx.Debug(true), identityx.AcceptAPIKeys()),
+			identityx.Module(cfg.IdentityX, identityx.AcceptAPIKeys()),
 			jobs.Module(cfg.JobsURL),
 		},
 		Build:    app.Build(cfg),

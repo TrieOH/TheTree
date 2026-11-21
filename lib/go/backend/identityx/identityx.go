@@ -51,7 +51,10 @@ type options struct {
 	httpClient           *http.Client
 }
 
-// Debug turns on the SDK client's request logging.
+// Debug turns on the SDK client's request logging: every request and
+// response, bodies included, goes to stdout. Off by default and never set
+// by a deployed Backend, since IdentityX bodies carry profiles and emails;
+// it's for troubleshooting locally.
 func Debug(on bool) Option {
 	return func(o *options) { o.debug = on }
 }

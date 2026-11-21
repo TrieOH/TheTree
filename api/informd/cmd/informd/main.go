@@ -20,7 +20,7 @@ func main() {
 		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
-			identityx.Module(cfg.IdentityX, identityx.Debug(true)),
+			identityx.Module(cfg.IdentityX),
 		},
 		Build:    app.Build,
 		Errors:   problems.Mapper(app.Problem),
