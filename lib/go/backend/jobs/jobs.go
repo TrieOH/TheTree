@@ -35,7 +35,7 @@ func Module(cfg libconfig.Jobs) backend.Module {
 	return backend.Module{
 		Name: "jobs",
 		Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {
-			c, err := newCarrier(cfg.URL)
+			c, err := newCarrier(cfg.URL, cfg.Secret)
 			if err != nil {
 				return nil, err
 			}
@@ -47,7 +47,8 @@ func Module(cfg libconfig.Jobs) backend.Module {
 
 // carrier implements backend.Jobs over httpjobs or the in-process runner.
 type carrier struct {
-	http *httpjobs.Enqueuer // nil when in-process
+	http   *httpjobs.Enqueuer // nil when in-process
+	secret string             // what /_jobs deliveries must carry (httpjobs only)
 
 	mu      sync.RWMutex
 	runner  *inprocess.Runner // in-process only, set by Serve
@@ -57,7 +58,7 @@ type carrier struct {
 
 var _ backend.Jobs = (*carrier)(nil)
 
-func newCarrier(jobsURL string) (*carrier, error) {
+func newCarrier(jobsURL, secret string) (*carrier, error) {
 	if jobsURL == "" {
 		return &carrier{}, nil
 	}
@@ -65,7 +66,7 @@ func newCarrier(jobsURL string) (*carrier, error) {
 	if err != nil {
 		return nil, fmt.Errorf("jobs carrier: %w", err)
 	}
-	return &carrier{http: e}, nil
+	return &carrier{http: e, secret: secret}, nil
 }
 
 func (c *carrier) Enqueue(ctx context.Context, job libjobs.Job) error {
@@ -111,7 +112,7 @@ func (c *carrier) Serve(registry *libjobs.Registry, periodic ...libjobs.Periodic
 	}
 	c.served = true
 	if c.http != nil {
-		c.handler = httpjobs.Handler(registry)
+		c.handler = httpjobs.Handler(registry, c.secret)
 		return
 	}
 	c.runner = inprocess.New(registry, inprocess.Options{})

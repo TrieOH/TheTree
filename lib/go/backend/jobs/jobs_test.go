@@ -16,7 +16,7 @@ type ping struct{}
 func (ping) Kind() string { return "ping" }
 
 func TestInProcessRefusesBeforeServe(t *testing.T) {
-	c, err := newCarrier("")
+	c, err := newCarrier("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestInProcessRefusesBeforeServe(t *testing.T) {
 }
 
 func TestInProcessRunsAfterServe(t *testing.T) {
-	c, err := newCarrier("")
+	c, err := newCarrier("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestHTTPEnqueuesBeforeServeAndHandlesAfter(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c, err := newCarrier(srv.URL)
+	c, err := newCarrier(srv.URL, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestHTTPEnqueuesBeforeServeAndHandlesAfter(t *testing.T) {
 }
 
 func TestServeTwicePanics(t *testing.T) {
-	c, err := newCarrier("http://example.invalid")
+	c, err := newCarrier("http://example.invalid", "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -17,6 +17,7 @@ package httpjobs
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,10 @@ const Path = "/_jobs"
 // DelayHeader carries a delayed job's delay, in whole seconds, to the queue
 // producer.
 const DelayHeader = "Job-Delay-Seconds"
+
+// SecretHeader carries the jobs secret on a delivery to Path, from the
+// queue consumer.
+const SecretHeader = "Jobs-Secret"
 
 // maxEnvelopeBytes bounds one Envelope.
 const maxEnvelopeBytes = 1 << 20
@@ -128,11 +133,17 @@ func (e *Enqueuer) send(ctx context.Context, body []byte, delay time.Duration) (
 	return false, nil
 }
 
-// Handler dispatches the posted Envelope into registry.
-func Handler(registry *jobs.Registry) http.Handler {
+// Handler dispatches the posted Envelope into registry. With a secret set,
+// a delivery must carry it in SecretHeader or it's refused (401); the queue
+// consumer sends it.
+func Handler(registry *jobs.Registry, secret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		if secret != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get(SecretHeader)), []byte(secret)) != 1 {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		raw, err := io.ReadAll(io.LimitReader(r.Body, maxEnvelopeBytes))

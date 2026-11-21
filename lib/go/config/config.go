@@ -70,6 +70,10 @@ type CORS struct {
 // which delivers them back to /_jobs (on Cloudflare the Worker sets it).
 type Jobs struct {
 	URL string `env:"JOBS_URL"`
+	// Secret, when set, is required in the Jobs-Secret header of every
+	// delivery to /_jobs. The API Worker sends it; nothing else can run a job
+	// even if the path were ever reachable from outside.
+	Secret string `env:"JOBS_SECRET"`
 }
 
 // SMTP is the outgoing mail block, unprefixed, for the backends that send

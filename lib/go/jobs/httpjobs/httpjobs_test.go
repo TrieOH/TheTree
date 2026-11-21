@@ -37,7 +37,7 @@ func post(t *testing.T, method, body string) int {
 	t.Helper()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(context.Background(), method, httpjobs.Path, strings.NewReader(body))
-	httpjobs.Handler(registry()).ServeHTTP(rec, req)
+	httpjobs.Handler(registry(), "").ServeHTTP(rec, req)
 	return rec.Code
 }
 
@@ -171,5 +171,29 @@ func TestEnqueueAfterSendsTheDelay(t *testing.T) {
 	}
 	if got := <-headers; got != "" {
 		t.Fatalf("delay header = %q on a plain enqueue, want none", got)
+	}
+}
+
+func TestHandlerRequiresTheSecretWhenSet(t *testing.T) {
+	h := httpjobs.Handler(registry(), "jobs-secret")
+	for _, tc := range []struct {
+		name, sent string
+		want       int
+	}{
+		{"right secret", "jobs-secret", http.StatusNoContent},
+		{"wrong secret", "nope", http.StatusUnauthorized},
+		{"no secret", "", http.StatusUnauthorized},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, httpjobs.Path, strings.NewReader(`{"kind":"work"}`))
+			if tc.sent != "" {
+				req.Header.Set(httpjobs.SecretHeader, tc.sent)
+			}
+			h.ServeHTTP(rec, req)
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
 	}
 }

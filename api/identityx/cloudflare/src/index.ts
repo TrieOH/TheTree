@@ -7,6 +7,7 @@ import {
 	deliver,
 	enqueue,
 	jobsOutbound,
+	jobsSecret,
 	periodicJobs,
 	runJobs,
 } from "@trieoh/container-budget/jobs";
@@ -138,7 +139,7 @@ export default {
 
 	async queue(batch, env, ctx) {
 		// No retryDelay: failed jobs retry on the queue's own delay.
-		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job) });
+		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)) });
 	},
 
 	async scheduled(controller, env) {
