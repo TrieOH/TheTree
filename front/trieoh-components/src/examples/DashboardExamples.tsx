@@ -102,7 +102,7 @@ export function SparklineExample(props: Props) {
               : history
         }
         label="Evolução das inscrições"
-        type={props.values.type as "line" | "area"}
+        type={props.values.type as "line" | "area" | "bar"}
         height={Number(props.values.height)}
         showTooltip={props.values.showTooltip !== false}
       />
