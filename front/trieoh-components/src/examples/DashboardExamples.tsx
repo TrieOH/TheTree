@@ -105,6 +105,7 @@ export function SparklineExample(props: Props) {
         type={props.values.type as "line" | "area" | "bar"}
         height={Number(props.values.height)}
         showTooltip={props.values.showTooltip !== false}
+        fill={!!props.values.fill}
       />
     </div>
   );

@@ -1938,13 +1938,14 @@ export function createCatalog(options: {
       description:
         "Histórico compacto em linha, área ou barras para complementar métricas, sem eixos nem controles.",
       previewSize: { width: 420, height: 120 },
-      defaults: { type: "area", height: "80", empty: false, flat: false, showTooltip: true },
+      defaults: { type: "area", height: "80", empty: false, flat: false, showTooltip: true, fill: false },
       controls: [
         select("type", "Tipo", ["line", "area", "bar"]),
         number("height", "Altura", { min: 32, max: 180 }),
         text("empty", "Sem dados"),
         text("flat", "Valores constantes"),
         text("showTooltip", "Tooltip de valores"),
+        text("fill", "Barras ocupam a largura"),
       ],
       render: (values, update) => (
         <SparklineExample

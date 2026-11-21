@@ -7,6 +7,8 @@ export interface SparklineProps {
   label?: string;
   /** `bar` draws one bar per value; a zero is a dot on the baseline. */
   type?: "line" | "area" | "bar";
+  /** Bar mode only: stretch the bars to fill the width, so strips of the same length line up. */
+  fill?: boolean;
   color?: string;
   height?: number;
   showTooltip?: boolean;
@@ -31,6 +33,7 @@ export function Sparkline(props: SparklineProps) {
           label={props.label}
           color={props.color}
           height={props.height}
+          fill={props.fill}
           valueFormatter={props.valueFormatter}
           class={props.class}
         />
@@ -80,7 +83,8 @@ function SparkBars(props: Omit<SparklineProps, "type" | "showTooltip">) {
           <span
             title={format(value)}
             class={cn(
-              "w-1.5 shrink-0 rounded-[2px]",
+              props.fill ? "min-w-0 flex-1" : "w-1.5 shrink-0",
+              "rounded-[2px]",
               value ? undefined : "h-px bg-border",
             )}
             style={
