@@ -140,7 +140,7 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 		return nil, fmt.Errorf("failed to render email: %w", err)
 	}
 
-	err = o.Email.Send(email.Message{
+	err = o.Email.Send(ctx, email.Message{
 		To:      []string{*payload.SignatoryEmail},
 		Subject: fmt.Sprintf("Signature request for %s — %s", event.FullName, edition.Name),
 		Body:    body,
@@ -303,7 +303,7 @@ func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Sign
 		return
 	}
 
-	err = o.Email.Send(email.Message{
+	err = o.Email.Send(ctx, email.Message{
 		To:      []string{*sig.SignatoryEmail},
 		Subject: fmt.Sprintf("Your signature for %s — %s", event.FullName, edition.Name),
 		Body:    body,

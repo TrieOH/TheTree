@@ -66,7 +66,7 @@ func (w *SendTosUpdateWorker) Work(ctx context.Context, args emails.SendTosUpdat
 			continue
 		}
 
-		err = w.emailClient.Send(email.Message{
+		err = w.emailClient.Send(ctx, email.Message{
 			To:      []string{*actor.Email},
 			Subject: subject,
 			Body:    body,

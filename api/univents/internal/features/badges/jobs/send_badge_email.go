@@ -22,7 +22,7 @@ import (
 
 // EmailSender is the send seam. Satisfied by *email.Client; faked in tests.
 type EmailSender interface {
-	SendWithInlineImage(msg email.Message, images ...email.InlineImage) error
+	SendWithInlineImage(ctx context.Context, msg email.Message, images ...email.InlineImage) error
 }
 
 // SendBadgeEmailArgs is the `badges.send_email` job: email the participant
@@ -119,7 +119,7 @@ func (w *SendBadgeEmailWorker) Work(ctx context.Context, args SendBadgeEmailArgs
 		return fmt.Errorf("badge email: render: %w", err)
 	}
 
-	err = w.email.SendWithInlineImage(email.Message{
+	err = w.email.SendWithInlineImage(ctx, email.Message{
 		To:      []string{reg.AttendeeEmail},
 		Subject: fmt.Sprintf("Your badge for %s — %s", event.FullName, edition.Name),
 		Body:    body,

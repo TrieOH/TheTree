@@ -265,7 +265,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		return
 	}
 
-	err = w.email.Send(email.Message{
+	err = w.email.Send(ctx, email.Message{
 		To:      []string{toEmail},
 		Subject: fmt.Sprintf("Your certificate for %s — %s", event.FullName, edition.Name),
 		Body:    body,

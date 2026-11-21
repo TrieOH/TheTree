@@ -44,7 +44,7 @@ func (w *SendAuthEmailWorker) Work(ctx context.Context, args emails.SendAuthEmai
 		return err
 	}
 
-	err = w.emailClient.Send(email.Message{
+	err = w.emailClient.Send(ctx, email.Message{
 		To:      []string{args.ToEmail},
 		Subject: subject,
 		Body:    body,

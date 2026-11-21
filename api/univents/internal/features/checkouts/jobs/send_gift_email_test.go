@@ -33,7 +33,7 @@ type recordingSender struct {
 	failAt int // fail the Nth send (1-based); 0 = never fail
 }
 
-func (s *recordingSender) Send(msg email.Message) error {
+func (s *recordingSender) Send(_ context.Context, msg email.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.failAt > 0 && len(s.sent)+1 == s.failAt {

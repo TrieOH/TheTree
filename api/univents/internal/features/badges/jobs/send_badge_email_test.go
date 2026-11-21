@@ -21,7 +21,7 @@ type fakeSender struct {
 	err  error
 }
 
-func (f *fakeSender) SendWithInlineImage(msg email.Message, _ ...email.InlineImage) error {
+func (f *fakeSender) SendWithInlineImage(_ context.Context, msg email.Message, _ ...email.InlineImage) error {
 	if f.err != nil {
 		return f.err
 	}

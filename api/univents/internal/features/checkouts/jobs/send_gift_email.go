@@ -20,7 +20,7 @@ import (
 // EmailSender is the SMTP send seam. Satisfied by *email.Client; faked in
 // tests.
 type EmailSender interface {
-	Send(msg email.Message) error
+	Send(ctx context.Context, msg email.Message) error
 }
 
 // SendGiftEmailArgs is the `gifts.send_email` job: email the accountless
@@ -119,7 +119,7 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 		return err
 	}
 
-	err = w.email.Send(email.Message{
+	err = w.email.Send(ctx, email.Message{
 		To:      []string{reg.AttendeeEmail},
 		Subject: fmt.Sprintf("You received a gifted ticket for %s — %s", event.FullName, edition.Name),
 		Body:    body,
