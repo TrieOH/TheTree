@@ -3,6 +3,7 @@ package main
 import (
 	spec "IdentityX"
 	"IdentityX/internal/app"
+	"IdentityX/internal/app/errmap"
 	"IdentityX/internal/config"
 	"IdentityX/internal/problems"
 	"lib/backend"
@@ -25,7 +26,7 @@ func main() {
 			jobs.Module(cfg.JobsURL),
 		},
 		Build:    app.Build(cfg),
-		Errors:   problems.Mapper(app.Problem),
+		Errors:   problems.Mapper(errmap.Problem),
 		Problems: problems.Docs,
 	}), "identityx exited with error")
 }

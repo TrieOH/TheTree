@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	spec "IdentityX"
+	"IdentityX/internal/app/errmap"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/openapi"
 	"IdentityX/internal/problems"
@@ -53,7 +54,7 @@ func newTestRouter(t *testing.T, h *server, primitives httpserver.Primitives, st
 	}
 	// Boot installs the problems before serving; the router under test
 	// answers errors through the same mapper.
-	httpserver.UseProblems(problems.Mapper(Problem), "http://identityx.test")
+	httpserver.UseProblems(problems.Mapper(errmap.Problem), "http://identityx.test")
 	httpserver.UseOperationProblems(ops, true)
 	r := chi.NewRouter()
 	openapi.Mount(r, h, chains)

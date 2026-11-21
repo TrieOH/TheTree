@@ -8,6 +8,7 @@ import (
 	"lib/errx"
 	spec "payssage"
 	"payssage/internal/app"
+	"payssage/internal/app/errmap"
 	"payssage/internal/config"
 	"payssage/internal/problems"
 )
@@ -25,7 +26,7 @@ func main() {
 			jobs.Module(cfg.JobsURL),
 		},
 		Build:    app.Build(cfg),
-		Errors:   problems.Mapper(app.Problem),
+		Errors:   problems.Mapper(errmap.Problem),
 		Problems: problems.Docs,
 	}), "payssage exited with error")
 }
