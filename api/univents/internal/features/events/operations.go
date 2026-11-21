@@ -54,7 +54,7 @@ func (o *Operations) AddMember(ctx context.Context, eventID uuid.UUID, payload m
 
 	err = o.Badges.AwardStaffBadgesForUser(ctx, eventID, actor.ID)
 	if err != nil {
-		telemetry.Log().Error("failed to award staff badges",
+		telemetry.Log().ErrorContext(ctx, "failed to award staff badges",
 			slog.String("event_id", eventID.String()),
 			slog.String("user_id", actor.ID.String()),
 			telemetry.Err(err))
@@ -241,7 +241,7 @@ func (o *Operations) RemoveMember(ctx context.Context, eventID uuid.UUID, payloa
 
 	err = o.Badges.RevokeStaffBadgesForUser(ctx, eventID, actor.ID)
 	if err != nil {
-		telemetry.Log().Error("failed to revoke staff badges",
+		telemetry.Log().ErrorContext(ctx, "failed to revoke staff badges",
 			slog.String("event_id", eventID.String()),
 			slog.String("user_id", actor.ID.String()),
 			telemetry.Err(err))

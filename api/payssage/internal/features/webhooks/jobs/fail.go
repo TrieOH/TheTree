@@ -43,7 +43,7 @@ func (w *FailWebhookDeliveryWorker) Work(ctx context.Context, args FailWebhookDe
 		return nil
 	}
 
-	telemetry.Log().Warn("webhook delivery: giving up after retries",
+	telemetry.Log().WarnContext(ctx, "webhook delivery: giving up after retries",
 		slog.String("delivery_id", delivery.ID.String()),
 		slog.Int("attempts", delivery.Attempts),
 	)

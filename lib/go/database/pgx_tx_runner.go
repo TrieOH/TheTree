@@ -48,10 +48,10 @@ func (r *PgxTxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context)
 			if !committed {
 				rbErr := tx.Rollback(ctx)
 				if rbErr != nil {
-					telemetry.Log().Error("error during tx rollback after panic", telemetry.Err(rbErr))
+					telemetry.Log().ErrorContext(ctx, "error during tx rollback after panic", telemetry.Err(rbErr))
 				}
 			}
-			telemetry.Log().Error("transaction function panicked", slog.Any("panic", p))
+			telemetry.Log().ErrorContext(ctx, "transaction function panicked", slog.Any("panic", p))
 			err = fmt.Errorf("transaction panicked: %v", p)
 		}
 	}()
@@ -62,17 +62,17 @@ func (r *PgxTxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context)
 	if err != nil {
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after usecase error", telemetry.Err(rbErr))
+			telemetry.Log().ErrorContext(ctx, "error during tx rollback after usecase error", telemetry.Err(rbErr))
 		}
 		return err
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		telemetry.Log().Error("error during tx commit", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "error during tx commit", telemetry.Err(err))
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after commit failure", telemetry.Err(rbErr))
+			telemetry.Log().ErrorContext(ctx, "error during tx rollback after commit failure", telemetry.Err(rbErr))
 		}
 		return fmt.Errorf("commit transaction: %w", err)
 	}

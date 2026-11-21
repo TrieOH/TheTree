@@ -112,7 +112,7 @@ func (r *Runner) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Dura
 	time.AfterFunc(delay, func() {
 		err := r.Enqueue(r.ctx, job)
 		if err != nil && !errors.Is(err, ErrStopped) {
-			telemetry.Log().Error("delayed job not enqueued", slog.String("kind", job.Kind()), telemetry.Err(err))
+			telemetry.Log().ErrorContext(ctx, "delayed job not enqueued", slog.String("kind", job.Kind()), telemetry.Err(err))
 		}
 	})
 	return nil
@@ -178,11 +178,11 @@ func (r *Runner) run(env jobs.Envelope) {
 			return
 		}
 		if errors.Is(err, jobs.ErrUnknownKind) || attempt >= r.opts.MaxAttempts || r.ctx.Err() != nil {
-			telemetry.Log().Error("job failed",
+			telemetry.Log().ErrorContext(r.ctx, "job failed",
 				slog.String("kind", env.Kind), slog.Int("attempts", attempt), telemetry.Err(err))
 			return
 		}
-		telemetry.Log().Warn("job failed, retrying",
+		telemetry.Log().WarnContext(r.ctx, "job failed, retrying",
 			slog.String("kind", env.Kind), slog.Int("attempt", attempt), slog.Duration("backoff", backoff), telemetry.Err(err))
 		select {
 		case <-time.After(backoff):
@@ -212,6 +212,6 @@ func (r *Runner) tick(p jobs.Periodic) {
 func (r *Runner) enqueuePeriodic(p jobs.Periodic) {
 	err := r.Enqueue(r.ctx, p.Job)
 	if err != nil && !errors.Is(err, ErrStopped) {
-		telemetry.Log().Error("periodic job not enqueued", slog.String("kind", p.Job.Kind()), telemetry.Err(err))
+		telemetry.Log().ErrorContext(r.ctx, "periodic job not enqueued", slog.String("kind", p.Job.Kind()), telemetry.Err(err))
 	}
 }

@@ -39,29 +39,29 @@ func New(d Deps) *Operations { return &Operations{Deps: d} }
 func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.Identity, error) {
 	key, err := apikeys.ParseAPIKey(rawKey)
 	if err != nil {
-		telemetry.Log().Warn("api key parse failed", telemetry.Err(err))
+		telemetry.Log().WarnContext(ctx, "api key parse failed", telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	apiKey, err := o.APIKeys.GetByPrefix(ctx, key.DisplayPrefix)
 	if err != nil {
-		telemetry.Log().Warn("api key lookup failed", slog.String("prefix", key.DisplayPrefix), telemetry.Err(err))
+		telemetry.Log().WarnContext(ctx, "api key lookup failed", slog.String("prefix", key.DisplayPrefix), telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if !apikeys.VerifyAPIKey(rawKey, apiKey.KeyHash, o.HmacSecret) {
-		telemetry.Log().Warn("api key hmac mismatch", slog.String("prefix", key.DisplayPrefix))
+		telemetry.Log().WarnContext(ctx, "api key hmac mismatch", slog.String("prefix", key.DisplayPrefix))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
-		telemetry.Log().Warn("api key expired", slog.String("prefix", key.DisplayPrefix), slog.Time("expires_at", *apiKey.ExpiresAt))
+		telemetry.Log().WarnContext(ctx, "api key expired", slog.String("prefix", key.DisplayPrefix), slog.Time("expires_at", *apiKey.ExpiresAt))
 		return nil, errs.ErrAPIKeyExpired
 	}
 
 	actor, err := o.Actors.GetByID(ctx, apiKey.SubjectID)
 	if err != nil {
-		telemetry.Log().Warn("actor lookup failed", slog.String("prefix", key.DisplayPrefix), slog.String("subject_id", apiKey.SubjectID.String()), telemetry.Err(err))
+		telemetry.Log().WarnContext(ctx, "actor lookup failed", slog.String("prefix", key.DisplayPrefix), slog.String("subject_id", apiKey.SubjectID.String()), telemetry.Err(err))
 		return nil, errs.ErrInvalidAPIKey
 	}
 
@@ -75,7 +75,7 @@ func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.I
 	}
 	capJSON, _ := json.Marshal(pairs)
 
-	telemetry.Log().Debug("api key authenticated", slog.String("prefix", key.DisplayPrefix), slog.Any("capabilities", pairs))
+	telemetry.Log().DebugContext(ctx, "api key authenticated", slog.String("prefix", key.DisplayPrefix), slog.Any("capabilities", pairs))
 	return &models.Identity{
 		Sub: models.Subject{
 			ID:           actor.ID,
@@ -96,7 +96,7 @@ func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.I
 func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
 	project, err := o.Projects.GetByID(ctx, *payload.ProjectID)
 	if err != nil {
-		telemetry.Log().Info("Create api key", slog.String("project_id", payload.ProjectID.String()))
+		telemetry.Log().InfoContext(ctx, "Create api key", slog.String("project_id", payload.ProjectID.String()))
 		return nil, "", err
 	}
 

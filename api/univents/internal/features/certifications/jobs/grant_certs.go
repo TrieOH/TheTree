@@ -57,7 +57,7 @@ func NewGrantCertsWorker(
 func (w *GrantCertsWorker) Work(ctx context.Context, args GrantCertsForEditionArgs) error {
 	errs := w.grantEditionAttendanceCerts(ctx, args.EditionID)
 	for _, e := range errs {
-		telemetry.Log().Warn("cert emission had errors",
+		telemetry.Log().WarnContext(ctx, "cert emission had errors",
 			slog.String("user_id", e.UserID.String()),
 			slog.String("error", e.Error),
 		)
@@ -88,7 +88,7 @@ func NewGrantCertsForOccurrenceWorker(
 func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, args GrantCertsForOccurrenceArgs) error {
 	errs := w.grantProgramCerts(ctx, args.EditionID, args.ProgramID)
 	for _, e := range errs {
-		telemetry.Log().Warn("cert emission had errors",
+		telemetry.Log().WarnContext(ctx, "cert emission had errors",
 			slog.String("user_id", e.UserID.String()),
 			slog.String("error", e.Error),
 		)
@@ -238,13 +238,13 @@ func (w *grantCertsDeps) emitCerts(ctx context.Context, editionID uuid.UUID, tem
 func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certification, certName, toEmail, toName string) {
 	edition, err := w.editions.GetByID(ctx, cert.EditionID)
 	if err != nil {
-		telemetry.Log().Error("failed to get edition for cert email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to get edition for cert email", telemetry.Err(err))
 		return
 	}
 
 	event, err := w.events.GetByID(ctx, edition.EventID)
 	if err != nil {
-		telemetry.Log().Error("failed to get event for cert email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to get event for cert email", telemetry.Err(err))
 		return
 	}
 
@@ -261,7 +261,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		VerifyLink:   verifyLink,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to render cert email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to render cert email", telemetry.Err(err))
 		return
 	}
 
@@ -272,7 +272,7 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send cert email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to send cert email", telemetry.Err(err))
 		return
 	}
 

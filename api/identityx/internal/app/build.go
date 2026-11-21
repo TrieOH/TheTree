@@ -175,7 +175,7 @@ func announceJWKSChange(j backend.Jobs) func(context.Context) {
 	return func(ctx context.Context) {
 		err := j.Enqueue(ctx, jobs.JWKSChangedArgs{})
 		if err != nil && !errors.Is(err, carrier.ErrNotServing) {
-			telemetry.Log().Warn("could not announce a JWKS change", telemetry.Err(err))
+			telemetry.Log().WarnContext(ctx, "could not announce a JWKS change", telemetry.Err(err))
 		}
 	}
 }

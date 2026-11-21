@@ -148,7 +148,7 @@ func logs(logger *slog.Logger, skip []string) func(http.Handler) http.Handler {
 			start := time.Now()
 			ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(ww, r)
-			logger.Info("http_request",
+			logger.InfoContext(r.Context(), "http_request",
 				slog.String("request_id", RequestIDFromCtx(r.Context())),
 				slog.String("method", r.Method),
 				slog.String("path", routePattern(r)),
@@ -238,7 +238,7 @@ func recoverer(logger *slog.Logger) func(http.Handler) http.Handler {
 				if errors.Is(recErr, http.ErrAbortHandler) {
 					panic(rec)
 				}
-				logger.Error("panic recovered",
+				logger.ErrorContext(r.Context(), "panic recovered",
 					slog.String("method", r.Method),
 					slog.String("path", r.URL.Path),
 					slog.Any("panic", rec),

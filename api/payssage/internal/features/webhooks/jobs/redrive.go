@@ -51,7 +51,7 @@ func (w *RedriveWebhookDeliveriesWorker) Work(ctx context.Context, _ RedriveWebh
 		}
 	}
 	if len(unsent) > 0 {
-		telemetry.Log().Warn("webhook delivery: redrove unsent deliveries",
+		telemetry.Log().WarnContext(ctx, "webhook delivery: redrove unsent deliveries",
 			slog.Int("found", len(unsent)),
 			slog.Int("failed", len(errs)),
 		)

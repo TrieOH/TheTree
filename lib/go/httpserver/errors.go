@@ -132,7 +132,7 @@ func checkListed(r *http.Request, slug string) {
 	if strict {
 		panic(msg)
 	}
-	telemetry.Log().Warn(msg, slog.String("operation", slot.id), slog.String("problem", slug))
+	telemetry.Log().WarnContext(r.Context(), msg, slog.String("operation", slot.id), slog.String("problem", slug))
 	trace.SpanFromContext(r.Context()).SetAttributes(attribute.String("problem.unlisted", slug))
 }
 
@@ -168,7 +168,7 @@ func problemFor(err error) (*fp.Problem, string) {
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	p, base := problemFor(err)
 	if p.Status >= http.StatusInternalServerError {
-		telemetry.Log().Error("request failed", slog.Int("status", p.Status), slog.String("path", r.URL.Path), telemetry.Err(err))
+		telemetry.Log().ErrorContext(r.Context(), "request failed", slog.Int("status", p.Status), slog.String("path", r.URL.Path), telemetry.Err(err))
 	}
 	checkListed(r, p.Type)
 	countProblem(r, p.Type, p.Status)

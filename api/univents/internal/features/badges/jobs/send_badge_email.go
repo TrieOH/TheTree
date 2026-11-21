@@ -89,7 +89,7 @@ func (w *SendBadgeEmailWorker) Work(ctx context.Context, args SendBadgeEmailArgs
 		return err
 	}
 	if reg.Status != models.RegistrationStatusConfirmed || reg.AttendeeUserID == nil {
-		telemetry.Log().Info("badge email skipped: registration not confirmed or attendee has no account",
+		telemetry.Log().InfoContext(ctx, "badge email skipped: registration not confirmed or attendee has no account",
 			slog.String("registration_id", reg.ID.String()))
 		return nil
 	}

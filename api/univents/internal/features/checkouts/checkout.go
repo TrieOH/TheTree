@@ -267,7 +267,7 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 	}
 	err := o.Jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
-		telemetry.Log().Error("checkout: failed to enqueue gift email",
+		telemetry.Log().ErrorContext(ctx, "checkout: failed to enqueue gift email",
 			slog.String("registration_id", reg.ID.String()),
 			telemetry.Err(err))
 	}
@@ -311,14 +311,14 @@ func (o *Operations) notifyPurchase(ctx context.Context, purchase *models.Purcha
 func (o *Operations) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
-		telemetry.Log().Error("checkout: marshal notifier payload",
+		telemetry.Log().ErrorContext(ctx, "checkout: marshal notifier payload",
 			slog.String("channel", channelUniventsChanges),
 			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
-		telemetry.Log().Error("checkout: publish to notifier",
+		telemetry.Log().ErrorContext(ctx, "checkout: publish to notifier",
 			slog.String("channel", channelUniventsChanges),
 			slog.String("payload", string(raw)),
 			telemetry.Err(err))
@@ -343,7 +343,7 @@ func (o *Operations) revert(ctx context.Context, purchase *models.Purchase, item
 		return o.flipCancelled(ctx, items)
 	})
 	if err != nil {
-		telemetry.Log().Error("checkout: revert failed after intent creation error",
+		telemetry.Log().ErrorContext(ctx, "checkout: revert failed after intent creation error",
 			slog.String("purchase_id", purchase.ID.String()),
 			telemetry.Err(err))
 		return

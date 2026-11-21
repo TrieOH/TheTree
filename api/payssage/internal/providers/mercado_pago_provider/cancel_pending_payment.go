@@ -57,13 +57,13 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 	}
 
 	if resp.IsStatusFailure() {
-		return mapMPError("cancel payment", resp.StatusCode(), resp.ResultError(),
+		return mapMPError(ctx, "cancel payment", resp.StatusCode(), resp.ResultError(),
 			slog.String("intent_id", intent.ID.String()),
 			slog.String("payment_id", providerData.TransactionID),
 		)
 	}
 
-	telemetry.Log().Info("MP payment cancelled",
+	telemetry.Log().InfoContext(ctx, "MP payment cancelled",
 		slog.String("intent_id", intent.ID.String()),
 		slog.String("payment_id", providerData.TransactionID),
 		slog.String("status", mpResp.Status),

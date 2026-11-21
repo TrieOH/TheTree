@@ -72,13 +72,13 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	}
 
 	if resp.IsStatusFailure() {
-		return mapMPError("refund payment", resp.StatusCode(), resp.ResultError(),
+		return mapMPError(ctx, "refund payment", resp.StatusCode(), resp.ResultError(),
 			slog.String("intent_id", intent.ID.String()),
 			slog.String("payment_id", providerData.TransactionID),
 		)
 	}
 
-	telemetry.Log().Info("MP refund created",
+	telemetry.Log().InfoContext(ctx, "MP refund created",
 		slog.String("intent_id", intent.ID.String()),
 		slog.String("payment_id", providerData.TransactionID),
 		slog.Int64("refund_id", mpResp.ID),

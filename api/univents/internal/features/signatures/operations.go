@@ -147,7 +147,7 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send signature request email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to send signature request email", telemetry.Err(err))
 	}
 
 	return request, nil
@@ -310,6 +310,6 @@ func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Sign
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send signature confirmation email", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "failed to send signature confirmation email", telemetry.Err(err))
 	}
 }

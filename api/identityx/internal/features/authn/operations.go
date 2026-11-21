@@ -83,7 +83,7 @@ func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens
 	if actor.ProjectID != nil {
 		err = o.Tos.StampUse(ctx, actor.ID, *actor.ProjectID)
 		if err != nil {
-			telemetry.Log().Error("failed to stamp tos continued-use acceptance",
+			telemetry.Log().ErrorContext(ctx, "failed to stamp tos continued-use acceptance",
 				slog.String("actor_id", actor.ID.String()),
 				slog.String("project_id", actor.ProjectID.String()),
 				telemetry.Err(err),
@@ -128,7 +128,7 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 	}
 	err = o.EmailSender.SendReset(ctx, actor, project)
 	if err != nil {
-		telemetry.Log().Error("failed to enqueue password reset email",
+		telemetry.Log().ErrorContext(ctx, "failed to enqueue password reset email",
 			slog.String("actor_id", actor.ID.String()),
 			telemetry.Err(err),
 		)
@@ -223,7 +223,7 @@ func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) e
 	// recover via resend-verification.
 	err = o.EmailSender.SendVerify(ctx, actor, project)
 	if err != nil {
-		telemetry.Log().Error("failed to enqueue verification email",
+		telemetry.Log().ErrorContext(ctx, "failed to enqueue verification email",
 			slog.String("actor_id", actor.ID.String()),
 			telemetry.Err(err),
 		)
@@ -314,7 +314,7 @@ func (o *Operations) ResendVerification(ctx context.Context, in models.ResendVer
 	}
 	err = o.EmailSender.SendVerify(ctx, actor, project)
 	if err != nil {
-		telemetry.Log().Error("failed to enqueue verification email",
+		telemetry.Log().ErrorContext(ctx, "failed to enqueue verification email",
 			slog.String("actor_id", actor.ID.String()),
 			telemetry.Err(err),
 		)

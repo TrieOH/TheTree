@@ -69,7 +69,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 		return nil, fmt.Errorf("%w: mercadopago fetch payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 	if resp.IsStatusFailure() {
-		return nil, mapMPError("fetch payment", resp.StatusCode(), resp.ResultError(),
+		return nil, mapMPError(ctx, "fetch payment", resp.StatusCode(), resp.ResultError(),
 			slog.String("intent_id", intent.ID.String()),
 			slog.String("payment_id", envelope.Data.ID),
 		)

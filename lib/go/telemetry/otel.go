@@ -141,6 +141,6 @@ func Shutdown(ctx context.Context, shutdown func(context.Context) error, appName
 	}
 	err := shutdown(ctx)
 	if err != nil {
-		Log().Error("error shutting down telemetry for "+appName, Err(err))
+		Log().ErrorContext(ctx, "error shutting down telemetry for "+appName, Err(err))
 	}
 }

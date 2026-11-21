@@ -34,7 +34,7 @@ func (o *Operations) attachIntent(ctx context.Context, res *reservation, intent 
 func (o *Operations) cancelIntentBestEffort(ctx context.Context, intentID uuid.UUID) {
 	_, err := o.Payssage.CancelIntent(ctx, intentID)
 	if err != nil {
-		telemetry.Log().Warn("checkout: best-effort intent cancel failed",
+		telemetry.Log().WarnContext(ctx, "checkout: best-effort intent cancel failed",
 			slog.String("intent_id", intentID.String()),
 			telemetry.Err(err))
 	}
