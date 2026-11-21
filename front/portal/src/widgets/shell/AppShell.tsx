@@ -187,6 +187,8 @@ export function AppShell(props: { children: JSX.Element }) {
   const [drawer, setDrawer] = createSignal(false, { name: "drawer" });
   // The API reference lays out its own floating columns.
   const wide = () => /^\/services\/[^/]+\/api\/?$/.test(location().pathname);
+  // Dashboards compare across columns and need more room than reading pages.
+  const dashboard = () => /^\/metrics\/?$/.test(location().pathname);
   createEffect(
     () => location().pathname,
     () => {
@@ -224,7 +226,9 @@ export function AppShell(props: { children: JSX.Element }) {
       </Drawer>
 
       <main id="main-content" class={cn("min-w-0", wide() ? "px-4 py-6 lg:px-6" : "px-4 py-10 sm:px-8 lg:py-14")}>
-        <div class={cn("mx-auto w-full", !wide() && "max-w-[760px]")}>{props.children}</div>
+        <div class={cn("mx-auto w-full", !wide() && (dashboard() ? "max-w-[1040px]" : "max-w-[760px]"))}>
+          {props.children}
+        </div>
       </main>
     </div>
   );
