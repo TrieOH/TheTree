@@ -9,8 +9,10 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"context"
+	"encoding/json"
 	"errors"
 	"lib/database"
+	"lib/validator"
 	"time"
 	"uuid"
 )
@@ -134,12 +136,12 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 		return errs.ErrAlreadyProjectMember
 	}
 
-	newMember, err := models.NewProjectMember(payload.ProjectID, actor.ID, payload.Role)
-	if err != nil {
-		return err
-	}
-
-	return o.Projects.AddMember(ctx, *newMember)
+	return o.Projects.AddMember(ctx, models.ProjectMember{
+		ProjectID: payload.ProjectID,
+		ActorID:   actor.ID,
+		Role:      payload.Role,
+		Metadata:  json.RawMessage("{}"),
+	})
 }
 
 func (o *Operations) Create(ctx context.Context, in models.CreateOrganizationInput) (*models.Organization, error) {
@@ -148,7 +150,8 @@ func (o *Operations) Create(ctx context.Context, in models.CreateOrganizationInp
 		return nil, err
 	}
 
-	org, err := models.NewOrganization(ident.Sub.ID, in.Name, in.Slug)
+	org := &models.Organization{OwnerID: ident.Sub.ID, Name: in.Name, Slug: in.Slug}
+	err = validator.Validate(org)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +188,15 @@ func (o *Operations) CreateProject(ctx context.Context, in models.CreateOrgProje
 		return nil, err
 	}
 
-	project, err := models.NewProject(org.OwnerID, in.BrandSlug, in.Name, in.Domain, &in.OrganizationID)
+	project := &models.Project{
+		OrganizationID: &in.OrganizationID,
+		OwnerID:        org.OwnerID,
+		Name:           in.Name,
+		BrandSlug:      in.BrandSlug,
+		Domain:         in.Domain,
+		Metadata:       json.RawMessage("{}"),
+	}
+	err = validator.Validate(project)
 	if err != nil {
 		return nil, err
 	}

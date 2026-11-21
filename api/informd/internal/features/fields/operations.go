@@ -9,6 +9,7 @@ import (
 	"Informd/ports"
 	"context"
 	"lib/database"
+	"lib/validator"
 	"lib/xslices"
 	"uuid"
 )
@@ -50,18 +51,19 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateStepFieldI
 		return nil, err
 	}
 
-	field, err := models.NewField(
-		payload.StepID,
-		payload.Key,
-		payload.Title,
-		payload.Description,
-		payload.PositionHint,
-		payload.Required,
-		payload.Type,
-		payload.Placeholder,
-		payload.DefaultValue,
-		payload.Config,
-	)
+	field := &models.Field{
+		StepID:       payload.StepID,
+		Key:          payload.Key,
+		Title:        payload.Title,
+		Description:  payload.Description,
+		PositionHint: payload.PositionHint,
+		Required:     payload.Required,
+		Type:         payload.Type,
+		Placeholder:  payload.Placeholder,
+		DefaultValue: payload.DefaultValue,
+		Config:       payload.Config,
+	}
+	err = validator.Validate(field)
 	if err != nil {
 		return nil, err
 	}

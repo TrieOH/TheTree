@@ -14,21 +14,6 @@ type Step struct {
 	PositionHint int       `json:"position_hint" validate:"required,gte=1"`
 }
 
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewStep(formID uuid.UUID, title string, description *string, positionHint int) (*Step, error) {
-	s := &Step{
-		FormID:       formID,
-		Title:        title,
-		Description:  description,
-		PositionHint: positionHint,
-	}
-	err := validate.Struct(s)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
 type CreateFormStepInput struct {
 	FormID       uuid.UUID `json:"form_id"`
 	Title        string    `json:"title"`

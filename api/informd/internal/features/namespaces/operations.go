@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"lib/database"
+	"lib/validator"
 	idx "sdk/identityx"
 	"time"
 	"uuid"
@@ -44,7 +45,14 @@ func (o *Operations) CreateForm(ctx context.Context, title string, namespaceID u
 		return nil, err
 	}
 
-	form, err := models.NewForm(&namespaceID, namespace.OwnerID, ident.Sub.ID, title)
+	form := &models.Form{
+		NamespaceID: &namespaceID,
+		OwnerID:     namespace.OwnerID,
+		CreatedBy:   ident.Sub.ID,
+		Title:       title,
+		Status:      models.FormStatusDraft,
+	}
+	err = validator.Validate(form)
 	if err != nil {
 		return nil, err
 	}
@@ -171,14 +179,15 @@ func (o *Operations) Create(ctx context.Context, name string) (*models.Namespace
 		return nil, err
 	}
 
-	project, err := models.NewNamespace(ident.Sub.ID, name)
+	namespace := &models.Namespace{OwnerID: ident.Sub.ID, Name: name}
+	err = validator.Validate(namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	var created *models.Namespace
 	err = o.Tx.WithinTx(ctx, func(ctx context.Context) error {
-		created, err = o.Namespaces.Create(ctx, *project)
+		created, err = o.Namespaces.Create(ctx, *namespace)
 		if err != nil {
 			return err
 		}

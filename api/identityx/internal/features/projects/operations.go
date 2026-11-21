@@ -9,8 +9,10 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"context"
+	"encoding/json"
 	"errors"
 	"lib/database"
+	"lib/validator"
 	"uuid"
 )
 
@@ -72,12 +74,12 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 		return errs.ErrAlreadyProjectMember
 	}
 
-	newMember, err := models.NewProjectMember(payload.ProjectID, actor.ID, payload.Role)
-	if err != nil {
-		return err
-	}
-
-	return o.Projects.AddMember(ctx, *newMember)
+	return o.Projects.AddMember(ctx, models.ProjectMember{
+		ProjectID: payload.ProjectID,
+		ActorID:   actor.ID,
+		Role:      payload.Role,
+		Metadata:  json.RawMessage("{}"),
+	})
 }
 
 func (o *Operations) Create(ctx context.Context, in models.CreateProjectInput) (*models.Project, error) {
@@ -86,7 +88,14 @@ func (o *Operations) Create(ctx context.Context, in models.CreateProjectInput) (
 		return nil, err
 	}
 
-	project, err := models.NewProject(ident.Sub.ID, in.BrandSlug, in.Name, in.Domain, nil)
+	project := &models.Project{
+		OwnerID:   ident.Sub.ID,
+		Name:      in.Name,
+		BrandSlug: in.BrandSlug,
+		Domain:    in.Domain,
+		Metadata:  json.RawMessage("{}"),
+	}
+	err = validator.Validate(project)
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +116,12 @@ func (o *Operations) Create(ctx context.Context, in models.CreateProjectInput) (
 			return err
 		}
 
-		member, err := models.NewProjectMember(created.ID, ident.Sub.ID, models.ProjectRoleOwner)
-		if err != nil {
-			return err
-		}
-
-		return o.Projects.AddMember(ctx, *member)
+		return o.Projects.AddMember(ctx, models.ProjectMember{
+			ProjectID: created.ID,
+			ActorID:   ident.Sub.ID,
+			Role:      models.ProjectRoleOwner,
+			Metadata:  json.RawMessage("{}"),
+		})
 	})
 	if err != nil {
 		return nil, err

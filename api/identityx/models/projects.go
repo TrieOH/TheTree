@@ -19,24 +19,6 @@ type Project struct {
 	DeletedAt        *time.Time      `json:"deleted_at"`
 }
 
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewProject(ownerID uuid.UUID, slug, name string, domain *string, orgID *uuid.UUID) (*Project, error) {
-	p := &Project{
-		OrganizationID:   orgID,
-		OwnerID:          ownerID,
-		Name:             name,
-		BrandSlug:        slug,
-		Domain:           domain,
-		Metadata:         json.RawMessage("{}"),
-		DomainVerifiedAt: nil,
-	}
-	err := validate.Struct(p)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
 type ProjectDomainChallenges struct {
 	ID         uuid.UUID `json:"id"`
 	ProjectID  uuid.UUID `json:"project_id"`
@@ -76,21 +58,6 @@ type ProjectMember struct {
 	Role      ProjectRole     `json:"role"`
 	Metadata  json.RawMessage `json:"metadata"`
 	JoinedAt  time.Time       `json:"joined_at"`
-}
-
-// TODO: kill this constructor — build the struct directly and validate at use sites.
-func NewProjectMember(projectID, actorID uuid.UUID, role ProjectRole) (*ProjectMember, error) {
-	pm := &ProjectMember{
-		ProjectID: projectID,
-		ActorID:   actorID,
-		Role:      role,
-		Metadata:  json.RawMessage("{}"),
-	}
-	err := validate.Struct(pm)
-	if err != nil {
-		return nil, err
-	}
-	return pm, nil
 }
 
 type ProjectOAuthProviders struct {

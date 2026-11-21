@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"lib/database"
+	"lib/validator"
 	idx "sdk/identityx"
 	"time"
 	"uuid"
@@ -118,7 +119,8 @@ func (o *Operations) Create(ctx context.Context, title string) (*models.Form, er
 		return nil, err
 	}
 
-	form, err := models.NewForm(nil, ident.Sub.ID, ident.Sub.ID, title)
+	form := &models.Form{OwnerID: ident.Sub.ID, CreatedBy: ident.Sub.ID, Title: title, Status: models.FormStatusDraft}
+	err = validator.Validate(form)
 	if err != nil {
 		return nil, err
 	}
