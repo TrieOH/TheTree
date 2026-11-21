@@ -21,7 +21,7 @@ func main() {
 		CORS:   cfg.CORS,
 		Modules: []backend.Module{
 			postgres.Module(cfg.Postgres, app.Constraints()),
-			email.Module(cfg.ToEmailConfig()),
+			email.Module(cfg.SMTP),
 			jobs.Module(cfg.JobsURL),
 		},
 		Build:    app.Build(cfg),

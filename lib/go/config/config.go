@@ -2,14 +2,15 @@
 // settings, its own Postgres database, the IdentityX client, and CORS. Embed
 // the blocks into the backend's Config; the own-DB block takes its service
 // env prefix from the envPrefix tag, e.g. INFORMD_POSTGRES_HOST.
-// Genuinely per-backend settings (feature fields, SMTP, providers) stay in
-// the backend's config.go.
+// Genuinely per-backend settings (feature fields, providers) stay in the
+// backend's config.go.
 package config
 
 import (
 	"uuid"
 
 	"lib/database"
+	"lib/email"
 
 	idx "sdk/identityx"
 )
@@ -58,6 +59,29 @@ type IdentityX struct {
 type CORS struct {
 	AllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
 	AllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
+}
+
+// SMTP is the outgoing mail block, unprefixed, for the backends that send
+// email: mailpit locally, any SMTP relay when deployed.
+type SMTP struct {
+	Host     string `env:"SMTP_HOST,required"`
+	Port     int    `env:"SMTP_PORT"          envDefault:"587"`
+	Username string `env:"SMTP_USERNAME"`
+	Password string `env:"SMTP_PASSWORD"`
+	From     string `env:"SMTP_FROM,required"`
+	TLS      bool   `env:"SMTP_TLS"           envDefault:"true"`
+}
+
+// EmailConfig assembles the SMTP client config from the shared block.
+func EmailConfig(s SMTP) email.Config {
+	return email.Config{
+		Host:     s.Host,
+		Port:     s.Port,
+		Username: s.Username,
+		Password: s.Password,
+		From:     s.From,
+		TLS:      s.TLS,
+	}
 }
 
 // DBConnectionConfig assembles the service's database connection settings;

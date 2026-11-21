@@ -26,7 +26,7 @@ func main() {
 			identityx.Module(cfg.IdentityX,
 				identityx.Debug(cfg.DebugMode),
 				identityx.RequireVerifiedEmail(cfg.RequireVerifiedEmail)),
-			email.Module(cfg.ToEmailConfig()),
+			email.Module(cfg.SMTP),
 			jobs.Module(cfg.JobsURL),
 		},
 		Build:    app.Build(cfg),
