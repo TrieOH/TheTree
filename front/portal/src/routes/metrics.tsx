@@ -1,18 +1,30 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { Tabs, cn, PageHeader, Card, Sparkline, Table } from "@trieoh/ui-solid";
+import {
+  Badge,
+  ChartCard,
+  DashboardStatCard,
+  Meter,
+  PageHeader,
+  PageSection,
+  Table,
+  Tabs,
+  ToggleGroup,
+  type ChartDatum,
+} from "@trieoh/ui-solid";
+import { For, Match, Show, Switch, createMemo, createSignal } from "solid-js";
 import { NotConnected } from "@/widgets/shell/NotConnected";
-import { For, Match, Show, Switch, createSignal } from "solid-js";
-import { findService, type ServiceId } from "@/features/catalog/services";
+import { KpiRow } from "@/widgets/shell/Kpi";
+import { SERVICES, findService } from "@/features/catalog/services";
 import { loadMetrics } from "@/features/metrics/api";
-import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
-import { DEGRADED_P95_MS, type MetricsPayload, type WorkerStats } from "@/features/metrics/model";
+import { cyclePace, needsAttention, projectedShare, type MetricsTab } from "@/features/metrics/attention";
 import { summarize } from "@/features/metrics/cold-starts";
-import { routerLink } from "@/shared/ui/router-link";
+import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
+import { PLAN, type MetricsPayload, type WorkerStats } from "@/features/metrics/model";
+import { Attention } from "@/features/metrics/ui/Attention";
 import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
+import { ServiceLanes } from "@/features/metrics/ui/ServiceLanes";
 import { UsageBar } from "@/features/metrics/ui/UsageBar";
 import { timeAgo } from "@/features/delivery/stats";
-import { formatDay } from "@/features/issues/stats";
-import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/metrics")({
   loader: () => loadMetrics(),
@@ -20,24 +32,27 @@ export const Route = createFileRoute("/metrics")({
   component: MetricsPage,
 });
 
-const TABS = [
-  { id: "services", label: "Services" },
+const TABS: { id: MetricsTab; label: string }[] = [
+  { id: "services", label: "APIs" },
   { id: "latency", label: "Latency & errors" },
   { id: "usage", label: "Plan usage" },
-  { id: "database", label: "Database" },
-  { id: "fronts", label: "Frontends" },
+  { id: "database", label: "Databases" },
+  { id: "workers", label: "Workers" },
   { id: "cold-starts", label: "Cold starts" },
-] as const;
+];
+const tabLabel = (id: MetricsTab) => TABS.find((tab) => tab.id === id)!.label;
 
-type Tab = (typeof TABS)[number]["id"];
-
-const td = "tabular-nums";
-/** Requests or starts per hour or day as small accent bars. */
-const bars = { type: "bar", height: 32, color: "color-mix(in oklab, var(--accent) 70%, transparent)" } as const;
+const note = "text-[13px] text-muted-foreground max-w-[68ch]";
 
 function MetricsPage() {
   const data = Route.useLoaderData();
-  const [tab, setTab] = createSignal<Tab>("services", { name: "metrics-tab" });
+  const [tab, setTab] = createSignal<MetricsTab>("services", { name: "metrics-tab" });
+  const attention = createMemo(() => (data().syncedAt ? needsAttention(data()) : []), { name: "metrics-attention" });
+  let tabs: HTMLDivElement | undefined;
+  const open = (next: MetricsTab) => {
+    setTab(next);
+    tabs?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <>
@@ -45,14 +60,17 @@ function MetricsPage() {
         title="Metrics"
         description={
           <>
-            From Cloudflare's analytics, Neon's API and Grafana Cloud, pulled every 30 minutes; nothing here reaches a
-            service. Full dashboards and traces live in Grafana.
+            The four APIs, their Workers and databases, pulled from Cloudflare, Neon and Grafana every 30 minutes.
+            <Show when={data().syncedAt}>{(at) => <> Last pulled {timeAgo(at())}.</>}</Show>
           </>
         }
       />
-      <Tabs ariaLabel="Metric views" items={TABS} value={tab()} onChange={setTab} />
-      <div class="mt-6">
-        <Show when={data().syncedAt} fallback={<NotConnected source="Cloudflare and Neon" />}>
+      <Show when={data().syncedAt} fallback={<NotConnected source="Cloudflare and Neon" />}>
+        <Attention items={attention()} tabLabel={tabLabel} onOpen={open} />
+        <div ref={(el) => (tabs = el)} class="scroll-mt-6">
+          <Tabs ariaLabel="Metric views" items={TABS} value={tab()} onChange={setTab} />
+        </div>
+        <div class="mt-6">
           <Switch>
             <Match when={tab() === "services"}>
               <Services data={data()} />
@@ -64,199 +82,180 @@ function MetricsPage() {
               <PlanUsage data={data()} />
             </Match>
             <Match when={tab() === "database"}>
-              <Database data={data()} />
+              <Databases data={data()} />
             </Match>
-            <Match when={tab() === "fronts"}>
-              <Workers workers={data().workers.filter((w) => w.kind === "front" || w.kind === "portal")} />
+            <Match when={tab() === "workers"}>
+              <Workers workers={data().workers} />
             </Match>
             <Match when={tab() === "cold-starts"}>
               <ColdStarts data={data()} />
-              <h3 class="mb-2 mt-10 font-heading text-[15px] font-semibold">API Workers</h3>
-              <Workers workers={data().workers.filter((w) => w.kind === "api")} />
             </Match>
           </Switch>
-          <p class="mt-8 text-[12px] text-muted-foreground">Last pulled {timeAgo(data().syncedAt!)}.</p>
-        </Show>
-      </div>
+        </div>
+      </Show>
     </>
   );
 }
 
 function Services(props: { data: MetricsPayload }) {
   return (
-    <div class="grid gap-3 sm:grid-cols-2">
-      <For each={props.data.services}>
-        {(service) => (
-          <Card href={`/services/${service.id}`} renderLink={routerLink} class="p-4">
-            <div class="flex items-center justify-between gap-3">
-              <span class="font-medium">{findService(service.id)?.name}</span>
-              <span class="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                <StatusDot status={service.status} />
-                {statusLabel(service.status)}
-              </span>
-            </div>
-            <div class="mt-3">
-              <Sparkline {...bars} data={service.hourly} label="Requests per hour, last 24 hours" />
-            </div>
-            <dl class="mt-3 grid grid-cols-4 gap-2 text-[12px]">
-              <div>
-                <dt class="text-muted-foreground">Requests 24h</dt>
-                <dd class="tabular-nums">{service.requests24h === null ? "—" : formatCount(service.requests24h)}</dd>
-              </div>
-              <div>
-                <dt class="text-muted-foreground">5xx 24h</dt>
-                <dd class={cn("tabular-nums", (service.errors24h ?? 0) > 0 && "text-warn")}>{service.errors24h ?? "—"}</dd>
-              </div>
-              <div>
-                <dt class="text-muted-foreground">p95 24h</dt>
-                <dd class={cn("tabular-nums", (service.p95Ms24h ?? 0) > DEGRADED_P95_MS && "text-warn")}>
-                  {formatMs(service.p95Ms24h)}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-muted-foreground">Success 30d</dt>
-                <dd class="tabular-nums">{formatPercent(service.successRate30d)}</dd>
-              </div>
-            </dl>
-            <Show when={service.lastRequestAt}>
-              {(at) => <p class="mt-2 text-[11.5px] text-muted-foreground">Last request {timeAgo(at())}</p>}
-            </Show>
-          </Card>
-        )}
-      </For>
+    <div class="space-y-4">
+      <ServiceLanes services={props.data.services} />
+      <p class={note}>
+        Requests, 5xx and p95 cover the last 24 hours. p95 is measured inside the container, so a cold start's wait is
+        not in it. Open an API for its endpoints, problems and releases.
+      </p>
     </div>
   );
 }
 
 function LatencyAndErrors(props: { data: MetricsPayload }) {
   return (
-    <div class="space-y-4">
-      <p class="text-[13px] text-muted-foreground">
-        Measured inside each API's container and read from Grafana Cloud, so a cold start's wait is not included (see
-        Cold starts). Last 7 days; an endpoint's p95 is its worst day.
+    <>
+      <p class={`${note} mb-6`}>
+        Last 7 days, measured inside each API's container. An endpoint's p95 is its worst day; past the tick it counts
+        as degraded.
       </p>
       <Show
         when={props.data.endpoints.length > 0 || props.data.problems.length > 0}
         fallback={<NotConnected source="Grafana Cloud">No latency or error data pulled yet.</NotConnected>}
       >
-        <h3 class="font-heading text-[15px] font-semibold">Slowest endpoints</h3>
-        <EndpointTable endpoints={props.data.endpoints.slice(0, 15)} showService />
-        <h3 class="mt-10 font-heading text-[15px] font-semibold">Top error types</h3>
-        <ProblemTable problems={props.data.problems.slice(0, 15)} showService />
+        <PageSection title="Slowest endpoints">
+          <EndpointTable endpoints={props.data.endpoints} showService />
+        </PageSection>
+        <PageSection title="Most common problems" aside="answers sent, by type">
+          <ProblemTable problems={props.data.problems} showService />
+        </PageSection>
       </Show>
-    </div>
+    </>
   );
 }
 
-function ColdStarts(props: { data: MetricsPayload }) {
-  const week = (id: ServiceId) => summarize(props.data.coldStarts, id, 7);
-  const fortnight = (id: ServiceId) => summarize(props.data.coldStarts, id, 14);
-  return (
-    <div class="space-y-4">
-      <p class="text-[13px] text-muted-foreground">
-        A request that finds its API's container asleep waits for it to start. Each API Worker records that wait (start
-        plus first answer) as it happens; nothing is started to measure it. Last 7 days; bars are starts per day over 14.
-      </p>
-      <Show
-        when={props.data.coldStarts.length > 0}
-        fallback={
-          <NotConnected source="the API Workers">
-            No cold starts recorded yet. They start arriving once each API is released with the cold-start recording.
-          </NotConnected>
-        }
-      >
-        <Table
-          caption="Cold starts by service"
-          items={props.data.services}
-          columns={[
-            {
-              id: "service",
-              header: "Service",
-              class: "font-medium",
-              cell: (service) => findService(service.id)?.name,
-            },
-            { id: "starts", header: "Starts", class: td, cell: (service) => week(service.id).count },
-            {
-              id: "failed",
-              header: "Failed",
-              class: (service) => cn(td, week(service.id).failed > 0 && "text-warn"),
-              cell: (service) => week(service.id).failed,
-            },
-            { id: "typical", header: "Typical", class: td, cell: (service) => formatMs(week(service.id).typicalMs) },
-            {
-              id: "worst",
-              header: "Worst day p95",
-              class: td,
-              cell: (service) => formatMs(week(service.id).worstP95Ms),
-            },
-            {
-              id: "daily",
-              header: "Per day",
-              cell: (service) => (
-                <Sparkline {...bars} data={fortnight(service.id).daily} label="Cold starts per day, last 14 days" />
-              ),
-            },
-          ]}
-        />
-      </Show>
-    </div>
-  );
-}
+/** Cycles turn over at midnight UTC, so their days are UTC days; the end is exclusive. */
+const utcDay = (at: string | number) =>
+  new Date(at).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
+
+/** Below this, a resource is a rounding error and goes in the small table. */
+const MINOR_SHARE = 0.01;
 
 function PlanUsage(props: { data: MetricsPayload }) {
-  const pace = () => {
-    const start = Date.parse(props.data.cycle.start);
-    const end = Date.parse(props.data.cycle.end);
-    return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
-  };
+  const pace = () => cyclePace(props.data.cycle);
+  const daysLeft = () => Math.max(0, Math.ceil((Date.parse(props.data.cycle.end) - Date.now()) / 86_400_000));
+  const ranked = createMemo(() =>
+    props.data.usage
+      .map((usage) => ({ usage, end: projectedShare(usage, pace()) ?? usage.used / usage.included }))
+      .sort((a, b) => b.end - a.end),
+  );
+  const major = () => ranked().filter((row) => row.end >= MINOR_SHARE);
+  const minor = () => ranked().filter((row) => row.end < MINOR_SHARE);
   return (
-    <div class="space-y-6">
-      <p class="text-[13px] text-muted-foreground">
-        Billing cycle {formatDay(props.data.cycle.start)} – {formatDay(props.data.cycle.end)}. The tick marks an even
-        pace through it; a bar past its tick is on course to run out.
-      </p>
-      <For each={props.data.usage}>{(usage) => <UsageBar usage={usage} pace={pace()} />}</For>
+    <div class="space-y-10">
+      <Meter
+        label="Billing cycle"
+        valueLabel={`${utcDay(props.data.cycle.start)} to ${utcDay(Date.parse(props.data.cycle.end) - 1)}, ${daysLeft()} ${daysLeft() === 1 ? "day" : "days"} left`}
+        value={pace()}
+        tone="default"
+      />
+      <PageSection title="On the Workers Paid plan" aside="sorted by where each lands at the end">
+        <div class="space-y-6">
+          <For each={major()}>{(row) => <UsageBar usage={row.usage} pace={pace()} />}</For>
+        </div>
+      </PageSection>
+      <Show when={minor().length > 0}>
+        <PageSection title="Barely used" aside="under 1% by the end of the cycle">
+          <Table
+            caption="Barely used resources"
+            density="compact"
+            items={minor()}
+            columns={[
+              { id: "resource", header: "Resource", cell: (row) => PLAN[row.usage.resource].label },
+              {
+                id: "used",
+                header: "Used",
+                align: "right",
+                class: "tabular-nums",
+                cell: (row) => formatCount(row.usage.used),
+              },
+              {
+                id: "included",
+                header: "Included",
+                align: "right",
+                class: "tabular-nums text-muted-foreground",
+                cell: (row) => formatCount(row.usage.included),
+              },
+              {
+                id: "end",
+                header: "By the end",
+                align: "right",
+                class: "tabular-nums text-muted-foreground",
+                cell: (row) => formatPercent(row.end, 2),
+              },
+            ]}
+          />
+        </PageSection>
+      </Show>
     </div>
   );
 }
 
-function Database(props: { data: MetricsPayload }) {
+function Databases(props: { data: MetricsPayload }) {
+  const neon = () => props.data.neon;
+  const total = (pick: (p: MetricsPayload["neon"][number]) => number | null) =>
+    neon().reduce((n, project) => n + (pick(project) ?? 0), 0);
+  const asleep = () =>
+    neon().length ? neon().reduce((n, project) => n + (project.suspendedShare ?? 0), 0) / neon().length : null;
   return (
-    <div class="space-y-4">
-      <p class="text-[13px] text-muted-foreground">
-        One Neon project per service, read from Neon's API; nothing connects to Postgres. Neon's month runs to its own
-        quota reset.
+    <div class="space-y-8">
+      <p class={note}>
+        One Neon project per API, read from Neon's API; nothing here connects to Postgres. Neon's month runs to its own
+        quota reset, not the Cloudflare cycle.
       </p>
+      <KpiRow>
+        <DashboardStatCard label="Stored" value={formatBytes(total((p) => p.storageBytes))} hint="all four" />
+        <DashboardStatCard label="Asleep" value={formatPercent(asleep(), 1)} hint="of the month, on average" />
+        <DashboardStatCard label="Woke up" value={formatCount(total((p) => p.resumes))} hint="times this month" />
+        <DashboardStatCard label="Awake" value={formatHours(total((p) => p.activeSeconds))} hint="compute, all four" />
+      </KpiRow>
       <Table
         caption="Neon projects"
-        items={props.data.neon}
+        items={neon()}
         columns={[
+          { id: "service", header: "API", class: "font-medium", cell: (p) => findService(p.service)?.name },
           {
-            id: "service",
-            header: "Service",
-            class: "font-medium",
-            cell: (project) => findService(project.service)?.name,
+            id: "storage",
+            header: "Stored",
+            align: "right",
+            class: "tabular-nums",
+            cell: (p) => formatBytes(p.storageBytes),
           },
-          { id: "storage", header: "Storage", class: td, cell: (project) => formatBytes(project.storageBytes) },
-          { id: "awake", header: "Awake", class: td, cell: (project) => formatHours(project.activeSeconds) },
           {
-            id: "suspended",
-            header: "Suspended",
-            class: td,
-            cell: (project) => formatPercent(project.suspendedShare, 1),
+            id: "awake",
+            header: "Awake",
+            align: "right",
+            class: "tabular-nums",
+            cell: (p) => formatHours(p.activeSeconds),
           },
-          { id: "resumes", header: "Resumes", class: td, cell: (project) => project.resumes },
+          { id: "resumes", header: "Woke up", align: "right", class: "tabular-nums", cell: (p) => p.resumes },
           {
-            id: "resume",
-            header: "Resume p50 / max",
-            class: td,
-            cell: (project) => `${formatMs(project.resumeP50Ms)} / ${formatMs(project.resumeMaxMs)}`,
+            id: "wake",
+            header: "Wake time, typical",
+            align: "right",
+            class: "tabular-nums",
+            cell: (p) => formatMs(p.resumeP50Ms),
+          },
+          {
+            id: "wake-max",
+            header: "slowest",
+            align: "right",
+            class: "tabular-nums text-muted-foreground",
+            cell: (p) => formatMs(p.resumeMaxMs),
           },
           {
             id: "active",
-            header: "Last active",
+            header: "Last awake",
+            align: "right",
             class: "text-muted-foreground",
-            cell: (project) => (project.lastActiveAt ? timeAgo(project.lastActiveAt) : "—"),
+            cell: (p) => (p.lastActiveAt ? timeAgo(p.lastActiveAt) : "—"),
           },
         ]}
       />
@@ -264,36 +263,180 @@ function Database(props: { data: MetricsPayload }) {
   );
 }
 
+type WorkerKind = "all" | "front" | "api" | "portal";
+const KINDS: { value: WorkerKind; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "front", label: "Fronts" },
+  { value: "api", label: "APIs" },
+  { value: "portal", label: "Portal" },
+];
+const KIND_LABEL: Record<WorkerStats["kind"], string> = {
+  front: "Front",
+  api: "API",
+  portal: "Portal",
+  other: "Other",
+};
+
 function Workers(props: { workers: WorkerStats[] }) {
+  const [kind, setKind] = createSignal<WorkerKind>("all", { name: "workers-kind" });
+  // Workers outside the platform (personal projects on the same account) stay off the portal.
+  const shown = () => props.workers.filter((w) => w.kind !== "other" && (kind() === "all" || w.kind === kind()));
+  const errorShare = (w: WorkerStats) => (w.requests ? w.errors / w.requests : 0);
   return (
-    <div>
+    <div class="space-y-4">
+      <ToggleGroup ariaLabel="Filter Workers by kind" items={KINDS} value={kind()} onChange={setKind} />
       <Table
-        caption="Workers"
-        items={props.workers}
+        caption="Workers this billing cycle"
+        items={shown()}
         columns={[
-          { id: "worker", header: "Worker", class: "font-mono text-[12.5px]", cell: (worker) => worker.script },
-          { id: "requests", header: "Requests", class: td, cell: (worker) => formatCount(worker.requests) },
+          {
+            id: "worker",
+            header: "Worker",
+            cell: (w) => (
+              <span class="flex flex-col">
+                <span class="font-medium">{w.script}</span>
+                <span class="text-[12px] text-muted-foreground">
+                  {KIND_LABEL[w.kind]}
+                  {w.service ? ` of ${findService(w.service)?.name}` : ""}
+                </span>
+              </span>
+            ),
+          },
+          {
+            id: "requests",
+            header: "Requests",
+            align: "right",
+            class: "tabular-nums",
+            cell: (w) => formatCount(w.requests),
+          },
           {
             id: "errors",
             header: "Errors",
-            class: (worker) => cn(td, worker.errors > 0 && "text-warn"),
-            cell: (worker) => worker.errors,
+            align: "right",
+            class: "tabular-nums",
+            cell: (w) => (
+              <Show when={w.errors > 0} fallback={<span class="text-muted-foreground">none</span>}>
+                <Badge variant={errorShare(w) > 0.01 ? "warning" : "muted"} shape="pill">
+                  {formatPercent(errorShare(w), 1)}
+                </Badge>
+              </Show>
+            ),
+            title: (w) => `${formatCount(w.errors)} of ${formatCount(w.requests)} requests threw`,
           },
+          { id: "cpu", header: "CPU p99", align: "right", class: "tabular-nums", cell: (w) => formatMs(w.cpuP99Ms) },
+          { id: "wall", header: "Time p50", align: "right", class: "tabular-nums", cell: (w) => formatMs(w.wallP50Ms) },
           {
-            id: "cpu",
-            header: "CPU p50 / p99",
-            class: td,
-            cell: (worker) => `${formatMs(worker.cpuP50Ms)} / ${formatMs(worker.cpuP99Ms)}`,
-          },
-          {
-            id: "wall",
-            header: "Wall p50 / p99",
-            class: td,
-            cell: (worker) => `${formatMs(worker.wallP50Ms)} / ${formatMs(worker.wallP99Ms)}`,
+            id: "wall99",
+            header: "Time p99",
+            align: "right",
+            class: "tabular-nums text-muted-foreground",
+            cell: (w) => formatMs(w.wallP99Ms),
           },
         ]}
       />
-      <p class="mt-3 text-[12px] text-muted-foreground">This billing cycle. Errors are uncaught exceptions in the Worker.</p>
+      <p class={note}>
+        This billing cycle. Errors are uncaught exceptions in the Worker. Time is wall-clock, so an API Worker's
+        includes waiting on its container, cold starts too.
+      </p>
     </div>
+  );
+}
+
+const CHART_DAYS = 14;
+
+function ColdStarts(props: { data: MetricsPayload }) {
+  const days = () =>
+    Array.from({ length: CHART_DAYS }, (_, i) => {
+      const now = new Date();
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (CHART_DAYS - 1 - i)));
+    });
+  const chart = createMemo<ChartDatum[]>(() =>
+    SERVICES.flatMap((service) =>
+      days().map((date) => ({
+        date,
+        series: service.name,
+        value:
+          props.data.coldStarts.find((row) => row.service === service.id && row.day === date.toISOString().slice(0, 10))
+            ?.count ?? 0,
+      })),
+    ),
+  );
+  const rows = () =>
+    props.data.services.map((service) => ({ id: service.id, week: summarize(props.data.coldStarts, service.id, 7) }));
+  return (
+    <Show
+      when={props.data.coldStarts.length > 0}
+      fallback={
+        <NotConnected source="the API Workers">
+          No cold starts recorded yet. They start arriving once each API is released with the cold-start recording.
+        </NotConnected>
+      }
+    >
+      <div class="space-y-10">
+        <p class={note}>
+          A request that finds its API's container asleep waits for it to start. Each API Worker records that wait,
+          start plus first answer, as it happens; nothing is started to measure it.
+        </p>
+        <ChartCard
+          title="Starts per day"
+          subtitle={`Last ${CHART_DAYS} days. Pick an API to show or hide it.`}
+          data={chart()}
+          initialType="bar"
+          initialRange="all"
+          showTypeSelector={false}
+          showRangeFilter={false}
+          showSearchFilter={false}
+          showPointsToggle={false}
+          height={220}
+          dateFormatter={(date) => date.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}
+        />
+        <PageSection title="Last 7 days">
+          <Table
+            caption="Cold starts by API, last 7 days"
+            items={rows()}
+            columns={[
+              { id: "service", header: "API", class: "font-medium", cell: (row) => findService(row.id)?.name },
+              { id: "starts", header: "Starts", align: "right", class: "tabular-nums", cell: (row) => row.week.count },
+              {
+                id: "failed",
+                header: "Failed",
+                align: "right",
+                class: "tabular-nums",
+                cell: (row) => (
+                  <Show when={row.week.failed > 0} fallback={<span class="text-muted-foreground">none</span>}>
+                    <Badge
+                      shape="pill"
+                      variant={
+                        row.week.failed / row.week.count > 0.5
+                          ? "destructive"
+                          : row.week.failed / row.week.count > 0.1
+                            ? "warning"
+                            : "muted"
+                      }
+                    >
+                      {row.week.failed} of {row.week.count}
+                    </Badge>
+                  </Show>
+                ),
+              },
+              {
+                id: "typical",
+                header: "Typical wait",
+                align: "right",
+                class: "tabular-nums",
+                cell: (row) => formatMs(row.week.typicalMs),
+              },
+              {
+                id: "worst",
+                header: "Worst day, p95",
+                align: "right",
+                class: "tabular-nums text-muted-foreground",
+                cell: (row) => formatMs(row.week.worstP95Ms),
+              },
+            ]}
+          />
+        </PageSection>
+      </div>
+    </Show>
   );
 }
