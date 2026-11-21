@@ -7,6 +7,7 @@ import {
 	containerEnv,
 	deliver,
 	jobsOutbound,
+	jobsSecret,
 	runJobs,
 } from "@trieoh/container-budget/jobs";
 import { ROUTES } from "./routes";
@@ -62,6 +63,6 @@ export default {
 	},
 
 	async queue(batch, env, ctx) {
-		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job), retryDelay: backoff });
+		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)), retryDelay: backoff });
 	},
 } satisfies ExportedHandler<Env, Job>;

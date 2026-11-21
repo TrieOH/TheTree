@@ -13,6 +13,7 @@ const providerSchema = z.enum(["github", "google"]);
 const bff = createTanStackIdentityXBff({
   identityX: { baseURL: env.VITE_API_URL },
   apiBaseURL: env.VITE_API_URL,
+  clientIPSecret: env.CLIENT_IP_SECRET,
   session: {
     password: env.AUTH_SESSION_PASSWORD,
     name: "identityx-auth",

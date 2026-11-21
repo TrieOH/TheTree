@@ -43,10 +43,26 @@ export interface IdentityXBffConfig {
   session: () => BffSession | Promise<BffSession>;
   /** Also per call: the proxy checks the origin of the incoming request. */
   request: () => Request;
+  /**
+   * The CLIENT_IP_SECRET our APIs share with this front. With it, each
+   * upstream call names the user's IP (`X-Client-IP`), so the API rate limits
+   * per user instead of every user of the front sharing the Worker's egress
+   * address. Unset, nothing is sent.
+   */
+  clientIPSecret?: string;
   observability?: {
     log?: (event: IdentityXTransportLogEvent) => void;
     logSuccesses?: boolean;
   };
+}
+
+/**
+ * A Worker env's CLIENT_IP_SECRET, when it's been set (`wrangler secret put
+ * CLIENT_IP_SECRET`). Optional, so a deploy before it's set still works.
+ */
+export function clientIPSecret(env: object): string | undefined {
+  const secret = (env as { CLIENT_IP_SECRET?: unknown }).CLIENT_IP_SECRET;
+  return typeof secret === "string" && secret !== "" ? secret : undefined;
 }
 
 type TokenResolution =
@@ -170,6 +186,13 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       const headers = new Headers(init?.headers);
       if (traceparent && !headers.has("traceparent")) {
         headers.set("traceparent", traceparent);
+      }
+      // Cloudflare sets CF-Connecting-IP on the request the user made; the
+      // API trusts X-Client-IP only alongside the shared secret.
+      const clientIP = config.request().headers.get("CF-Connecting-IP");
+      if (config.clientIPSecret && clientIP) {
+        headers.set("X-Client-IP", clientIP);
+        headers.set("X-Client-IP-Secret", config.clientIPSecret);
       }
 
       const response = await fetch(url, {

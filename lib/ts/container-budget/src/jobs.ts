@@ -17,6 +17,19 @@ export const JOBS_PATH = "/_jobs";
 // (lib/jobs/httpjobs.DelayHeader).
 export const DELAY_HEADER = "Job-Delay-Seconds";
 
+// A delivery to the container's job endpoint carries the jobs secret in this
+// header (lib/jobs/httpjobs.SecretHeader).
+export const SECRET_HEADER = "Jobs-Secret";
+
+// The API's JOBS_SECRET, when it's been set (`wrangler secret put
+// JOBS_SECRET`). It reaches the container with every other secret
+// (containerEnv), which then refuses deliveries without it. Optional, so a
+// deploy before it's set still works.
+export function jobsSecret(env: object): string | undefined {
+	const secret = (env as { JOBS_SECRET?: unknown }).JOBS_SECRET;
+	return typeof secret === "string" && secret !== "" ? secret : undefined;
+}
+
 // trace is the W3C trace context of whatever enqueued the job
 // (lib/jobs.Envelope.Trace). The Worker passes it through untouched.
 export type Job = { kind: string; args?: unknown; trace?: Record<string, string> };
@@ -58,13 +71,20 @@ export function backoff(attempts: number): number {
 	return Math.min(30 * 2 ** (attempts - 1), 60 * 60);
 }
 
-// Delivers one job to a container. True when the job is done or can never
-// succeed (4xx); false when it should be retried.
-export async function deliver(container: Fetcher | { fetch(req: Request): Promise<Response> }, job: Job): Promise<boolean> {
+// Delivers one job to a container, with the jobs secret when there is one
+// (jobsSecret). True when the job is done or can never succeed (4xx); false
+// when it should be retried.
+export async function deliver(
+	container: Fetcher | { fetch(req: Request): Promise<Response> },
+	job: Job,
+	secret?: string,
+): Promise<boolean> {
+	const headers: Record<string, string> = { "Content-Type": "application/json" };
+	if (secret) headers[SECRET_HEADER] = secret;
 	const res = await container.fetch(
 		new Request(`http://container${JOBS_PATH}`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers,
 			body: JSON.stringify(job),
 		}),
 	);

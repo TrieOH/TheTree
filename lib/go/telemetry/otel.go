@@ -104,7 +104,7 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 			return fail(fmt.Errorf("metric exporter: %w", err))
 		}
 		reader := sdkmetric.NewPeriodicReader(exporter)
-		mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader), sdkmetric.WithResource(res))
+		mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader), sdkmetric.WithResource(res), sdkmetric.WithView(secondsHistograms))
 		otel.SetMeterProvider(mp)
 		shutdowns = append(shutdowns, mp.Shutdown)
 		err = runtimeInstruments(mp.Meter("lib/telemetry"))

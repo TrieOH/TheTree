@@ -11,6 +11,8 @@ export interface BffHandlerConfig {
   apiBaseURL: string;
   /** See {@link IdentityXBffConfig.readTimeoutMs}. */
   readTimeoutMs?: number;
+  /** See {@link IdentityXBffConfig.clientIPSecret}. */
+  clientIPSecret?: string;
   session: CookieSessionOptions;
   observability?: {
     log?: (event: IdentityXTransportLogEvent) => void;
@@ -52,6 +54,7 @@ export function createBffHandler(config: BffHandlerConfig) {
       identityX: config.identityX,
       apiBaseURL: config.apiBaseURL,
       readTimeoutMs: config.readTimeoutMs,
+      clientIPSecret: config.clientIPSecret,
       observability: config.observability,
       session: () => cookieSession.session,
       request: () => request,

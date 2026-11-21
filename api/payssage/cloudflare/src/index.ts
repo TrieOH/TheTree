@@ -8,6 +8,7 @@ import {
 	deliver,
 	enqueue,
 	jobsOutbound,
+	jobsSecret,
 	periodicJobs,
 	runJobs,
 } from "@trieoh/container-budget/jobs";
@@ -117,7 +118,7 @@ export default {
 	async queue(batch, env, ctx) {
 		if (batch.messages.some((m) => m.body.kind !== REDRIVE_KIND)) markWrite(env, ctx);
 		await runJobs(batch, ctx, {
-			deliver: async (job) => deliver(await instance(env), job),
+			deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)),
 			retryDelay: backoff,
 			deadLetter: { queue: DEAD_LETTER_QUEUE, onDead: ON_DEAD },
 		});

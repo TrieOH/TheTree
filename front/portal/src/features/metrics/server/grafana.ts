@@ -54,13 +54,13 @@ async function syncLatency(env: Env, now: Date): Promise<D1PreparedStatement[]> 
   // Evaluated at each full hour, the value covers the hour before it.
   const [hourly, day] = await Promise.all([
     prom<Matrix>(env, "query_range", {
-      query: p95("http_server_request_duration_seconds_bucket", "service_name", "1h"),
+      query: p95("http_request_duration_seconds_bucket", "service_name", "1h"),
       start: String((since + HOUR) / 1000),
       end: String(hourNow / 1000),
       step: "3600",
     }),
     prom<Vector>(env, "query", {
-      query: p95("http_server_request_duration_seconds_bucket", "service_name", "24h"),
+      query: p95("http_request_duration_seconds_bucket", "service_name", "24h"),
       time: String(now.getTime() / 1000),
     }),
   ]);

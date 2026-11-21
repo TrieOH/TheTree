@@ -33,6 +33,11 @@ type Server struct {
 	RateLimitBurst   int     `env:"RATE_LIMIT_BURST"   envDefault:"20"`
 	// ProfilePort serves pprof when set; empty leaves it off.
 	ProfilePort string `env:"PROFILE_PORT"`
+	// ClientIPSecret is shared with our front Workers. A request carrying it
+	// in X-Client-IP-Secret is trusted to name its user's IP in X-Client-IP,
+	// so a front's server-side calls are rate limited per user instead of
+	// all sharing the Worker's egress address. Empty: never trusted.
+	ClientIPSecret string `env:"CLIENT_IP_SECRET"`
 }
 
 // Postgres is the backend's own database, configured by POSTGRES_* in the
@@ -70,6 +75,10 @@ type CORS struct {
 // which delivers them back to /_jobs (on Cloudflare the Worker sets it).
 type Jobs struct {
 	URL string `env:"JOBS_URL"`
+	// Secret, when set, is required in the Jobs-Secret header of every
+	// delivery to /_jobs. The API Worker sends it; nothing else can run a job
+	// even if the path were ever reachable from outside.
+	Secret string `env:"JOBS_SECRET"`
 }
 
 // SMTP is the outgoing mail block, unprefixed, for the backends that send
