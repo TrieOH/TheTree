@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { Tabs, cn } from "@trieoh/ui-solid";
+import { Tabs, PageHeader, PageSection, DashboardStatCard, ToggleGroup, type ToggleGroupItem } from "@trieoh/ui-solid";
 import { For, Match, Show, Switch, createMemo, createSignal } from "solid-js";
 import { SERVICES, type ServiceId } from "@/features/catalog/services";
 import { loadIssues } from "@/features/issues/api";
@@ -13,8 +13,7 @@ import {
   medianDaysToClose,
 } from "@/features/issues/stats";
 import { IssueList, StateMark } from "@/features/issues/ui/IssueList";
-import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
-import { PageHeader, Section } from "@/widgets/shell/PageHeader";
+import { KpiRow } from "@/widgets/shell/Kpi";
 
 export const Route = createFileRoute("/issues")({
   loader: () => loadIssues(),
@@ -32,6 +31,12 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 /** A service, "other" for issues outside the four, or everything. */
 type Filter = ServiceId | "other" | "all";
+
+const FILTERS: ToggleGroupItem<Filter>[] = [
+  { value: "all", label: "All" },
+  ...SERVICES.map((service) => ({ value: service.id, label: service.name })),
+  { value: "other", label: "Other" },
+];
 
 const LINEAR_URL = "https://linear.app/trieoh";
 
@@ -71,14 +76,18 @@ function IssuesPage() {
       />
 
       <KpiRow>
-        <Kpi label="Open">{open().length}</Kpi>
-        <Kpi label="Urgent">{open().filter((issue) => issue.priority === 1).length}</Kpi>
-        <Kpi label="Done this cycle" note={data().cycle ? undefined : "last 14 days"}>
-          {doneThisCycle(done(), data().cycle).length}
-        </Kpi>
-        <Kpi label="Median time to close" note="last 30 days">
-          {median() === null ? "—" : `${median()!.toFixed(1)} d`}
-        </Kpi>
+        <DashboardStatCard label="Open" value={open().length} />
+        <DashboardStatCard label="Urgent" value={open().filter((issue) => issue.priority === 1).length} />
+        <DashboardStatCard
+          label="Done this cycle"
+          hint={data().cycle ? undefined : "last 14 days"}
+          value={doneThisCycle(done(), data().cycle).length}
+        />
+        <DashboardStatCard
+          label="Median time to close"
+          hint="last 30 days"
+          value={median() === null ? "—" : `${median()!.toFixed(1)} d`}
+        />
       </KpiRow>
 
       <Show when={data().cycle}>
@@ -106,17 +115,13 @@ function IssuesPage() {
         <Tabs ariaLabel="Issue views" items={TABS} value={tab()} onChange={setTab} />
       </div>
 
-      <div role="group" aria-label="Filter by service" class="mt-4 flex flex-wrap gap-1.5">
-        <FilterChip value="all" current={filter()} onSelect={setFilter}>All</FilterChip>
-        <For each={SERVICES}>
-          {(service) => (
-            <FilterChip value={service.id} current={filter()} onSelect={setFilter}>
-              {service.name}
-            </FilterChip>
-          )}
-        </For>
-        <FilterChip value="other" current={filter()} onSelect={setFilter}>Other</FilterChip>
-      </div>
+      <ToggleGroup
+        ariaLabel="Filter by service"
+        class="mt-4"
+        value={filter()}
+        onChange={setFilter}
+        items={FILTERS}
+      />
 
       <div class="mt-6">
         <Switch>
@@ -127,12 +132,12 @@ function IssuesPage() {
             >
               <For each={groupByState(currentList())}>
                 {(group) => (
-                  <Section
+                  <PageSection
                     title={group.state}
                     aside={<span class="tabular-nums">{group.issues.length}</span>}
                   >
                     <IssueList issues={group.issues} />
-                  </Section>
+                  </PageSection>
                 )}
               </For>
             </Show>
@@ -163,29 +168,6 @@ function IssuesPage() {
   );
 }
 
-function FilterChip(props: {
-  value: Filter;
-  current: Filter;
-  onSelect: (value: Filter) => void;
-  children: string;
-}) {
-  const active = () => props.value === props.current;
-  return (
-    <button
-      type="button"
-      aria-pressed={active() ? "true" : "false"}
-      onClick={() => props.onSelect(props.value)}
-      class={cn(
-        "h-7 rounded-full border px-3 text-[12.5px] transition-colors",
-        active()
-          ? "border-foreground/30 bg-foreground/10 text-foreground"
-          : "border-border text-muted-foreground hover:bg-foreground/5",
-      )}
-    >
-      {props.children}
-    </button>
-  );
-}
 
 function ProjectList(props: { projects: readonly Project[] }) {
   return (

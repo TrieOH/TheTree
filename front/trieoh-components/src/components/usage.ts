@@ -124,6 +124,31 @@ export function usage(name: string, v: Values): string {
       imports = "toast, Button";
       jsx = `<Button onClick={() => toast.success("Ação realizada com sucesso!")}>Disparar Toast</Button>`;
       break;
+    case "StatusDot":
+      jsx = `<StatusDot ${prop("tone")} label={${q("label")}} ${prop("size")} />`;
+      break;
+    case "Callout":
+      jsx = `<Callout ${prop("tone")} title={${q("title")}}>\\n  <p>${v.children}</p>\\n</Callout>`;
+      break;
+    case "Meter":
+      jsx = `<Meter\\n  value={${v.value}}\\n  max={100}\\n  label={${q("label")}}\\n  valueLabel="${v.value}%"\\n  ${prop("tone")}${v.showMarkers ? `\\n  markers={[\\n    { value: 50, label: "Ritmo esperado" },\\n    { value: 90, label: "Limite", tone: "destructive" },\\n  ]}` : ""}\\n/>`;
+      break;
+    case "CopyButton":
+      jsx = `<CopyButton text={${q("text")}} ${prop("size")} />`;
+      break;
+    case "ToggleGroup":
+      setup = state(q("value"));
+      jsx = `<ToggleGroup\\n  ariaLabel="Filtrar por serviço"\\n  value={value()}\\n  onChange={setValue}\\n  ${prop("size")}\\n  items={[\\n    { value: "all", label: "Todos" },\\n    { value: "identityx", label: "IdentityX" },\\n  ]}\\n/>`;
+      break;
+    case "PageHeader":
+      jsx = `<PageHeader title={${q("title")}} description={${q("description")}} />`;
+      break;
+    case "PageSection":
+      jsx = `<PageSection title={${q("title")}} aside={${q("aside")}}>\\n  <p>Conteúdo da seção.</p>\\n</PageSection>`;
+      break;
+    case "Table":
+      jsx = `<Table\\n  caption="Serviços"\\n  ${prop("density")}\\n  items={services}\\n  columns={[\\n    { id: "name", header: "Serviço", cell: (row) => row.name },\\n    { id: "p95", header: "p95", align: "right", cell: (row) => \`\${row.p95} ms\` },\\n  ]}\\n/>`;
+      break;
     case "EmptyState":
       jsx = `<EmptyState title={${q("title")}} description={${q("description")}} />`;
       break;
@@ -251,6 +276,9 @@ export function usage(name: string, v: Values): string {
     WaveText: ["text", "duration", "delay", "lift", "waveWidth"],
     WaveSpinnerLoading: ["text", "spinnerSize"],
     Spinner: ["size"],
+    Card: ["href", "external"],
+    EmptyState: ["variant"],
+    Drawer: ["side"],
   };
   if (
     [

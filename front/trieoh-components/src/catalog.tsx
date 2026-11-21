@@ -60,6 +60,18 @@ import {
   Reveal,
   Separator,
   Tabs,
+  Callout,
+  CopyButton,
+  Meter,
+  PageHeader,
+  PageSection,
+  StatusDot,
+  Table,
+  ToggleGroup,
+  type BadgeProps,
+  type CalloutTone,
+  type MeterTone,
+  type StatusDotTone,
   type RevealDirection,
   type RevealVariant,
   type SeparatorLabelPosition,
@@ -103,6 +115,13 @@ const ChartExample = clientOnly(() => import("./examples/DashboardExamples"), {
   lazy: true,
   export: "ChartExample",
 });
+
+type BadgeVariant = NonNullable<BadgeProps["variant"]>;
+const tableRows = [
+  { name: "IdentityX", p95: 212, requests: 18_420 },
+  { name: "Payssage", p95: 940, requests: 2_318 },
+  { name: "Univents", p95: 388, requests: 7_904 },
+];
 
 export type Values = Record<string, string | boolean>;
 export type NumberRange = {
@@ -398,16 +417,236 @@ export function createCatalog(options: {
           "accent",
           "secondary",
           "outline",
+          "muted",
+          "success",
+          "warning",
+          "destructive",
         ]),
       ],
       render: (v) => (
         <Badge
           class={String(v.class)}
-          variant={v.variant as "default" | "accent" | "secondary" | "outline"}
+          variant={v.variant as BadgeVariant}
           shape={v.shape as Shape}
         >
           {String(v.children)}
         </Badge>
+      ),
+    },
+
+    {
+      name: "StatusDot",
+      group: "Feedback",
+      description:
+        "Luz de estado compacta; idle é vazada, para quando nada está acontecendo.",
+      defaults: { tone: "success", label: "Operacional", size: "sm" },
+      controls: [
+        select("tone", "Tom", ["success", "warning", "destructive", "muted", "idle"]),
+        text("label", "Rótulo"),
+        select("size", "Tamanho", ["sm", "md"]),
+      ],
+      render: (v) => (
+        <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <StatusDot
+            class={String(v.class)}
+            tone={v.tone as StatusDotTone}
+            label={String(v.label)}
+            size={v.size as "sm" | "md"}
+          />
+          {String(v.label)}
+        </span>
+      ),
+    },
+    {
+      name: "Callout",
+      group: "Feedback",
+      description: "Nota destacada dentro de uma página: contexto, dica, aviso ou perigo.",
+      defaults: {
+        tone: "warning",
+        title: "Acorda a API",
+        children: "Esta chamada liga o container se ele estiver dormindo.",
+      },
+      controls: [
+        select("tone", "Tom", ["info", "success", "warning", "destructive"]),
+        text("title", "Título"),
+        text("children", "Conteúdo"),
+      ],
+      render: (v) => (
+        <Callout
+          class={cn("w-full max-w-md", String(v.class))}
+          shape={v.shape as Shape}
+          tone={v.tone as CalloutTone}
+          title={String(v.title) || undefined}
+        >
+          <p>{String(v.children)}</p>
+        </Callout>
+      ),
+    },
+    {
+      name: "Meter",
+      group: "Feedback",
+      description:
+        "Quanto de algo já foi usado, com marcas opcionais para limites ou ritmo esperado.",
+      defaults: {
+        value: "62",
+        label: "Horas de container",
+        tone: "success",
+        showMarkers: true,
+      },
+      controls: [
+        number("value", "Valor (%)", { min: 0, max: 100 }),
+        text("label", "Rótulo"),
+        select("tone", "Tom", ["default", "accent", "success", "warning", "destructive"]),
+        text("showMarkers", "Mostrar marcas"),
+      ],
+      render: (v) => (
+        <Meter
+          class={cn("w-full max-w-sm", String(v.class))}
+          value={Number(v.value)}
+          max={100}
+          label={String(v.label)}
+          valueLabel={`${Number(v.value)}%`}
+          tone={v.tone as MeterTone}
+          markers={
+            v.showMarkers
+              ? [
+                  { value: 50, label: "Ritmo esperado" },
+                  { value: 90, label: "Limite", tone: "destructive" },
+                ]
+              : []
+          }
+        />
+      ),
+    },
+    {
+      name: "CopyButton",
+      group: "Ações",
+      description: "Copia um texto para a área de transferência e confirma com um check.",
+      defaults: { text: "pnpm add @trieoh/ui-solid", size: "md" },
+      controls: [text("text", "Texto"), select("size", "Tamanho", ["sm", "md"])],
+      render: (v) => (
+        <div class="flex items-center gap-2 rounded-md border border-border px-3 py-1 font-mono text-xs">
+          <span>{String(v.text)}</span>
+          <CopyButton
+            class={String(v.class)}
+            shape={v.shape as Shape}
+            text={String(v.text)}
+            size={v.size as "sm" | "md"}
+          />
+        </div>
+      ),
+    },
+    {
+      name: "ToggleGroup",
+      group: "Formulários",
+      description: "Linha de opções em que uma fica marcada, como um filtro.",
+      defaults: { value: "all", size: "sm" },
+      controls: [select("size", "Tamanho", ["sm", "md"])],
+      render: (v, update) => (
+        <ToggleGroup
+          class={String(v.class)}
+          shape={v.shape as Shape}
+          ariaLabel="Filtrar por serviço"
+          size={v.size as "sm" | "md"}
+          value={String(v.value)}
+          onChange={(value) => update("value", value)}
+          items={[
+            { value: "all", label: "Todos" },
+            { value: "identityx", label: "IdentityX" },
+            { value: "payssage", label: "Payssage" },
+            { value: "univents", label: "Univents" },
+          ]}
+        />
+      ),
+    },
+    {
+      name: "PageHeader",
+      group: "Layout",
+      description: "Bloco de título no topo de uma página, com descrição e ações.",
+      defaults: {
+        title: "Entrega",
+        description: "Deploys, pull requests e CI dos últimos 30 dias.",
+        showActions: false,
+      },
+      controls: [
+        text("title", "Título"),
+        text("description", "Descrição"),
+        text("showActions", "Mostrar ações"),
+      ],
+      render: (v) => (
+        <PageHeader
+          class={cn("w-full max-w-lg", String(v.class))}
+          title={String(v.title)}
+          description={String(v.description) || undefined}
+          actions={
+            v.showActions ? (
+              <Button size="sm" variant="outline">
+                Exportar
+              </Button>
+            ) : undefined
+          }
+        />
+      ),
+    },
+    {
+      name: "PageSection",
+      group: "Layout",
+      description: "Bloco com título dentro de uma página, com uma nota à direita.",
+      defaults: { title: "Deploys", aside: "últimos 30 dias" },
+      controls: [text("title", "Título"), text("aside", "Nota")],
+      render: (v) => (
+        <PageSection
+          class={cn("mb-0 w-full max-w-lg", String(v.class))}
+          title={String(v.title)}
+          aside={String(v.aside) || undefined}
+        >
+          <p class="text-sm text-muted-foreground">Conteúdo da seção.</p>
+        </PageSection>
+      ),
+    },
+    {
+      name: "Table",
+      group: "Layout",
+      description:
+        "Tabela simples só de leitura; para ordenar, selecionar ou paginar use DataTable.",
+      previewSize: { width: 520, height: 220 },
+      defaults: { density: "default", empty: false },
+      controls: [
+        select("density", "Densidade", ["default", "compact"]),
+        text("empty", "Sem dados"),
+      ],
+      render: (v) => (
+        <Table
+          class={cn("w-full max-w-lg", String(v.class))}
+          caption="Serviços"
+          density={v.density as "default" | "compact"}
+          items={v.empty ? [] : tableRows}
+          emptyState={
+            <EmptyState variant="inline" title="Nenhum serviço ainda." />
+          }
+          columns={[
+            {
+              id: "name",
+              header: "Serviço",
+              cell: (row) => row.name,
+              class: "font-medium",
+            },
+            {
+              id: "p95",
+              header: "p95",
+              align: "right",
+              cell: (row) => `${row.p95} ms`,
+              class: (row) => (row.p95 > 800 ? "tabular-nums text-warning" : "tabular-nums"),
+            },
+            {
+              id: "requests",
+              header: "Requisições",
+              align: "right",
+              cell: (row) => row.requests.toLocaleString("pt-BR"),
+              class: "tabular-nums",
+            },
+          ]}
+        />
       ),
     },
 
@@ -521,10 +760,16 @@ export function createCatalog(options: {
       name: "Card",
       group: "Layout",
       description: "Superfície de conteúdo com borda e fundo semânticos.",
-      defaults: { children: "Conteúdo do card" },
-      controls: [text("children", "Conteúdo")],
+      defaults: { children: "Conteúdo do card", href: "", external: false },
+      controls: [
+        text("children", "Conteúdo"),
+        text("href", "Link"),
+        text("external", "Abrir em nova aba"),
+      ],
       render: (v) => (
         <Card
+          href={String(v.href) || undefined}
+          external={!!v.external}
           shape={v.shape as Shape}
           class={cn("w-full p-5", String(v.class))}
         >
@@ -1041,7 +1286,7 @@ export function createCatalog(options: {
         description: {
           Dialog: "Modal com título, conteúdo e tamanhos configuráveis.",
           AlertModal: "Modal de confirmação com variantes semânticas.",
-          Drawer: "Painel sobreposto que abre pela base da tela.",
+          Drawer: "Painel sobreposto que abre pela base ou pela lateral da tela.",
           MultiStepDialog: "Formulário dividido em etapas.",
         }[name],
         defaults: {
@@ -1057,6 +1302,7 @@ export function createCatalog(options: {
           fixedHeight: true,
           nextLabel: "Continuar",
           submitLabel: "Concluir",
+          side: "bottom",
         },
         controls: [
           text("title", "Título"),
@@ -1084,6 +1330,9 @@ export function createCatalog(options: {
             : []),
           ...(name === "Dialog" || name === "MultiStepDialog"
             ? [select("size", "Tamanho", ["sm", "md", "lg", "xl", "full"])]
+            : []),
+          ...(name === "Drawer"
+            ? [select("side", "Lado", ["bottom", "left", "right"])]
             : []),
           ...(name === "AlertModal"
             ? [
@@ -1150,6 +1399,7 @@ export function createCatalog(options: {
             </Show>
             <Show when={name === "Drawer"}>
               <Drawer
+                side={v.side as "bottom" | "left" | "right"}
                 class={String(v.class)}
                 shape={v.shape as Shape}
                 open={opened() === name}
@@ -1277,8 +1527,10 @@ export function createCatalog(options: {
         eyebrow: "Projetos",
         actionLabel: "Criar projeto",
         showAction: false,
+        variant: "default",
       },
       controls: [
+        select("variant", "Variante", ["default", "inline"]),
         text("title", "Título"),
         text("description", "Descrição"),
         text("eyebrow", "Texto superior"),
@@ -1287,6 +1539,7 @@ export function createCatalog(options: {
       ],
       render: (v) => (
         <EmptyState
+          variant={v.variant as "default" | "inline"}
           shape={v.shape as Shape}
           eyebrow={String(v.eyebrow)}
           action={
@@ -1683,11 +1936,11 @@ export function createCatalog(options: {
       name: "Sparkline",
       group: "Dashboard",
       description:
-        "Histórico compacto em linha ou área para complementar métricas, sem eixos nem controles.",
+        "Histórico compacto em linha, área ou barras para complementar métricas, sem eixos nem controles.",
       previewSize: { width: 420, height: 120 },
       defaults: { type: "area", height: "80", empty: false, flat: false, showTooltip: true },
       controls: [
-        select("type", "Tipo", ["line", "area"]),
+        select("type", "Tipo", ["line", "area", "bar"]),
         number("height", "Altura", { min: 32, max: 180 }),
         text("empty", "Sem dados"),
         text("flat", "Valores constantes"),
@@ -2118,6 +2371,9 @@ export function createCatalog(options: {
     MultiStepDialog: "round",
     Avatar: "soft",
     Badge: "subtle",
+    Callout: "round",
+    CopyButton: "soft",
+    ToggleGroup: "pill",
   };
   for (const entry of entries) {
     const shape = shapeDefaults[entry.name];

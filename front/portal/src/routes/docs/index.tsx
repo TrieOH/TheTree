@@ -1,7 +1,8 @@
-import { Link, createFileRoute } from "@tanstack/solid-router";
+import { createFileRoute } from "@tanstack/solid-router";
+import { PageHeader, Card } from "@trieoh/ui-solid";
+import { routerLink } from "@/shared/ui/router-link";
 import { For } from "solid-js";
 import { DOC_CATEGORIES, docsIn } from "@/features/docs/catalog";
-import { PageHeader } from "@/widgets/shell/PageHeader";
 
 export const Route = createFileRoute("/docs/")({
   head: () => ({ meta: [{ title: "Docs · TrieOH dev" }] }),
@@ -15,17 +16,13 @@ function DocsIndex() {
       <div class="grid gap-3 sm:grid-cols-2">
         <For each={DOC_CATEGORIES}>
           {(category) => (
-            <Link
-              to="/docs/$category"
-              params={{ category: category.id }}
-              class="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-foreground/5"
-            >
+            <Card href={`/docs/${category.id}`} renderLink={routerLink} class="p-4">
               <span class="flex items-baseline justify-between gap-3">
                 <span class="font-medium">{category.label}</span>
                 <span class="text-[12px] tabular-nums text-muted-foreground">{docsIn(category.id).length}</span>
               </span>
               <span class="mt-1 block text-[13px] text-muted-foreground">{category.description}</span>
-            </Link>
+            </Card>
           )}
         </For>
       </div>

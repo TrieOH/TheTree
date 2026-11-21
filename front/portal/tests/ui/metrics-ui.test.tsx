@@ -29,7 +29,7 @@ describe("<UsageBar>", () => {
     ));
 
     expect(container.textContent).toContain("10.0 GiB-h of 25.0 GiB-h");
-    expect(container.querySelector(".bg-warn")).not.toBeNull();
+    expect(container.querySelector("[role='meter'] .bg-warning")).not.toBeNull();
     expect(container.querySelector("[title='The container guard stops containers here']")).not.toBeNull();
     expect(container.textContent).toContain("stops every API container at 22.5 GiB-h");
   });
@@ -39,8 +39,8 @@ describe("<UsageBar>", () => {
       <UsageBar usage={{ resource: "workers_requests", used: 50_000, included: 10_000_000 }} pace={0.3} />
     ));
 
-    expect(container.querySelector(".bg-warn")).toBeNull();
-    expect(container.querySelector(".bg-ok")).not.toBeNull();
+    expect(container.querySelector("[role='meter'] .bg-warning")).toBeNull();
+    expect(container.querySelector("[role='meter'] .bg-success")).not.toBeNull();
   });
 });
 

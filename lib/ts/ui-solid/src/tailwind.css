@@ -1,3 +1,9 @@
 @import "./spinner.css";
 
 @source "./";
+
+/* Status colors. The fallbacks cover apps that bring their own palette instead of theme.css. */
+@theme {
+  --color-success: var(--success, oklch(0.6 0.13 155));
+  --color-warning: var(--warning, oklch(0.72 0.15 75));
+}

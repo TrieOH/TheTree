@@ -1,7 +1,6 @@
 import { shapeClass, type Shape } from "./lib/shape";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
-import CopyIcon from "~icons/lucide/copy";
-import { Button } from "./button";
+import { CopyButton } from "./copy-button";
 import { toast } from "./toast";
 import { cn } from "./lib/cn";
 
@@ -137,16 +136,6 @@ export function CodeBlock(props: CodeBlockProps) {
     return code.replace(/\r\n?/g, "\n").replace(/\n$/, "");
   });
   const lines = createMemo(() => highlightLines(displayed()));
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(displayed());
-      toast.success("Código copiado", { description: filename() });
-    } catch {
-      toast.error("Não foi possível copiar", {
-        description: "Selecione o código e copie manualmente.",
-      });
-    }
-  };
   return (
     <figure
       class={cn(
@@ -159,16 +148,20 @@ export function CodeBlock(props: CodeBlockProps) {
         <span class="min-w-0 truncate font-mono" title={filename()}>
           {filename()}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={copy}
-          aria-label="Copiar código"
-          title="Copiar código"
-          class="size-8 shrink-0"
-        >
-          <CopyIcon class="size-4" />
-        </Button>
+        <CopyButton
+          text={displayed}
+          label="Copiar código"
+          copiedLabel="Código copiado"
+          onCopied={() =>
+            toast.success("Código copiado", { description: filename() })
+          }
+          onError={() =>
+            toast.error("Não foi possível copiar", {
+              description: "Selecione o código e copie manualmente.",
+            })
+          }
+          class="text-current"
+        />
       </figcaption>
       <pre
         tabindex={0}
