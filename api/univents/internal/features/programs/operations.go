@@ -55,14 +55,14 @@ func (o *Operations) notifyStock(ctx context.Context, editionID, occurrenceID uu
 		ItemIDs:   []uuid.UUID{occurrenceID},
 	})
 	if err != nil {
-		telemetry.Log().Error("programs: marshal notifier payload",
+		telemetry.Log().ErrorContext(ctx, "programs: marshal notifier payload",
 			slog.String("channel", channelUniventsChanges),
 			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
-		telemetry.Log().Error("programs: publish to notifier",
+		telemetry.Log().ErrorContext(ctx, "programs: publish to notifier",
 			slog.String("channel", channelUniventsChanges),
 			slog.String("payload", string(raw)),
 			telemetry.Err(err))

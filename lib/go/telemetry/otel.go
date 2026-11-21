@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"slices"
@@ -124,7 +123,8 @@ func Start(ctx context.Context, appName string) (func(context.Context) error, er
 		shutdowns = append(shutdowns, lp.Shutdown)
 	}
 
-	log.Printf("%s telemetry: traces=%t metrics=%t logs=%t", appName, Traces.Enabled(), Metrics.Enabled(), Logs.Enabled())
+	Log().InfoContext(ctx, appName+" telemetry",
+		slog.Bool("traces", Traces.Enabled()), slog.Bool("metrics", Metrics.Enabled()), slog.Bool("logs", Logs.Enabled()))
 	return shutdown, nil
 }
 
@@ -141,6 +141,6 @@ func Shutdown(ctx context.Context, shutdown func(context.Context) error, appName
 	}
 	err := shutdown(ctx)
 	if err != nil {
-		Log().Error("error shutting down telemetry for "+appName, Err(err))
+		Log().ErrorContext(ctx, "error shutting down telemetry for "+appName, Err(err))
 	}
 }

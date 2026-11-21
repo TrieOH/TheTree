@@ -110,7 +110,7 @@ func (o *Operations) ServeStream(w http.ResponseWriter, r *http.Request, edition
 
 	stream, err := newSSEStream(w)
 	if err != nil {
-		telemetry.Log().Error("store: hijack failed", telemetry.Err(err))
+		telemetry.Log().ErrorContext(r.Context(), "store: hijack failed", telemetry.Err(err))
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +138,7 @@ func (o *Operations) ServeStream(w http.ResponseWriter, r *http.Request, edition
 func (o *Operations) writeSnapshot(ctx context.Context, stream *sseStream, editionID uuid.UUID) error {
 	avail, err := o.Avail.Availability(ctx, editionID)
 	if err != nil {
-		telemetry.Log().Error("store: snapshot availability read failed",
+		telemetry.Log().ErrorContext(ctx, "store: snapshot availability read failed",
 			slog.String("edition_id", editionID.String()),
 			telemetry.Err(err))
 		return err
@@ -288,7 +288,7 @@ func (s *subscription) close() {
 func (r *Relay) broadcast(stock *notify.StockNotification) {
 	availability, err := r.avail.Availability(context.Background(), r.editionID)
 	if err != nil {
-		telemetry.Log().Error("store: relay availability read failed",
+		telemetry.Log().ErrorContext(context.Background(), "store: relay availability read failed",
 			slog.String("edition_id", r.editionID.String()),
 			telemetry.Err(err))
 		return

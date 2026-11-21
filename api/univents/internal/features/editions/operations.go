@@ -152,7 +152,7 @@ func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 
 	err = o.Badges.AwardStaffBadgesForEdition(ctx, editionID)
 	if err != nil {
-		telemetry.Log().Error("failed to award staff badges for edition",
+		telemetry.Log().ErrorContext(ctx, "failed to award staff badges for edition",
 			slog.String("edition_id", editionID.String()),
 			telemetry.Err(err))
 	}

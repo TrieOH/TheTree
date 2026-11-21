@@ -3,7 +3,9 @@
 //
 //   - Enqueuer POSTs each job's Envelope as JSON to a URL. Whatever answers
 //     there (a queue producer) owns delivery and retries. A delayed job
-//     carries its delay in the DelayHeader, in whole seconds.
+//     carries its delay in the DelayHeader, in whole seconds. A POST that
+//     fails outright or answers 5xx is tried again a couple of times, so a
+//     blip on the way to the queue doesn't lose the job.
 //   - Handler serves Path: it receives one Envelope per POST, from the queue
 //     consumer or a scheduler, and dispatches it. 2xx means done; 5xx means
 //     the job failed and should be retried; 4xx means it never will succeed.
@@ -26,6 +28,8 @@ import (
 
 	"lib/jobs"
 	"lib/telemetry"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Path is where Handler is mounted. It must not collide with any API
@@ -42,6 +46,10 @@ const maxEnvelopeBytes = 1 << 20
 // enqueueTimeout bounds one enqueue POST.
 const enqueueTimeout = 10 * time.Second
 
+// retryBackoff is the wait before each retry of a failed enqueue POST: three
+// tries in all.
+var retryBackoff = []time.Duration{200 * time.Millisecond, 800 * time.Millisecond}
+
 type Enqueuer struct {
 	url    string
 	client *http.Client
@@ -54,7 +62,9 @@ func New(url string) (*Enqueuer, error) {
 	if url == "" {
 		return nil, errors.New("httpjobs: enqueue URL is required")
 	}
-	return &Enqueuer{url: url, client: &http.Client{Timeout: enqueueTimeout}}, nil
+	// otelhttp: the POST is a client span of whatever enqueued the job.
+	client := &http.Client{Timeout: enqueueTimeout, Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	return &Enqueuer{url: url, client: client}, nil
 }
 
 func (e *Enqueuer) Enqueue(ctx context.Context, job jobs.Job) error {
@@ -71,7 +81,7 @@ func (e *Enqueuer) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Du
 }
 
 func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) error {
-	env, err := jobs.Encode(job)
+	env, err := jobs.Encode(ctx, job)
 	if err != nil {
 		return err
 	}
@@ -79,9 +89,28 @@ func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) 
 	if err != nil {
 		return fmt.Errorf("httpjobs: encode envelope: %w", err)
 	}
+	for attempt := 0; ; attempt++ {
+		retry, err := e.send(ctx, body, delay)
+		if err == nil {
+			return nil
+		}
+		if !retry || attempt == len(retryBackoff) {
+			return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, err)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, errors.Join(err, ctx.Err()))
+		case <-time.After(retryBackoff[attempt]):
+		}
+	}
+}
+
+// send makes one enqueue POST. retry reports whether a failure is worth
+// another try: a transport error or a 5xx is, a 4xx never succeeds.
+func (e *Enqueuer) send(ctx context.Context, body []byte, delay time.Duration) (retry bool, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("httpjobs: build request: %w", err)
+		return false, fmt.Errorf("build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if delay > 0 {
@@ -89,14 +118,14 @@ func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) 
 	}
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, err)
+		return ctx.Err() == nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxEnvelopeBytes))
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("httpjobs: enqueue %s: status %d", env.Kind, resp.StatusCode)
+		return resp.StatusCode >= 500, fmt.Errorf("status %d", resp.StatusCode)
 	}
-	return nil
+	return false, nil
 }
 
 // Handler dispatches the posted Envelope into registry.
@@ -122,7 +151,7 @@ func Handler(registry *jobs.Registry) http.Handler {
 		case errors.Is(err, jobs.ErrUnknownKind):
 			http.Error(w, "unknown job kind", http.StatusBadRequest)
 		case err != nil:
-			telemetry.Log().Error("job failed", slog.String("kind", env.Kind), telemetry.Err(err))
+			telemetry.Log().ErrorContext(r.Context(), "job failed", slog.String("kind", env.Kind), telemetry.Err(err))
 			http.Error(w, "job failed", http.StatusInternalServerError)
 		default:
 			w.WriteHeader(http.StatusNoContent)

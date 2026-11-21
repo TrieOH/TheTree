@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"log/slog"
+	"lib/telemetry"
 	"sync"
 	"time"
 
@@ -111,7 +111,7 @@ func (n *Notifier) run() {
 
 		conn, err := n.connectAndListen()
 		if err != nil {
-			slog.Warn("notifier: listen connect failed", "err", err)
+			telemetry.Log().WarnContext(context.Background(), "notifier: listen connect failed", telemetry.Err(err))
 			if !sleepCtx(n.closeCh, backoff) {
 				return
 			}
@@ -137,7 +137,7 @@ func (n *Notifier) run() {
 		// dropped-connection warn fires whenever the conn was not closed
 		// intentionally (SA4023: the error is never nil).
 		if !isClosed(conn) {
-			slog.Warn("notifier: listen loop dropped", "err", err)
+			telemetry.Log().WarnContext(context.Background(), "notifier: listen loop dropped", telemetry.Err(err))
 		}
 		if !sleepCtx(n.closeCh, backoff) {
 			return

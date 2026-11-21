@@ -44,14 +44,14 @@ func (w *SendAuthEmailWorker) Work(ctx context.Context, args emails.SendAuthEmai
 		return err
 	}
 
-	err = w.emailClient.Send(email.Message{
+	err = w.emailClient.Send(ctx, email.Message{
 		To:      []string{args.ToEmail},
 		Subject: subject,
 		Body:    body,
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send auth email",
+		telemetry.Log().ErrorContext(ctx, "failed to send auth email",
 			slog.String("kind", args.TemplateKind),
 			slog.String("to", args.ToEmail),
 			telemetry.Err(err),

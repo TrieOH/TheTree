@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -98,6 +99,50 @@ func TestEnqueueFailsOnNon2xx(t *testing.T) {
 	}
 	if e.Enqueue(context.Background(), work{}) == nil {
 		t.Fatal("expected an error")
+	}
+}
+
+func TestEnqueueRetriesA5xx(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if calls.Add(1) < 3 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	e, err := httpjobs.New(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = e.Enqueue(context.Background(), work{})
+	if err != nil {
+		t.Fatalf("third try should succeed: %v", err)
+	}
+	if calls.Load() != 3 {
+		t.Fatalf("calls = %d, want 3", calls.Load())
+	}
+}
+
+func TestEnqueueDoesNotRetryA4xx(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	e, err := httpjobs.New(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.Enqueue(context.Background(), work{}) == nil {
+		t.Fatal("expected an error")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1", calls.Load())
 	}
 }
 

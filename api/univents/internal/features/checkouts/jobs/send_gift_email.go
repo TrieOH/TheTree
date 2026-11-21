@@ -20,7 +20,7 @@ import (
 // EmailSender is the SMTP send seam. Satisfied by *email.Client; faked in
 // tests.
 type EmailSender interface {
-	Send(msg email.Message) error
+	Send(ctx context.Context, msg email.Message) error
 }
 
 // SendGiftEmailArgs is the `gifts.send_email` job: email the accountless
@@ -82,7 +82,7 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 	if reg.AttendeeUserID != nil {
 		// Claimed before the job ran — they have an account now; the badge
 		// email covers the confirmation. No gift email needed.
-		telemetry.Log().Info("gift email skipped: recipient already has an account",
+		telemetry.Log().InfoContext(ctx, "gift email skipped: recipient already has an account",
 			slog.String("registration_id", reg.ID.String()))
 		return nil
 	}
@@ -119,14 +119,14 @@ func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) 
 		return err
 	}
 
-	err = w.email.Send(email.Message{
+	err = w.email.Send(ctx, email.Message{
 		To:      []string{reg.AttendeeEmail},
 		Subject: fmt.Sprintf("You received a gifted ticket for %s — %s", event.FullName, edition.Name),
 		Body:    body,
 		HTML:    true,
 	})
 	if err != nil {
-		telemetry.Log().Error("failed to send gifted-ticket email",
+		telemetry.Log().ErrorContext(ctx, "failed to send gifted-ticket email",
 			slog.String("registration_id", reg.ID.String()),
 			slog.String("to", reg.AttendeeEmail),
 			telemetry.Err(err))

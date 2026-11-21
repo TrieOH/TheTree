@@ -61,11 +61,18 @@ export class IdentityXContainer extends BudgetedContainer<Env> {
 
 	// JWKS_CHANGED is not work for the queue: the keys changed, so the
 	// cached JWKS is dropped right away.
-	static outboundByHost = jobsOutbound<Env>(async (job, env) => {
-		if (job.kind !== JWKS_CHANGED) return false;
-		await forgetJWKS(env);
-		return true;
-	});
+	// Assigned in a static block, not declared as a static field: the
+	// containers package registers outbound handlers through the inherited
+	// `outboundByHost` setter, and a class field defines its own property
+	// instead, so the handlers never registered and every enqueue went to
+	// the internet (530).
+	static {
+		this.outboundByHost = jobsOutbound<Env>(async (job, env) => {
+			if (job.kind !== JWKS_CHANGED) return false;
+			await forgetJWKS(env);
+			return true;
+		});
+	}
 
 	constructor(ctx: DurableObjectState<{}>, env: Env) {
 		super(ctx, env);

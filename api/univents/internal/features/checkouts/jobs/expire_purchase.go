@@ -82,7 +82,7 @@ func (w *ExpirePurchaseWorker) Work(ctx context.Context, args ExpirePurchaseArgs
 	}
 	if purchase.Status != models.PurchaseStatusPending {
 		// Already approved/cancelled/expired — nothing to do.
-		telemetry.Log().Info("expiry: purchase not pending — no-op",
+		telemetry.Log().InfoContext(ctx, "expiry: purchase not pending — no-op",
 			slog.String("purchase_id", purchase.ID.String()),
 			slog.String("status", string(purchase.Status)))
 		return nil
@@ -169,14 +169,14 @@ func (w *ExpirePurchaseWorker) notify(ctx context.Context, purchase *models.Purc
 func (w *ExpirePurchaseWorker) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
-		telemetry.Log().Error("expiry: marshal notifier payload",
+		telemetry.Log().ErrorContext(ctx, "expiry: marshal notifier payload",
 			slog.String("channel", notify.Channel),
 			telemetry.Err(err))
 		return
 	}
 	err = w.notifier.Notify(ctx, notify.Channel, string(raw))
 	if err != nil {
-		telemetry.Log().Error("expiry: publish to notifier",
+		telemetry.Log().ErrorContext(ctx, "expiry: publish to notifier",
 			slog.String("channel", notify.Channel),
 			slog.String("payload", string(raw)),
 			telemetry.Err(err))

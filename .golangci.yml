@@ -58,6 +58,7 @@ linters:
     - durationcheck        # time.Second * time.Second — two durations multiplied is nonsense
     - gocritic             # huge suite: redundant code, bad patterns, micro-optimizations
     - modernize            # interface{} → any, if → min/max, range int, etc.
+    - sloglint             # slog keys and a context on every log call (settings below)
     - dupword              # "the the" in comments/strings [auto-fix]
     - dogsled              # too many blank identifiers: x, _, _, _, _ := f()
     - iface                # interface defined in implementation package (should be in consumer)
@@ -131,9 +132,11 @@ linters:
     nestif:
       min-complexity: 6         # max nested if depth
     sloglint:
-      # enforce key=value attr pairs, no embedded objects, context as first arg
+      # snake_case keys, none of slog's own, and a context on every call
       args-on-sep-lines: false
-      no-raw-keys: true
+      # Every log call takes a context, so the OTel bridge stamps the line
+      # with its trace and span and Grafana links the two.
+      context: all
       key-naming-case: snake
       forbidden-keys:
         - time

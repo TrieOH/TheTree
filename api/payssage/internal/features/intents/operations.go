@@ -66,7 +66,7 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 
 	err = provider.CancelPendingPayment(ctx, intent)
 	if err != nil {
-		telemetry.Log().Error("error cancelling payment",
+		telemetry.Log().ErrorContext(ctx, "error cancelling payment",
 			slog.String("provider", intent.Provider),
 			slog.String("intent_id", intent.ID.String()),
 			telemetry.Err(err),
@@ -261,7 +261,7 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 
 	err = provider.Refund(ctx, intent)
 	if err != nil {
-		telemetry.Log().Error("error refunding payment",
+		telemetry.Log().ErrorContext(ctx, "error refunding payment",
 			slog.String("provider", intent.Provider),
 			slog.String("intent_id", intent.ID.String()),
 			telemetry.Err(err),

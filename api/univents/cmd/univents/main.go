@@ -6,6 +6,7 @@ import (
 	"lib/backend/identityx"
 	"lib/backend/jobs"
 	"lib/backend/postgres"
+	libconfig "lib/config"
 	"lib/errx"
 	spec "univents"
 	"univents/internal/app"
@@ -15,7 +16,7 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg := libconfig.Load[config.Config]()
 	errx.Exit(backend.Run(backend.App{
 		Name:   cfg.AppName,
 		Spec:   spec.OpenAPISpec,
@@ -25,7 +26,7 @@ func main() {
 			postgres.Module(cfg.Postgres, app.Constraints()),
 			identityx.Module(cfg.IdentityX, identityx.RequireVerifiedEmail(cfg.RequireVerifiedEmail)),
 			email.Module(cfg.SMTP),
-			jobs.Module(cfg.JobsURL),
+			jobs.Module(cfg.Jobs),
 		},
 		Build:    app.Build(cfg),
 		Errors:   problems.Mapper(errmap.Problem),

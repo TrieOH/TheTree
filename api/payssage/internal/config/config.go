@@ -2,9 +2,6 @@ package config
 
 import (
 	libconfig "lib/config"
-	"lib/errx"
-
-	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
@@ -15,11 +12,7 @@ type Config struct {
 	libconfig.CORS
 
 	Postgres libconfig.Postgres `envPrefix:"PAYSSAGE_"`
-
-	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /_jobs; the
-	// deploy's scheduler fires the periodic ones there.
-	JobsURL string `env:"JOBS_URL"`
+	Jobs     libconfig.Jobs
 
 	// TestMode turns on the /testmode routes, which fake provider outcomes.
 	// Never on in production.
@@ -34,13 +27,4 @@ type MercadoPagoConfig struct {
 	MpWebhookSecret   string `env:"MP_WEBHOOK_SECRET,required"`
 	MpTestAccessToken string `env:"MP_TEST_ACCESS_TOKEN,required"`
 	MpTestPublicKey   string `env:"MP_TEST_PUBLIC_KEY,required"`
-}
-
-func LoadConfig() Config {
-	var cfg Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		errx.Exit(err, "failed to load config")
-	}
-	return cfg
 }

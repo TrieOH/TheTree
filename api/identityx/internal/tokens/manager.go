@@ -230,7 +230,7 @@ func (m *Manager) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]an
 	for _, k := range keys {
 		jwk, err := crypto.PublicKeyToJWKS(k.ID.String(), k.PublicKey)
 		if err != nil {
-			telemetry.Log().Warn("skipping malformed key", slog.String("key_id", k.ID.String()), telemetry.Err(err))
+			telemetry.Log().WarnContext(ctx, "skipping malformed key", slog.String("key_id", k.ID.String()), telemetry.Err(err))
 			continue
 		}
 		jwks = append(jwks, jwk)

@@ -488,7 +488,7 @@ func (h *Hub) framesFor(status string, purchaseID, intentID uuid.UUID, hasIntent
 	case models.PurchaseStatusExpired:
 		return []outbound{h.terminalFrame(frameExpired, purchaseEventPayload{PurchaseID: purchaseID})}
 	default:
-		telemetry.Log().Warn("ws: unhandled purchase status in notification",
+		telemetry.Log().WarnContext(context.Background(), "ws: unhandled purchase status in notification",
 			slog.String("status", status),
 			slog.String("purchase_id", purchaseID.String()))
 		return nil
@@ -507,7 +507,7 @@ func (h *Hub) statusDetail(intentID uuid.UUID, hasIntent bool) *string {
 	defer cancel()
 	intent, err := h.intents.GetIntent(ctx, intentID)
 	if err != nil {
-		telemetry.Log().Warn("ws: intent status_detail unavailable", telemetry.Err(err))
+		telemetry.Log().WarnContext(ctx, "ws: intent status_detail unavailable", telemetry.Err(err))
 		return nil
 	}
 	return intent.StatusDetail
@@ -545,7 +545,7 @@ func (h *Hub) terminalFrame(typ string, payload purchaseEventPayload) outbound {
 func mustFrame(typ string, payload any) []byte {
 	b, err := marshalFrame(typ, payload)
 	if err != nil {
-		slog.Error("ws: marshal frame", "type", typ, "err", err)
+		telemetry.Log().ErrorContext(context.Background(), "ws: marshal frame", slog.String("type", typ), telemetry.Err(err))
 		panic(err)
 	}
 	return b
@@ -567,7 +567,7 @@ func (o *Operations) ServeWS(w http.ResponseWriter, r *http.Request) {
 
 	tok, err := o.Tokens.Consume(r.Context(), hashToken(raw))
 	if err != nil {
-		telemetry.Log().Error("ws: token consume failed",
+		telemetry.Log().ErrorContext(r.Context(), "ws: token consume failed",
 			slog.String("purchase_id", r.URL.Query().Get("purchase_id")),
 			telemetry.Err(err))
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -602,7 +602,7 @@ func (o *Operations) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// never misses a terminal event behind a stale snapshot.
 	snap, err := o.snapshot(r.Context(), purchase)
 	if err != nil {
-		telemetry.Log().Error("ws: snapshot build failed",
+		telemetry.Log().ErrorContext(r.Context(), "ws: snapshot build failed",
 			slog.String("purchase_id", purchase.ID.String()),
 			telemetry.Err(err))
 		_ = conn.Close(websocket.StatusInternalError, "snapshot failed")
@@ -672,7 +672,7 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 		if attempt < o.intentAttempts {
 			select {
 			case <-ctx.Done():
-				telemetry.Log().Warn("ws: intent status fetch cancelled",
+				telemetry.Log().WarnContext(ctx, "ws: intent status fetch cancelled",
 					slog.String("intent_id", intentID.String()),
 					telemetry.Err(ctx.Err()))
 				return nil
@@ -680,7 +680,7 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 			}
 		}
 	}
-	telemetry.Log().Error("ws: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
+	telemetry.Log().ErrorContext(ctx, "ws: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
 		slog.String("intent_id", intentID.String()),
 		slog.Int("attempts", o.intentAttempts),
 		telemetry.Err(lastErr))

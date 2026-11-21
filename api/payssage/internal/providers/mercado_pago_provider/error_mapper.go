@@ -1,6 +1,7 @@
 package mercado_pago_provider
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 
@@ -40,7 +41,7 @@ var knownMPErrorCodes = map[int]string{
 // similar). Payssage's problem is picked from statusCode by the problem switch
 // (internal/app). It logs MP's error code and message under "MP <op>
 // failed" with attrs, never the response body: MP echoes the payer back.
-func mapMPError(op string, statusCode int, resultErr any, attrs ...any) error {
+func mapMPError(ctx context.Context, op string, statusCode int, resultErr any, attrs ...any) error {
 	var body mpErrorBody
 	raw, err := json.Marshal(resultErr)
 	if err == nil {
@@ -64,7 +65,7 @@ func mapMPError(op string, statusCode int, resultErr any, attrs ...any) error {
 		perr.CauseDescription = cause.Description
 		perr.Reason = knownMPErrorCodes[cause.Code]
 	}
-	telemetry.Log().Warn("MP "+op+" failed", append(attrs,
+	telemetry.Log().WarnContext(ctx, "MP "+op+" failed", append(attrs,
 		slog.Int("status", statusCode),
 		slog.String("mp_error", perr.Code),
 		slog.String("mp_message", perr.Message),

@@ -119,7 +119,7 @@ func (o *Operations) approve(ctx context.Context, purchase *models.Purchase) err
 	case models.PurchaseStatusExpired:
 		return o.lateApprove(ctx, purchase)
 	default: // cancelled — terminal
-		telemetry.Log().Warn("webhook: approval for terminal purchase ignored",
+		telemetry.Log().WarnContext(ctx, "webhook: approval for terminal purchase ignored",
 			slog.String("purchase_id", purchase.ID.String()),
 			slog.String("status", string(purchase.Status)))
 		return nil
@@ -167,7 +167,7 @@ func (o *Operations) lateApprove(ctx context.Context, purchase *models.Purchase)
 			return err
 		}
 		o.notify(ctx, updated, items, models.PurchaseStatusExpired)
-		telemetry.Log().Error("webhook: late approval without full stock — refund deferred (D1), manual reconciliation needed",
+		telemetry.Log().ErrorContext(ctx, "webhook: late approval without full stock — refund deferred (D1), manual reconciliation needed",
 			slog.String("purchase_id", purchase.ID.String()),
 			slog.String("intent_id", intentIDString(purchase)),
 			slog.String("edition_id", purchase.EditionID.String()))
@@ -203,7 +203,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 		switch item.ItemType {
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
-				telemetry.Log().Warn("webhook: ticket item without registration",
+				telemetry.Log().WarnContext(ctx, "webhook: ticket item without registration",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -218,7 +218,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 			o.enqueueGiftEmail(ctx, reg)
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
-				telemetry.Log().Warn("webhook: product item without product_purchase",
+				telemetry.Log().WarnContext(ctx, "webhook: product item without product_purchase",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -251,7 +251,7 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 	}
 	err := o.Jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
-		telemetry.Log().Error("webhook: failed to enqueue gift email",
+		telemetry.Log().ErrorContext(ctx, "webhook: failed to enqueue gift email",
 			slog.String("registration_id", reg.ID.String()),
 			telemetry.Err(err))
 	}
@@ -309,14 +309,14 @@ func stockNotification(purchase *models.Purchase, items []models.PurchaseItem) n
 func (o *Operations) publish(ctx context.Context, payload any) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
-		telemetry.Log().Error("webhook: marshal notifier payload",
+		telemetry.Log().ErrorContext(ctx, "webhook: marshal notifier payload",
 			slog.String("channel", channelUniventsChanges),
 			telemetry.Err(err))
 		return
 	}
 	err = o.Notifier.Notify(ctx, channelUniventsChanges, string(raw))
 	if err != nil {
-		telemetry.Log().Error("webhook: publish to notifier",
+		telemetry.Log().ErrorContext(ctx, "webhook: publish to notifier",
 			slog.String("channel", channelUniventsChanges),
 			slog.String("payload", string(raw)),
 			telemetry.Err(err))
@@ -342,7 +342,7 @@ func intentIDString(purchase *models.Purchase) string {
 // reason from the delivery envelope lands in status_reason.
 func (o *Operations) cancel(ctx context.Context, purchase *models.Purchase, to models.PurchaseStatus, reason *string) error {
 	if purchase.Status != models.PurchaseStatusPending {
-		telemetry.Log().Info("webhook: failure for non-pending purchase ignored",
+		telemetry.Log().InfoContext(ctx, "webhook: failure for non-pending purchase ignored",
 			slog.String("purchase_id", purchase.ID.String()),
 			slog.String("status", string(purchase.Status)))
 		return nil
@@ -373,7 +373,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 		switch item.ItemType {
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
-				telemetry.Log().Warn("webhook: ticket item without registration",
+				telemetry.Log().WarnContext(ctx, "webhook: ticket item without registration",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -383,7 +383,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 			}
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
-				telemetry.Log().Warn("webhook: product item without product_purchase",
+				telemetry.Log().WarnContext(ctx, "webhook: product item without product_purchase",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -393,7 +393,7 @@ func (o *Operations) flipCancelled(ctx context.Context, purchase *models.Purchas
 			}
 		case models.PurchaseItemTypeProgramOccurrence:
 			if item.ParticipationID == nil {
-				telemetry.Log().Warn("webhook: program item without participation",
+				telemetry.Log().WarnContext(ctx, "webhook: program item without participation",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -428,7 +428,7 @@ const (
 // an error is a non-2xx (Payssage retries).
 func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 	if !o.validSignature(input) {
-		telemetry.Log().Warn("webhook: invalid signature",
+		telemetry.Log().WarnContext(ctx, "webhook: invalid signature",
 			slog.String("intent_id", input.IntentID.String()))
 		return errs.ErrInvalidPayssageWebhookSignature
 	}
@@ -458,7 +458,7 @@ func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 		// revoke emitted badges — webhook-confirmed, like approval.
 		return o.refund(ctx, purchase)
 	default:
-		telemetry.Log().Warn("webhook: unhandled event type",
+		telemetry.Log().WarnContext(ctx, "webhook: unhandled event type",
 			slog.String("event_type", input.EventType),
 			slog.String("intent_id", input.IntentID.String()))
 		return nil
@@ -488,7 +488,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 		return nil, err
 	}
 
-	telemetry.Log().Info("webhook: intent not found — waiting for checkout commit (D3)",
+	telemetry.Log().InfoContext(ctx, "webhook: intent not found — waiting for checkout commit (D3)",
 		slog.String("intent_id", intentID.String()))
 	select {
 	case <-ctx.Done():
@@ -499,7 +499,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 	purchase, err = o.Purchases.GetByIntentID(ctx, intentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			telemetry.Log().Error("webhook: intent never correlated to a purchase (unknown intent or broken checkout)",
+			telemetry.Log().ErrorContext(ctx, "webhook: intent never correlated to a purchase (unknown intent or broken checkout)",
 				slog.String("intent_id", intentID.String()))
 			return nil, fmt.Errorf("purchase not found for intent %s", intentID)
 		}
@@ -516,7 +516,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 // acknowledged.
 func (o *Operations) refund(ctx context.Context, purchase *models.Purchase) error {
 	if purchase.Status != models.PurchaseStatusApproved {
-		telemetry.Log().Info("webhook: refund for non-approved purchase ignored",
+		telemetry.Log().InfoContext(ctx, "webhook: refund for non-approved purchase ignored",
 			slog.String("purchase_id", purchase.ID.String()),
 			slog.String("status", string(purchase.Status)))
 		return nil
@@ -551,7 +551,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 		switch item.ItemType {
 		case models.PurchaseItemTypeTicket:
 			if item.RegistrationID == nil {
-				telemetry.Log().Warn("webhook: refunded ticket item without registration",
+				telemetry.Log().WarnContext(ctx, "webhook: refunded ticket item without registration",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -565,7 +565,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 			}
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
-				telemetry.Log().Warn("webhook: refunded product item without product_purchase",
+				telemetry.Log().WarnContext(ctx, "webhook: refunded product item without product_purchase",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}
@@ -575,7 +575,7 @@ func (o *Operations) flipRefunded(ctx context.Context, purchase *models.Purchase
 			}
 		case models.PurchaseItemTypeProgramOccurrence:
 			if item.ParticipationID == nil {
-				telemetry.Log().Warn("webhook: refunded program item without participation",
+				telemetry.Log().WarnContext(ctx, "webhook: refunded program item without participation",
 					slog.String("purchase_id", purchase.ID.String()))
 				continue
 			}

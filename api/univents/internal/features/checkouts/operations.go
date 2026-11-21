@@ -230,7 +230,7 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 		if attempt < o.intentAttempts {
 			select {
 			case <-ctx.Done():
-				telemetry.Log().Warn("checkouts: intent status fetch cancelled",
+				telemetry.Log().WarnContext(ctx, "checkouts: intent status fetch cancelled",
 					slog.String("intent_id", intentID.String()),
 					telemetry.Err(ctx.Err()))
 				return nil
@@ -238,7 +238,7 @@ func (o *Operations) intentStatus(ctx context.Context, intentID uuid.UUID) *stri
 			}
 		}
 	}
-	telemetry.Log().Error("checkouts: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
+	telemetry.Log().ErrorContext(ctx, "checkouts: intent status unavailable after retries — degrading (purchases table remains the source of truth)",
 		slog.String("intent_id", intentID.String()),
 		slog.Int("attempts", o.intentAttempts),
 		telemetry.Err(lastErr))

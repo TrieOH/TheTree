@@ -59,21 +59,21 @@ func (w *SendTosUpdateWorker) Work(ctx context.Context, args emails.SendTosUpdat
 			TosContent:    args.TosContent,
 		})
 		if err != nil {
-			telemetry.Log().Error("failed to render tos update email",
+			telemetry.Log().ErrorContext(ctx, "failed to render tos update email",
 				slog.String("actor_id", actor.ID.String()),
 				telemetry.Err(err),
 			)
 			continue
 		}
 
-		err = w.emailClient.Send(email.Message{
+		err = w.emailClient.Send(ctx, email.Message{
 			To:      []string{*actor.Email},
 			Subject: subject,
 			Body:    body,
 			HTML:    true,
 		})
 		if err != nil {
-			telemetry.Log().Error("failed to send tos update email",
+			telemetry.Log().ErrorContext(ctx, "failed to send tos update email",
 				slog.String("actor_id", actor.ID.String()),
 				slog.String("to", *actor.Email),
 				telemetry.Err(err),

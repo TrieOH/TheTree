@@ -88,7 +88,7 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 	for _, id := range created {
 		err = o.Jobs.Enqueue(ctx, jobs.DeliverWebhookArgs{DeliveryID: id})
 		if err != nil {
-			telemetry.Log().Error("webhook delivery: enqueue failed, left for redrive",
+			telemetry.Log().ErrorContext(ctx, "webhook delivery: enqueue failed, left for redrive",
 				slog.String("delivery_id", id.String()),
 				telemetry.Err(err),
 			)
@@ -119,7 +119,7 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 			// payment the provider no longer has — expected-and-ignored
 			// cases, not failures. Acknowledge with 200 so the provider
 			// doesn't retry.
-			telemetry.Log().Info("webhook acknowledged, not processed",
+			telemetry.Log().InfoContext(ctx, "webhook acknowledged, not processed",
 				slog.String("provider", payload.Provider),
 				telemetry.Err(err),
 			)

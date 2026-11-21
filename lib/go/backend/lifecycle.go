@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -79,7 +79,7 @@ func boot(app App, ops []openapispec.Operation) error {
 		if telemetry.Traces.Enabled() {
 			go probeEgress(bootCtx)
 		}
-		log.Printf("%s listening on :%s", app.Name, app.Server.Port)
+		telemetry.Log().InfoContext(ctx, app.Name+" listening", slog.String("port", app.Server.Port))
 		serveErr = srv.Serve(ln)
 	}
 	if errors.Is(serveErr, http.ErrServerClosed) {
@@ -88,7 +88,7 @@ func boot(app App, ops []openapispec.Operation) error {
 
 	err = shutdown(ctx)
 	if err != nil {
-		log.Printf("%s shutdown: %v", app.Name, err)
+		telemetry.Log().ErrorContext(ctx, app.Name+" shutdown failed", telemetry.Err(err))
 	}
 	telemetry.Shutdown(ctx, shutdownTelemetry, app.Name)
 	return serveErr
@@ -122,9 +122,11 @@ func servePprof(port, appName string) {
 		WriteTimeout: 120 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	log.Printf("%s pprof listening on :%s", appName, port)
+	ctx := context.Background()
+	telemetry.Log().InfoContext(ctx, appName+" pprof listening", slog.String("port", port))
+	// pprof is a debugging aid: when it can't serve, the API carries on.
 	err := srv.ListenAndServe()
 	if err != nil {
-		log.Fatalf("%s pprof server error: %v", appName, err)
+		telemetry.Log().ErrorContext(ctx, appName+" pprof server stopped", telemetry.Err(err))
 	}
 }

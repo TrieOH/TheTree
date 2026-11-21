@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"lib/backend"
+	libconfig "lib/config"
 	libjobs "lib/jobs"
 	"lib/jobs/httpjobs"
 	"lib/jobs/inprocess"
@@ -29,12 +30,12 @@ const drainTimeout = 15 * time.Second
 // called Serve: there is no runner to queue onto yet.
 var ErrNotServing = errors.New("jobs: enqueue before Serve")
 
-// Module fills Deps.Jobs with the carrier for jobsURL (JOBS_URL).
-func Module(jobsURL string) backend.Module {
+// Module fills Deps.Jobs with the carrier for cfg's URL (JOBS_URL).
+func Module(cfg libconfig.Jobs) backend.Module {
 	return backend.Module{
 		Name: "jobs",
 		Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {
-			c, err := newCarrier(jobsURL)
+			c, err := newCarrier(cfg.URL)
 			if err != nil {
 				return nil, err
 			}

@@ -109,14 +109,14 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	}
 
 	if resp.IsStatusFailure() {
-		return mapMPError("create payment", resp.StatusCode(), resp.ResultError(),
+		return mapMPError(ctx, "create payment", resp.StatusCode(), resp.ResultError(),
 			slog.String("intent_id", intent.ID.String()),
 			slog.String("payment_method", checkoutData.PaymentMethodID),
 			slog.Int64("amount_cents", intent.AmountCents),
 		)
 	}
 
-	telemetry.Log().Info("MP payment created",
+	telemetry.Log().InfoContext(ctx, "MP payment created",
 		slog.String("intent_id", intent.ID.String()),
 		slog.Int64("payment_id", mpResp.ID),
 		slog.String("status", mpResp.Status),

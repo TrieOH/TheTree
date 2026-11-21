@@ -1,7 +1,9 @@
 package email
 
 import (
+	"context"
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -64,5 +66,30 @@ func TestSendWithInlineImageNoImagesFallsBack(t *testing.T) {
 	plain := string(c.buildPayload(Message{To: []string{"a@b.c"}, Subject: "s", Body: "x", HTML: true}, nil))
 	if withImages != plain {
 		t.Fatalf("no-image path must equal Send payload:\n--- inline ---\n%s\n--- send ---\n%s", withImages, plain)
+	}
+}
+
+func TestSendRefusesLineBreaksInHeaders(t *testing.T) {
+	c := NewClient(Config{Host: "unused.invalid", Port: 25, From: "a@b.c"})
+	for _, msg := range []Message{
+		{To: []string{"a@b.c"}, Subject: "Event\r\nBcc: victim@x.y"},
+		{To: []string{"a@b.c\nBcc: victim@x.y"}, Subject: "s"},
+	} {
+		err := c.Send(context.Background(), msg)
+		if !errors.Is(err, ErrHeaderInjection) {
+			t.Errorf("Send(%q) = %v, want ErrHeaderInjection", msg.Subject, err)
+		}
+	}
+}
+
+func TestSubjectIsEncodedWhenNotASCII(t *testing.T) {
+	c := NewClient(Config{From: "a@b.c"})
+	payload := string(c.buildPayload(Message{To: []string{"a@b.c"}, Subject: "Certificado — Semana Acadêmica"}, nil))
+	if !strings.Contains(payload, "Subject: =?UTF-8?q?") {
+		t.Fatalf("non-ASCII subject not RFC 2047 encoded:\n%s", payload)
+	}
+	plain := string(c.buildPayload(Message{To: []string{"a@b.c"}, Subject: "Reset your password"}, nil))
+	if !strings.Contains(plain, "Subject: Reset your password\r\n") {
+		t.Fatalf("ASCII subject should be left as is:\n%s", plain)
 	}
 }

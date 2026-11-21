@@ -1,6 +1,7 @@
 package errx
 
 import (
+	"context"
 	"log/slog"
 	"os"
 )
@@ -9,7 +10,7 @@ import (
 // process edge (cmd/main, config loading); boot code returns errors (ADR-0014).
 func Exit(err error, msg string) {
 	if err != nil {
-		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error(msg, "err", err)
+		slog.New(slog.NewJSONHandler(os.Stderr, nil)).ErrorContext(context.Background(), msg, "err", err)
 		os.Exit(1)
 	}
 }

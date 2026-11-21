@@ -91,7 +91,7 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 	// can never be replayed.
 	err = o.LoginStates.DeleteState(ctx, loginState.ID)
 	if err != nil {
-		telemetry.Log().Warn("failed to delete oauth login state", slog.String("state_id", loginState.ID.String()))
+		telemetry.Log().WarnContext(ctx, "failed to delete oauth login state", slog.String("state_id", loginState.ID.String()))
 	}
 	if string(loginState.Provider) != provider {
 		return nil, errs.ErrOAuthStateMismatch
@@ -208,7 +208,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateOAuthProvi
 
 	encryptedSecret, err := o.Vault.EncryptPrivateKey([]byte(payload.ClientSecret))
 	if err != nil {
-		telemetry.Log().Error("encrypt oauth client secret", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "encrypt oauth client secret", telemetry.Err(err))
 		return nil, err
 	}
 
@@ -375,7 +375,7 @@ func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProvi
 	if payload.ClientSecret != nil {
 		encryptedSecret, err := o.Vault.EncryptPrivateKey([]byte(*payload.ClientSecret))
 		if err != nil {
-			telemetry.Log().Error("encrypt oauth client secret", telemetry.Err(err))
+			telemetry.Log().ErrorContext(ctx, "encrypt oauth client secret", telemetry.Err(err))
 			return nil, err
 		}
 		row, err = o.Providers.UpdateClientSecret(ctx, payload.ID, encryptedSecret)
@@ -459,7 +459,7 @@ func (o *Operations) updateExistingIdentity(
 	if actor.ProjectID != nil {
 		err = o.Tos.StampUse(ctx, actor.ID, *actor.ProjectID)
 		if err != nil {
-			telemetry.Log().Error("failed to stamp tos continued-use acceptance",
+			telemetry.Log().ErrorContext(ctx, "failed to stamp tos continued-use acceptance",
 				slog.String("actor_id", actor.ID.String()),
 				slog.String("project_id", actor.ProjectID.String()),
 				telemetry.Err(err),
@@ -542,7 +542,7 @@ func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds o
 	exchangeCtx := context.WithValue(ctx, oauth2.HTTPClient, o.Client.Client())
 	providerToken, err := cfg.Exchange(exchangeCtx, code)
 	if err != nil {
-		telemetry.Log().Error("oauth code exchange failed", telemetry.Err(err))
+		telemetry.Log().ErrorContext(ctx, "oauth code exchange failed", telemetry.Err(err))
 		return nil, nil, errs.ErrOAuthCodeExchange
 	}
 	if providerToken == nil {

@@ -184,7 +184,7 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 		// QR points at the profile). Emission is deferred until the
 		// recipient claims an account and the registration gets its actor
 		// id — the claim flow re-emits from here.
-		telemetry.Log().Info("badge emission deferred: attendee has no account yet",
+		telemetry.Log().InfoContext(ctx, "badge emission deferred: attendee has no account yet",
 			slog.String("registration_id", registrationID.String()))
 		//nolint:nilnil // deferred emission is a normal state, not an error
 		return nil, nil
@@ -203,7 +203,7 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 	if emission.EmailSentAt == nil {
 		err = o.Jobs.EnqueueAfter(ctx, jobs.SendBadgeEmailArgs{EmissionID: emission.ID, RegistrationID: reg.ID}, badgeEmailDelay)
 		if err != nil {
-			telemetry.Log().Error("failed to enqueue badge email",
+			telemetry.Log().ErrorContext(ctx, "failed to enqueue badge email",
 				slog.String("registration_id", reg.ID.String()),
 				telemetry.Err(err))
 		}
@@ -311,7 +311,7 @@ func (o *Operations) ListByUser(ctx context.Context, userID uuid.UUID) (*models.
 func (o *Operations) claimGiftsForUser(ctx context.Context, userID uuid.UUID) {
 	actor, err := o.Actors.GetByID(ctx, userID)
 	if err != nil {
-		telemetry.Log().Warn("badge claim: actor lookup failed",
+		telemetry.Log().WarnContext(ctx, "badge claim: actor lookup failed",
 			slog.String("user_id", userID.String()), telemetry.Err(err))
 		return
 	}
@@ -325,14 +325,14 @@ func (o *Operations) claimGiftsForUser(ctx context.Context, userID uuid.UUID) {
 
 	claimed, err := o.Registrations.ClaimAllByAttendeeEmail(ctx, email, userID)
 	if err != nil {
-		telemetry.Log().Warn("badge claim: gift claim failed",
+		telemetry.Log().WarnContext(ctx, "badge claim: gift claim failed",
 			slog.String("user_id", userID.String()), telemetry.Err(err))
 		return
 	}
 	for _, reg := range claimed {
 		_, err = o.EmitForConfirmedRegistration(ctx, reg.ID)
 		if err != nil {
-			telemetry.Log().Warn("badge claim: emission failed",
+			telemetry.Log().WarnContext(ctx, "badge claim: emission failed",
 				slog.String("registration_id", reg.ID.String()), telemetry.Err(err))
 		}
 	}

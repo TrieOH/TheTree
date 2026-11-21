@@ -2,9 +2,6 @@ package config
 
 import (
 	libconfig "lib/config"
-	"lib/errx"
-
-	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
@@ -16,13 +13,4 @@ type Config struct {
 
 	// Feature fields
 	AppURL string `env:"APP_URL,required"`
-}
-
-func LoadConfig() Config {
-	var cfg Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		errx.Exit(err, "failed to load config")
-	}
-	return cfg
 }
