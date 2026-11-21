@@ -106,3 +106,15 @@ export function timeAgo(iso: string, now = new Date()): string {
   if (hours < 24) return `${hours} h ago`;
   return `${Math.round(hours / 24)} d ago`;
 }
+
+/** Successful deploys of a component per UTC day over the last `days` days, oldest first. */
+export function dailyDeploys(deploys: readonly Deploy[], component: string, days = 30, now = new Date()): number[] {
+  const today = Math.floor(now.getTime() / DAY);
+  const counts = Array.from({ length: days }, () => 0);
+  for (const deploy of deploys) {
+    if (deploy.component !== component || deploy.status !== "success") continue;
+    const index = days - 1 - (today - Math.floor(Date.parse(deploy.at) / DAY));
+    if (index >= 0 && index < days) counts[index]++;
+  }
+  return counts;
+}
