@@ -110,10 +110,26 @@ export {
   type OverlayScrollbarProps,
 } from "./overlay-scrollbar";
 export { Checkbox, type CheckboxProps } from "./checkbox";
-export { Card, type CardProps } from "./card";
+export { Card, type CardProps, type CardLinkRenderProps } from "./card";
 export { Link, type LinkProps } from "./link";
 export { SearchInput, type SearchInputProps } from "./search-input";
 export { CodeBlock, type CodeBlockProps } from "./code-block";
+export { CopyButton, type CopyButtonProps } from "./copy-button";
+export { Callout, type CalloutProps, type CalloutTone } from "./callout";
+export { StatusDot, type StatusDotProps, type StatusDotTone } from "./status-dot";
+export {
+  PageHeader,
+  PageSection,
+  type PageHeaderProps,
+  type PageSectionProps,
+} from "./page-header";
+export { Meter, type MeterProps, type MeterMarker, type MeterTone } from "./meter";
+export {
+  ToggleGroup,
+  type ToggleGroupProps,
+  type ToggleGroupItem,
+} from "./toggle-group";
+export { Table, type TableProps, type TableColumn } from "./table";
 export { shapes, shapeClass, type Shape } from "./lib/shape";
 export { Badge, type BadgeProps } from "./badge";
 export { Avatar, type AvatarProps } from "./avatar";
