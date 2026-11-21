@@ -1,9 +1,10 @@
-// Package config holds the env blocks every Backend shares: the server
-// settings, its own Postgres database, the IdentityX client, and CORS. Embed
-// the blocks into the backend's Config; the own-DB block takes its service
-// env prefix from the envPrefix tag, e.g. INFORMD_POSTGRES_HOST.
-// Genuinely per-backend settings (feature fields, providers) stay in the
-// backend's config.go.
+// Package config holds the env blocks the Backends share: the server
+// settings, its own Postgres database, the IdentityX client, CORS, SMTP and
+// background jobs. Embed the blocks into the backend's Config; the own-DB
+// block takes its service env prefix from the envPrefix tag, e.g.
+// INFORMD_POSTGRES_HOST. Genuinely per-backend settings (feature fields,
+// providers) stay in the backend's config.go, and cmd/main reads the whole
+// Config with Load.
 package config
 
 import (
@@ -11,6 +12,9 @@ import (
 
 	"lib/database"
 	"lib/email"
+	"lib/errx"
+
+	"github.com/caarlos0/env/v11"
 
 	idx "sdk/identityx"
 )
@@ -61,6 +65,13 @@ type CORS struct {
 	AllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 }
 
+// Jobs is the background jobs block, unprefixed. URL empty runs the jobs
+// in-process (local compose); set, they're POSTed to that queue producer,
+// which delivers them back to /_jobs (on Cloudflare the Worker sets it).
+type Jobs struct {
+	URL string `env:"JOBS_URL"`
+}
+
 // SMTP is the outgoing mail block, unprefixed, for the backends that send
 // email: mailpit locally, any SMTP relay when deployed.
 type SMTP struct {
@@ -107,4 +118,15 @@ func IdentityXConfig(i IdentityX, debug bool) idx.Config {
 		ProjectID: i.ProjectID,
 		Debug:     debug,
 	}
+}
+
+// Load parses a backend's Config from the environment and ends the process
+// when that fails: it belongs in cmd/main. Secrets arrive as plain
+// environment variables (compose env_file locally, Worker secrets passed
+// into the container on Cloudflare).
+func Load[T any]() T {
+	var cfg T
+	err := env.Parse(&cfg)
+	errx.Exit(err, "error loading config")
+	return cfg
 }

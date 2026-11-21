@@ -4,9 +4,6 @@ import (
 	"time"
 
 	libconfig "lib/config"
-	"lib/errx"
-
-	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
@@ -15,14 +12,10 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"IDX_"`
 	SMTP     libconfig.SMTP
+	Jobs     libconfig.Jobs
 
 	// Server extras
 	AppURL string `env:"APP_URL,required"`
-
-	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /_jobs; the
-	// deploy's scheduler fires the periodic ones there.
-	JobsURL string `env:"JOBS_URL"`
 
 	// Auth / crypto
 	Issuer                string        `env:"ISSUER,required"`
@@ -47,16 +40,4 @@ type Config struct {
 	// Action tokens (email verify / password reset links)
 	EmailVerifyTokenTTL time.Duration `env:"EMAIL_VERIFY_TOKEN_TTL" envDefault:"10m"`
 	EmailResetTokenTTL  time.Duration `env:"EMAIL_RESET_TOKEN_TTL"  envDefault:"10m"`
-}
-
-// LoadConfig parses the environment. Secrets arrive as plain environment
-// variables (compose env_file locally, Worker secrets passed into the
-// container on Cloudflare).
-func LoadConfig() Config {
-	var cfg Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		errx.Exit(err, "error loading config")
-	}
-	return cfg
 }

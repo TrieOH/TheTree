@@ -5,9 +5,6 @@ import (
 
 	libconfig "lib/config"
 	"lib/database"
-	"lib/errx"
-
-	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
@@ -17,6 +14,7 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
 	SMTP     libconfig.SMTP
+	Jobs     libconfig.Jobs
 
 	// Feature fields
 	AppURL string `env:"APP_URL,required"`
@@ -44,23 +42,10 @@ type Config struct {
 
 	// Webhook HMAC
 	HmacSecret string `env:"HMAC_SECRET,required"`
-
-	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /_jobs.
-	JobsURL string `env:"JOBS_URL"`
 }
 
 // ToDBConfig is the connection only: the schema is migrated outside the
 // API process (`just migrate univents`).
 func (cfg Config) ToDBConfig() database.Config {
 	return libconfig.DBConnectionConfig(cfg.Postgres)
-}
-
-func Load() Config {
-	var cfg Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		errx.Exit(err, "error loading config")
-	}
-	return cfg
 }
