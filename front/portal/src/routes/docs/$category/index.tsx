@@ -1,8 +1,9 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
+import { PageHeader } from "@trieoh/ui-solid";
+import { NotConnected } from "@/widgets/shell/NotConnected";
 import { For, Show } from "solid-js";
 import { docsIn, findCategory } from "@/features/docs/catalog";
 import { DocStatus } from "@/features/docs/DocStatus";
-import { NotConnected, PageHeader } from "@/widgets/shell/PageHeader";
 
 export const Route = createFileRoute("/docs/$category/")({
   loader: ({ params }) => {

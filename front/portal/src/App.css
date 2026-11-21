@@ -31,14 +31,10 @@
   --color-warn: var(--warn);
 }
 
-/* Status colors for Operational / Degraded; Idle is a hollow dot. */
+/* Status colors come from the registry's success / warning tokens. */
 :root {
-  --ok: oklch(0.6 0.13 155);
-  --warn: oklch(0.72 0.15 75);
-}
-.dark {
-  --ok: oklch(0.72 0.14 155);
-  --warn: oklch(0.8 0.14 80);
+  --ok: var(--success);
+  --warn: var(--warning);
 }
 
 @layer base {

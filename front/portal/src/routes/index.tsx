@@ -1,4 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/solid-router";
+import { PageSection, Card } from "@trieoh/ui-solid";
+import { routerLink } from "@/shared/ui/router-link";
 import { For, Show } from "solid-js";
 import { docsIn, type DocCategoryId } from "@/features/docs/catalog";
 import { loadIssues } from "@/features/issues/api";
@@ -7,7 +9,6 @@ import { IssueList } from "@/features/issues/ui/IssueList";
 import { findService } from "@/features/catalog/services";
 import { loadMetrics } from "@/features/metrics/api";
 import type { MetricsPayload } from "@/features/metrics/model";
-import { Section } from "@/widgets/shell/PageHeader";
 import { StatusDot } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/")({
@@ -60,7 +61,7 @@ function Home() {
         </div>
       </section>
 
-      <Section title="Needs attention">
+      <PageSection title="Needs attention">
         <Show when={degraded().length > 0}>
           <ul class="mb-3 divide-y divide-border rounded-xl border border-warn/40">
             <For each={degraded()}>
@@ -88,9 +89,9 @@ function Home() {
         >
           <IssueList issues={urgent()} empty={degraded().length ? "No urgent issues." : "Nothing needs attention."} />
         </Show>
-      </Section>
+      </PageSection>
 
-      <Section
+      <PageSection
         title="Decisions"
         aside={<Link to="/docs/$category" params={{ category: "decisions" }}>All decisions</Link>}
       >
@@ -113,9 +114,9 @@ function Home() {
             )}
           </For>
         </ul>
-      </Section>
+      </PageSection>
 
-      <Section title="New here?">
+      <PageSection title="New here?">
         <div class="grid gap-3 sm:grid-cols-3">
           <StartCard category="onboarding" title="Run TheTree locally" note="mise, just and the four APIs" />
           <StartCard category="runbooks" title="How we ship" note="Branches, commits and deploys" />
@@ -125,20 +126,16 @@ function Home() {
             note={`${decisions.length} decision records`}
           />
         </div>
-      </Section>
+      </PageSection>
     </>
   );
 }
 
 function StartCard(props: { category: DocCategoryId; title: string; note: string }) {
   return (
-    <Link
-      to="/docs/$category"
-      params={{ category: props.category }}
-      class="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-foreground/5"
-    >
+    <Card href={`/docs/${props.category}`} renderLink={routerLink} class="p-4">
       <span class="block font-medium">{props.title}</span>
       <span class="mt-1 block text-[13px] text-muted-foreground">{props.note}</span>
-    </Link>
+    </Card>
   );
 }

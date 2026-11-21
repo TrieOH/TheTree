@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { Tabs, cn } from "@trieoh/ui-solid";
+import { Tabs, cn, PageHeader, PageSection, DashboardStatCard, Badge, Sparkline, Table } from "@trieoh/ui-solid";
 import { For, Match, Show, Switch, createMemo, createSignal } from "solid-js";
 import { loadDelivery } from "@/features/delivery/api";
 import {
@@ -25,8 +25,7 @@ import {
   timeToRestore,
   typicalDuration,
 } from "@/features/delivery/stats";
-import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
-import { PageHeader, Section } from "@/widgets/shell/PageHeader";
+import { KpiRow } from "@/widgets/shell/Kpi";
 
 export const Route = createFileRoute("/delivery")({
   loader: () => loadDelivery(),
@@ -58,10 +57,14 @@ function DeliveryPage() {
       />
 
       <KpiRow>
-        <Kpi label="Deploys / week" note="last 4 weeks">{deploysPerWeek(data().deploys).toFixed(1)}</Kpi>
-        <Kpi label="PR lead time" note="median, 30 days">{formatDuration(prLeadTime(data().pulls))}</Kpi>
-        <Kpi label="Change failure rate" note="30 days">{cfr() === null ? "—" : `${Math.round(cfr()! * 100)}%`}</Kpi>
-        <Kpi label="Time to restore" note="median, 30 days">{formatDuration(timeToRestore(data().deploys))}</Kpi>
+        <DashboardStatCard label="Deploys / week" hint="last 4 weeks" value={deploysPerWeek(data().deploys).toFixed(1)} />
+        <DashboardStatCard label="PR lead time" hint="median, 30 days" value={formatDuration(prLeadTime(data().pulls))} />
+        <DashboardStatCard
+          label="Change failure rate"
+          hint="30 days"
+          value={cfr() === null ? "—" : `${Math.round(cfr()! * 100)}%`}
+        />
+        <DashboardStatCard label="Time to restore" hint="median, 30 days" value={formatDuration(timeToRestore(data().deploys))} />
       </KpiRow>
 
       <div class="mt-8">
@@ -107,81 +110,72 @@ function Empty(props: { children: string }) {
   return <p class="text-[13px] text-muted-foreground">{props.children}</p>;
 }
 
-function Pill(props: { tone: "ok" | "bad" | "warn" | "muted"; children: string }) {
-  return (
-    <span
-      class={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-        props.tone === "ok" && "bg-ok/15 text-ok",
-        props.tone === "bad" && "bg-destructive/20 text-destructive dark:text-destructive-foreground",
-        props.tone === "warn" && "bg-warn/15 text-warn",
-        props.tone === "muted" && "bg-muted text-muted-foreground",
-      )}
-    >
-      {props.children}
-    </span>
-  );
-}
+type Tone = "success" | "destructive" | "warning" | "muted";
 
-function deployPill(deploy: Deploy): { tone: "ok" | "bad" | "warn" | "muted"; label: string } {
+function deployPill(deploy: Deploy): { tone: Tone; label: string } {
   if (deploy.status === "cancelled") return { tone: "muted", label: "Cancelled" };
-  if (deploy.status === "failure") return { tone: "bad", label: "Failed" };
-  return { tone: "ok", label: "Deployed" };
+  if (deploy.status === "failure") return { tone: "destructive", label: "Failed" };
+  return { tone: "success", label: "Deployed" };
 }
 
 function Production(props: { deploys: readonly Deploy[] }) {
   return (
     <Show when={props.deploys.length > 0} fallback={<Empty>No deploys recorded yet.</Empty>}>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-[13.5px]">
-          <thead class="text-[12px] text-muted-foreground">
-            <tr class="border-b border-border">
-              <th class="py-2 pr-4 font-normal">Component</th>
-              <th class="py-2 pr-4 font-normal">Tag</th>
-              <th class="py-2 pr-4 font-normal">Status</th>
-              <th class="py-2 pr-4 font-normal">Deployed</th>
-              <th class="py-2 font-normal">By</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            <For each={props.deploys}>
-              {(deploy) => {
-                const pill = deployPill(deploy);
-                return (
-                  <tr>
-                    <td class="py-2.5 pr-4 font-medium">{deploy.component}</td>
-                    <td class="py-2.5 pr-4 font-mono text-[12.5px]">
-                      <a class="hover:underline" href={commitUrl(deploy.sha)} {...external}>
-                        {deploy.tag.slice(deploy.component.length + 1) || deploy.tag}
-                      </a>
-                    </td>
-                    <td class="py-2.5 pr-4">
-                      <Show when={deploy.runId} fallback={<Pill tone={pill.tone}>{pill.label}</Pill>}>
-                        {(id) => (
-                          <a href={runUrl(id())} {...external}>
-                            <Pill tone={pill.tone}>{pill.label}</Pill>
-                          </a>
-                        )}
-                      </Show>
-                    </td>
-                    <td class="whitespace-nowrap py-2.5 pr-4 text-muted-foreground">{timeAgo(deploy.at)}</td>
-                    <td class="py-2.5 text-muted-foreground">{deploy.actor}</td>
-                  </tr>
-                );
-              }}
-            </For>
-          </tbody>
-        </table>
-      </div>
+      <Table
+        caption="Production deploys"
+        class="text-[13.5px]"
+        items={props.deploys}
+        columns={[
+          { id: "component", header: "Component", class: "font-medium", cell: (deploy) => deploy.component },
+          {
+            id: "tag",
+            header: "Tag",
+            class: "font-mono text-[12.5px]",
+            cell: (deploy) => (
+              <a class="hover:underline" href={commitUrl(deploy.sha)} {...external}>
+                {deploy.tag.slice(deploy.component.length + 1) || deploy.tag}
+              </a>
+            ),
+          },
+          {
+            id: "status",
+            header: "Status",
+            cell: (deploy) => {
+              const pill = deployPill(deploy);
+              const badge = (
+                <Badge shape="pill" variant={pill.tone}>
+                  {pill.label}
+                </Badge>
+              );
+              return (
+                <Show when={deploy.runId} fallback={badge}>
+                  {(id) => (
+                    <a href={runUrl(id())} {...external}>
+                      {badge}
+                    </a>
+                  )}
+                </Show>
+              );
+            },
+          },
+          {
+            id: "deployed",
+            header: "Deployed",
+            class: "whitespace-nowrap text-muted-foreground",
+            cell: (deploy) => timeAgo(deploy.at),
+          },
+          { id: "by", header: "By", class: "text-muted-foreground", cell: (deploy) => deploy.actor },
+        ]}
+      />
     </Show>
   );
 }
 
-function reviewPill(pr: PullRequest): { tone: "ok" | "bad" | "warn" | "muted"; label: string } {
+function reviewPill(pr: PullRequest): { tone: Tone; label: string } {
   if (pr.draft) return { tone: "muted", label: "Draft" };
-  if (pr.reviewState === "approved") return { tone: "ok", label: "Approved" };
-  if (pr.reviewState === "changes_requested") return { tone: "bad", label: "Changes requested" };
-  return { tone: "warn", label: "Needs review" };
+  if (pr.reviewState === "approved") return { tone: "success", label: "Approved" };
+  if (pr.reviewState === "changes_requested") return { tone: "destructive", label: "Changes requested" };
+  return { tone: "warning", label: "Needs review" };
 }
 
 function Pulls(props: { pulls: readonly PullRequest[] }) {
@@ -189,7 +183,7 @@ function Pulls(props: { pulls: readonly PullRequest[] }) {
   const merged = () => props.pulls.filter((pr) => pr.state === "merged");
   return (
     <>
-      <Section
+      <PageSection
         title="Open"
         aside={
           <a href="https://github.com/TrieOH/TheTree/pulls" {...external}>
@@ -198,14 +192,14 @@ function Pulls(props: { pulls: readonly PullRequest[] }) {
         }
       >
         <PullList pulls={open()} empty="No open pull requests." pill={reviewPill} />
-      </Section>
-      <Section title="Merged" aside="last 30 days">
+      </PageSection>
+      <PageSection title="Merged" aside="last 30 days">
         <PullList
           pulls={merged()}
           empty="Nothing merged in the last 30 days."
           pill={(pr) => ({ tone: "muted", label: timeAgo(pr.mergedAt!) })}
         />
-      </Section>
+      </PageSection>
     </>
   );
 }
@@ -213,7 +207,7 @@ function Pulls(props: { pulls: readonly PullRequest[] }) {
 function PullList(props: {
   pulls: readonly PullRequest[];
   empty: string;
-  pill: (pr: PullRequest) => { tone: "ok" | "bad" | "warn" | "muted"; label: string };
+  pill: (pr: PullRequest) => { tone: Tone; label: string };
 }) {
   return (
     <Show when={props.pulls.length > 0} fallback={<Empty>{props.empty}</Empty>}>
@@ -231,7 +225,7 @@ function PullList(props: {
                   <span class="w-12 shrink-0 font-mono text-[12px] text-muted-foreground">#{pr.number}</span>
                   <span class="min-w-0 flex-1 truncate">{pr.title}</span>
                   <span class="hidden shrink-0 text-[12px] text-muted-foreground sm:inline">{pr.author}</span>
-                  <Pill tone={pill.tone}>{pill.label}</Pill>
+                  <Badge shape="pill" variant={pill.tone}>{pill.label}</Badge>
                 </a>
               </li>
             );
@@ -297,23 +291,12 @@ function Ci(props: { runs: readonly WorkflowRun[] }) {
 
 const PIPELINES: Record<string, string> = { service: "Services", front: "Fronts", sdk: "SDKs", pages: "Pages" };
 
-function stagePill(run: CiRun): { tone: "ok" | "bad" | "warn" | "muted"; label: string } {
+function stagePill(run: CiRun): { tone: Tone; label: string } {
   if (run.status === "cancelled") return { tone: "muted", label: "Cancelled" };
-  if (run.status === "failure") return run.stage === "publish" ? { tone: "bad", label: "Failed" } : { tone: "warn", label: `Blocked at ${run.stage}` };
-  return { tone: "ok", label: run.type === "sdk" ? "Gate passed" : "Shipped" };
+  if (run.status === "failure") return run.stage === "publish" ? { tone: "destructive", label: "Failed" } : { tone: "warning", label: `Blocked at ${run.stage}` };
+  return { tone: "success", label: run.type === "sdk" ? "Gate passed" : "Shipped" };
 }
 
-/** Each step's recent times as bars, scaled to the slowest one. */
-function Spark(props: { values: readonly number[] }) {
-  const max = () => Math.max(...props.values, 1);
-  return (
-    <span class="flex h-5 items-end gap-px" aria-hidden="true">
-      <For each={props.values}>
-        {(ms) => <span class="w-1.5 rounded-[1px] bg-muted-foreground/50" style={{ height: `${Math.max(8, (ms / max()) * 100)}%` }} />}
-      </For>
-    </span>
-  );
-}
 
 function Pipelines(props: { ci: CiPayload }) {
   const types = createMemo(() => Object.keys(PIPELINES).filter((type) => props.ci.runs.some((run) => run.type === type)));
@@ -335,82 +318,116 @@ function Pipelines(props: { ci: CiPayload }) {
       </div>
 
       <div class="mt-6">
-        <Section title="Step times" aside={`last ${Math.max(0, ...steps().map((s) => s.runs))} runs`}>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-[13.5px]">
-              <thead class="text-[12px] text-muted-foreground">
-                <tr class="border-b border-border">
-                  <th class="py-2 pr-4 font-normal">Step</th>
-                  <th class="py-2 pr-4 text-right font-normal">Median</th>
-                  <th class="py-2 pr-4 text-right font-normal">p90</th>
-                  <th class="py-2 pr-4 text-right font-normal">Last</th>
-                  <th class="py-2 font-normal">Recent</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border">
-                <For each={steps()}>
-                  {(step) => (
-                    <tr>
-                      <td class="py-2 pr-4">
-                        <span class="text-muted-foreground">{step.job} · </span>
-                        {step.step}
-                      </td>
-                      <td class="py-2 pr-4 text-right tabular-nums">{formatStepTime(step.medianMs)}</td>
-                      <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatStepTime(step.p90Ms)}</td>
-                      <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatStepTime(step.lastMs)}</td>
-                      <td class="py-2" title={stepLabel(step)}>
-                        <Spark values={step.recentMs} />
-                      </td>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </table>
-          </div>
-        </Section>
+        <PageSection title="Step times" aside={`last ${Math.max(0, ...steps().map((s) => s.runs))} runs`}>
+          <Table
+            caption="Step times"
+            class="text-[13.5px]"
+            density="compact"
+            items={steps()}
+            columns={[
+              {
+                id: "step",
+                header: "Step",
+                cell: (step) => (
+                  <>
+                    <span class="text-muted-foreground">{step.job} · </span>
+                    {step.step}
+                  </>
+                ),
+              },
+              {
+                id: "median",
+                header: "Median",
+                align: "right",
+                class: "tabular-nums",
+                cell: (step) => formatStepTime(step.medianMs),
+              },
+              {
+                id: "p90",
+                header: "p90",
+                align: "right",
+                class: "tabular-nums text-muted-foreground",
+                cell: (step) => formatStepTime(step.p90Ms),
+              },
+              {
+                id: "last",
+                header: "Last",
+                align: "right",
+                class: "tabular-nums text-muted-foreground",
+                cell: (step) => formatStepTime(step.lastMs),
+              },
+              {
+                id: "recent",
+                header: "Recent",
+                title: stepLabel,
+                cell: (step) => (
+                  <Sparkline
+                    type="bar"
+                    data={step.recentMs}
+                    label={`${stepLabel(step)}, recent runs`}
+                    height={20}
+                    color="color-mix(in oklab, var(--muted-foreground) 50%, transparent)"
+                  />
+                ),
+              },
+            ]}
+          />
+        </PageSection>
 
-        <Section title="Measurements" aside="from .github/scripts/metric">
+        <PageSection title="Measurements" aside="from .github/scripts/metric">
           <Show when={metrics().length > 0} fallback={<Empty>No measurements for this pipeline yet.</Empty>}>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-[13.5px]">
-                <thead class="text-[12px] text-muted-foreground">
-                  <tr class="border-b border-border">
-                    <th class="py-2 pr-4 font-normal">Measurement</th>
-                    <th class="py-2 pr-4 text-right font-normal">Last</th>
-                    <th class="py-2 pr-4 text-right font-normal">Median</th>
-                    <th class="py-2 text-right font-normal">Runs</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                  <For each={metrics()}>
-                    {(metric) => (
-                      <tr>
-                        <td class="py-2 pr-4">
-                          <span class="text-muted-foreground">
-                            {metric.job} · {metric.source} ·{" "}
+            <Table
+              caption="Measurements"
+              class="text-[13.5px]"
+              density="compact"
+              items={metrics()}
+              columns={[
+                {
+                  id: "name",
+                  header: "Measurement",
+                  cell: (metric) => (
+                    <>
+                      <span class="text-muted-foreground">
+                        {metric.job} · {metric.source} ·{" "}
+                      </span>
+                      {metric.name}
+                      <For each={Object.entries(metric.labels)}>
+                        {([key, value]) => (
+                          <span class="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                            {key}={value}
                           </span>
-                          {metric.name}
-                          <For each={Object.entries(metric.labels)}>
-                            {([key, value]) => (
-                              <span class="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                                {key}={value}
-                              </span>
-                            )}
-                          </For>
-                        </td>
-                        <td class="py-2 pr-4 text-right tabular-nums">{formatMetric(metric.name, metric.last)}</td>
-                        <td class="py-2 pr-4 text-right tabular-nums text-muted-foreground">{formatMetric(metric.name, metric.median)}</td>
-                        <td class="py-2 text-right tabular-nums text-muted-foreground">{metric.runs}</td>
-                      </tr>
-                    )}
-                  </For>
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </For>
+                    </>
+                  ),
+                },
+                {
+                  id: "last",
+                  header: "Last",
+                  align: "right",
+                  class: "tabular-nums",
+                  cell: (metric) => formatMetric(metric.name, metric.last),
+                },
+                {
+                  id: "median",
+                  header: "Median",
+                  align: "right",
+                  class: "tabular-nums text-muted-foreground",
+                  cell: (metric) => formatMetric(metric.name, metric.median),
+                },
+                {
+                  id: "runs",
+                  header: "Runs",
+                  align: "right",
+                  class: "tabular-nums text-muted-foreground",
+                  cell: (metric) => metric.runs,
+                },
+              ]}
+            />
           </Show>
-        </Section>
+        </PageSection>
 
-        <Section title="Release runs" aside="newest first, all pipelines">
+        <PageSection title="Release runs" aside="newest first, all pipelines">
           <ul class="divide-y divide-border border-y border-border">
             <For each={props.ci.runs}>
               {(run) => {
@@ -421,7 +438,7 @@ function Pipelines(props: { ci: CiPayload }) {
                     <a href={runUrl(run.runId)} {...external} class="flex items-center gap-3 py-2.5 text-[13.5px] hover:bg-foreground/5">
                       <span class="min-w-0 flex-1 truncate font-mono text-[12.5px]">{run.tag}</span>
                       <Show when={run.lane === "express"}>
-                        <Pill tone="muted">hotfix</Pill>
+                        <Badge shape="pill" variant="muted">hotfix</Badge>
                       </Show>
                       <span class="hidden shrink-0 text-[12px] tabular-nums text-muted-foreground sm:inline">
                         {formatDuration(ms)}
@@ -429,14 +446,14 @@ function Pipelines(props: { ci: CiPayload }) {
                       <span class="hidden w-20 shrink-0 text-right text-[12px] text-muted-foreground sm:inline">
                         {run.startedAt ? timeAgo(run.startedAt) : ""}
                       </span>
-                      <Pill tone={pill.tone}>{pill.label}</Pill>
+                      <Badge shape="pill" variant={pill.tone}>{pill.label}</Badge>
                     </a>
                   </li>
                 );
               }}
             </For>
           </ul>
-        </Section>
+        </PageSection>
       </div>
     </Show>
   );

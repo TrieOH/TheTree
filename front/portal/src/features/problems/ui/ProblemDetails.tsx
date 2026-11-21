@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
+import { CopyButton } from "@trieoh/ui-solid";
 import { For, Show } from "solid-js";
-import { CopyButton } from "@/shared/ui/CopyButton";
 import { exampleBody, problemType, statusText, type ProblemDoc } from "../model";
 
 /**
@@ -17,7 +17,13 @@ export function ProblemDetails(props: { problem: ProblemDoc }) {
         <span>·</span>
         <span class="font-mono">application/problem+json</span>
         <span class="ml-auto">Copy example</span>
-        <CopyButton text={() => exampleBody(props.problem)} label="Copy example body" class="-my-1 -mr-1" />
+        <CopyButton
+          size="sm"
+          copiedLabel="Copied"
+          text={() => exampleBody(props.problem)}
+          label="Copy example body"
+          class="-my-1 -mr-1"
+        />
       </header>
       <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 px-3 py-2.5">
         <Member name="type">

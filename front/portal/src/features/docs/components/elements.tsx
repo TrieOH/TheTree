@@ -1,7 +1,7 @@
 import { Dynamic, type JSX } from "@solidjs/web";
+import { CopyButton } from "@trieoh/ui-solid";
 import { omit } from "solid-js";
 import LinkIcon from "~icons/lucide/link";
-import { CopyButton } from "@/shared/ui/CopyButton";
 
 // Overrides for the plain elements MDX emits.
 
@@ -35,6 +35,8 @@ function Pre(props: Props) {
         {props.children}
       </pre>
       <CopyButton
+        size="sm"
+        copiedLabel="Copied"
         text={() => pre?.textContent ?? ""}
         label="Copy code"
         class="absolute right-2 top-2 border border-border bg-background/80 opacity-0 focus:opacity-100 group-hover:opacity-100"

@@ -1,17 +1,17 @@
-import { Link, createFileRoute } from "@tanstack/solid-router";
-import { Tabs, cn } from "@trieoh/ui-solid";
+import { createFileRoute } from "@tanstack/solid-router";
+import { Tabs, cn, PageHeader, Card, Sparkline, Table } from "@trieoh/ui-solid";
+import { NotConnected } from "@/widgets/shell/NotConnected";
 import { For, Match, Show, Switch, createSignal } from "solid-js";
-import { findService } from "@/features/catalog/services";
+import { findService, type ServiceId } from "@/features/catalog/services";
 import { loadMetrics } from "@/features/metrics/api";
 import { formatBytes, formatCount, formatHours, formatMs, formatPercent } from "@/features/metrics/format";
 import { DEGRADED_P95_MS, type MetricsPayload, type WorkerStats } from "@/features/metrics/model";
 import { summarize } from "@/features/metrics/cold-starts";
-import { Sparkline } from "@/features/metrics/ui/Sparkline";
+import { routerLink } from "@/shared/ui/router-link";
 import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
 import { UsageBar } from "@/features/metrics/ui/UsageBar";
 import { timeAgo } from "@/features/delivery/stats";
 import { formatDay } from "@/features/issues/stats";
-import { NotConnected, PageHeader } from "@/widgets/shell/PageHeader";
 import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/metrics")({
@@ -31,8 +31,9 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]["id"];
 
-const th = "py-2 pr-4 font-normal";
-const td = "py-2.5 pr-4 tabular-nums";
+const td = "tabular-nums";
+/** Requests or starts per hour or day as small accent bars. */
+const bars = { type: "bar", height: 32, color: "color-mix(in oklab, var(--accent) 70%, transparent)" } as const;
 
 function MetricsPage() {
   const data = Route.useLoaderData();
@@ -86,11 +87,7 @@ function Services(props: { data: MetricsPayload }) {
     <div class="grid gap-3 sm:grid-cols-2">
       <For each={props.data.services}>
         {(service) => (
-          <Link
-            to="/services/$service"
-            params={{ service: service.id }}
-            class="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-foreground/5"
-          >
+          <Card href={`/services/${service.id}`} renderLink={routerLink} class="p-4">
             <div class="flex items-center justify-between gap-3">
               <span class="font-medium">{findService(service.id)?.name}</span>
               <span class="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
@@ -99,7 +96,7 @@ function Services(props: { data: MetricsPayload }) {
               </span>
             </div>
             <div class="mt-3">
-              <Sparkline values={service.hourly} label={`Requests per hour, last 24 hours`} />
+              <Sparkline {...bars} data={service.hourly} label="Requests per hour, last 24 hours" />
             </div>
             <dl class="mt-3 grid grid-cols-4 gap-2 text-[12px]">
               <div>
@@ -124,7 +121,7 @@ function Services(props: { data: MetricsPayload }) {
             <Show when={service.lastRequestAt}>
               {(at) => <p class="mt-2 text-[11.5px] text-muted-foreground">Last request {timeAgo(at())}</p>}
             </Show>
-          </Link>
+          </Card>
         )}
       </For>
     </div>
@@ -152,6 +149,8 @@ function LatencyAndErrors(props: { data: MetricsPayload }) {
 }
 
 function ColdStarts(props: { data: MetricsPayload }) {
+  const week = (id: ServiceId) => summarize(props.data.coldStarts, id, 7);
+  const fortnight = (id: ServiceId) => summarize(props.data.coldStarts, id, 14);
   return (
     <div class="space-y-4">
       <p class="text-[13px] text-muted-foreground">
@@ -166,40 +165,39 @@ function ColdStarts(props: { data: MetricsPayload }) {
           </NotConnected>
         }
       >
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-[13px]">
-            <thead class="text-[12px] text-muted-foreground">
-              <tr class="border-b border-border">
-                <th class={th}>Service</th>
-                <th class={th}>Starts</th>
-                <th class={th}>Failed</th>
-                <th class={th}>Typical</th>
-                <th class={th}>Worst day p95</th>
-                <th class="py-2 font-normal">Per day</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border">
-              <For each={props.data.services}>
-                {(service) => {
-                  const week = summarize(props.data.coldStarts, service.id, 7);
-                  const fortnight = summarize(props.data.coldStarts, service.id, 14);
-                  return (
-                    <tr>
-                      <td class="py-2.5 pr-4 font-medium">{findService(service.id)?.name}</td>
-                      <td class={td}>{week.count}</td>
-                      <td class={cn(td, week.failed > 0 && "text-warn")}>{week.failed}</td>
-                      <td class={td}>{formatMs(week.typicalMs)}</td>
-                      <td class={td}>{formatMs(week.worstP95Ms)}</td>
-                      <td class="py-2.5">
-                        <Sparkline values={fortnight.daily} label="Cold starts per day, last 14 days" />
-                      </td>
-                    </tr>
-                  );
-                }}
-              </For>
-            </tbody>
-          </table>
-        </div>
+        <Table
+          caption="Cold starts by service"
+          items={props.data.services}
+          columns={[
+            {
+              id: "service",
+              header: "Service",
+              class: "font-medium",
+              cell: (service) => findService(service.id)?.name,
+            },
+            { id: "starts", header: "Starts", class: td, cell: (service) => week(service.id).count },
+            {
+              id: "failed",
+              header: "Failed",
+              class: (service) => cn(td, week(service.id).failed > 0 && "text-warn"),
+              cell: (service) => week(service.id).failed,
+            },
+            { id: "typical", header: "Typical", class: td, cell: (service) => formatMs(week(service.id).typicalMs) },
+            {
+              id: "worst",
+              header: "Worst day p95",
+              class: td,
+              cell: (service) => formatMs(week(service.id).worstP95Ms),
+            },
+            {
+              id: "daily",
+              header: "Per day",
+              cell: (service) => (
+                <Sparkline {...bars} data={fortnight(service.id).daily} label="Cold starts per day, last 14 days" />
+              ),
+            },
+          ]}
+        />
       </Show>
     </div>
   );
@@ -229,73 +227,72 @@ function Database(props: { data: MetricsPayload }) {
         One Neon project per service, read from Neon's API; nothing connects to Postgres. Neon's month runs to its own
         quota reset.
       </p>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-[13px]">
-          <thead class="text-[12px] text-muted-foreground">
-            <tr class="border-b border-border">
-              <th class={th}>Service</th>
-              <th class={th}>Storage</th>
-              <th class={th}>Awake</th>
-              <th class={th}>Suspended</th>
-              <th class={th}>Resumes</th>
-              <th class={th}>Resume p50 / max</th>
-              <th class="py-2 font-normal">Last active</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            <For each={props.data.neon}>
-              {(project) => (
-                <tr>
-                  <td class="py-2.5 pr-4 font-medium">{findService(project.service)?.name}</td>
-                  <td class={td}>{formatBytes(project.storageBytes)}</td>
-                  <td class={td}>{formatHours(project.activeSeconds)}</td>
-                  <td class={td}>{formatPercent(project.suspendedShare, 1)}</td>
-                  <td class={td}>{project.resumes}</td>
-                  <td class={td}>
-                    {formatMs(project.resumeP50Ms)} / {formatMs(project.resumeMaxMs)}
-                  </td>
-                  <td class="py-2.5 text-muted-foreground">{project.lastActiveAt ? timeAgo(project.lastActiveAt) : "—"}</td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
-      </div>
+      <Table
+        caption="Neon projects"
+        items={props.data.neon}
+        columns={[
+          {
+            id: "service",
+            header: "Service",
+            class: "font-medium",
+            cell: (project) => findService(project.service)?.name,
+          },
+          { id: "storage", header: "Storage", class: td, cell: (project) => formatBytes(project.storageBytes) },
+          { id: "awake", header: "Awake", class: td, cell: (project) => formatHours(project.activeSeconds) },
+          {
+            id: "suspended",
+            header: "Suspended",
+            class: td,
+            cell: (project) => formatPercent(project.suspendedShare, 1),
+          },
+          { id: "resumes", header: "Resumes", class: td, cell: (project) => project.resumes },
+          {
+            id: "resume",
+            header: "Resume p50 / max",
+            class: td,
+            cell: (project) => `${formatMs(project.resumeP50Ms)} / ${formatMs(project.resumeMaxMs)}`,
+          },
+          {
+            id: "active",
+            header: "Last active",
+            class: "text-muted-foreground",
+            cell: (project) => (project.lastActiveAt ? timeAgo(project.lastActiveAt) : "—"),
+          },
+        ]}
+      />
     </div>
   );
 }
 
 function Workers(props: { workers: WorkerStats[] }) {
   return (
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-[13px]">
-        <thead class="text-[12px] text-muted-foreground">
-          <tr class="border-b border-border">
-            <th class={th}>Worker</th>
-            <th class={th}>Requests</th>
-            <th class={th}>Errors</th>
-            <th class={th}>CPU p50 / p99</th>
-            <th class="py-2 font-normal">Wall p50 / p99</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          <For each={props.workers}>
-            {(worker) => (
-              <tr>
-                <td class="py-2.5 pr-4 font-mono text-[12.5px]">{worker.script}</td>
-                <td class={td}>{formatCount(worker.requests)}</td>
-                <td class={cn(td, worker.errors > 0 && "text-warn")}>{worker.errors}</td>
-                <td class={td}>
-                  {formatMs(worker.cpuP50Ms)} / {formatMs(worker.cpuP99Ms)}
-                </td>
-                <td class="py-2.5 tabular-nums">
-                  {formatMs(worker.wallP50Ms)} / {formatMs(worker.wallP99Ms)}
-                </td>
-              </tr>
-            )}
-          </For>
-        </tbody>
-      </table>
+    <div>
+      <Table
+        caption="Workers"
+        items={props.workers}
+        columns={[
+          { id: "worker", header: "Worker", class: "font-mono text-[12.5px]", cell: (worker) => worker.script },
+          { id: "requests", header: "Requests", class: td, cell: (worker) => formatCount(worker.requests) },
+          {
+            id: "errors",
+            header: "Errors",
+            class: (worker) => cn(td, worker.errors > 0 && "text-warn"),
+            cell: (worker) => worker.errors,
+          },
+          {
+            id: "cpu",
+            header: "CPU p50 / p99",
+            class: td,
+            cell: (worker) => `${formatMs(worker.cpuP50Ms)} / ${formatMs(worker.cpuP99Ms)}`,
+          },
+          {
+            id: "wall",
+            header: "Wall p50 / p99",
+            class: td,
+            cell: (worker) => `${formatMs(worker.wallP50Ms)} / ${formatMs(worker.wallP99Ms)}`,
+          },
+        ]}
+      />
       <p class="mt-3 text-[12px] text-muted-foreground">This billing cycle. Errors are uncaught exceptions in the Worker.</p>
     </div>
   );

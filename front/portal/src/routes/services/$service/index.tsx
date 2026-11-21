@@ -1,4 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
+import { PageHeader, PageSection, DashboardStatCard } from "@trieoh/ui-solid";
 import { For, Show } from "solid-js";
 import { REPO_URL, findService } from "@/features/catalog/services";
 import { loadDelivery } from "@/features/delivery/api";
@@ -10,8 +11,7 @@ import { loadIssues } from "@/features/issues/api";
 import { isOpen } from "@/features/issues/model";
 import { IssueList } from "@/features/issues/ui/IssueList";
 import { EndpointTable, ProblemTable } from "@/features/metrics/ui/LatencyTables";
-import { Kpi, KpiRow } from "@/widgets/shell/Kpi";
-import { PageHeader, Section } from "@/widgets/shell/PageHeader";
+import { KpiRow } from "@/widgets/shell/Kpi";
 import { StatusDot, statusLabel } from "@/widgets/shell/StatusDot";
 
 export const Route = createFileRoute("/services/$service/")({
@@ -81,21 +81,23 @@ function ServicePage() {
         </div>
       </PageHeader>
 
-      <Section title="Health">
+      <PageSection title="Health">
         <KpiRow>
-          <Kpi label="Status">
-            <span class="inline-flex items-center gap-2">
-              <StatusDot status={data().metrics?.status ?? "unknown"} />
-              {statusLabel(data().metrics?.status ?? "unknown")}
-            </span>
-          </Kpi>
-          <Kpi label="Success rate 30d">{formatPercent(data().metrics?.successRate30d ?? null)}</Kpi>
-          <Kpi label="Requests 24h">
-            {data().metrics?.requests24h == null ? "—" : formatCount(data().metrics!.requests24h!)}
-          </Kpi>
-          <Kpi label="p95 24h" note="inside the container">
-            {formatMs(data().metrics?.p95Ms24h ?? null)}
-          </Kpi>
+          <DashboardStatCard
+            label="Status"
+            value={
+              <span class="inline-flex items-center gap-2">
+                <StatusDot status={data().metrics?.status ?? "unknown"} />
+                {statusLabel(data().metrics?.status ?? "unknown")}
+              </span>
+            }
+          />
+          <DashboardStatCard label="Success rate 30d" value={formatPercent(data().metrics?.successRate30d ?? null)} />
+          <DashboardStatCard
+            label="Requests 24h"
+            value={data().metrics?.requests24h == null ? "—" : formatCount(data().metrics!.requests24h!)}
+          />
+          <DashboardStatCard label="p95 24h" hint="inside the container" value={formatMs(data().metrics?.p95Ms24h ?? null)} />
         </KpiRow>
         <Show when={data().coldStarts?.count}>
           <p class="mt-3 text-[13px] text-muted-foreground">
@@ -106,21 +108,21 @@ function ServicePage() {
             </Link>
           </p>
         </Show>
-      </Section>
+      </PageSection>
 
       <Show when={data().endpoints.length > 0 || data().problems.length > 0}>
-        <Section title="Latency and errors" aside={<Link to="/metrics">Metrics</Link>}>
+        <PageSection title="Latency and errors" aside={<Link to="/metrics">Metrics</Link>}>
           <p class="mb-3 text-[13px] text-muted-foreground">Slowest endpoints and error types, last 7 days.</p>
           <EndpointTable endpoints={data().endpoints} />
           <div class="mt-6">
             <ProblemTable problems={data().problems} />
           </div>
-        </Section>
+        </PageSection>
       </Show>
 
-      <Section title={`Open issues (${data().issues.length})`} aside={<Link to="/issues">All issues</Link>}>
+      <PageSection title={`Open issues (${data().issues.length})`} aside={<Link to="/issues">All issues</Link>}>
         <IssueList issues={data().issues} empty={`No open issues for ${service().name}.`} />
-      </Section>
+      </PageSection>
     </>
   );
 }

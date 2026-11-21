@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { Link, useLocation } from "@tanstack/solid-router";
-import { cn } from "@trieoh/ui-solid";
+import { cn, Drawer } from "@trieoh/ui-solid";
 import { For, Show, createEffect, createSignal, onSettled } from "solid-js";
 import BookIcon from "~icons/lucide/book-open";
 import BoxIcon from "~icons/lucide/box";
@@ -14,7 +14,6 @@ import MenuIcon from "~icons/lucide/menu";
 import MoonIcon from "~icons/lucide/moon";
 import SearchIcon from "~icons/lucide/search";
 import SunIcon from "~icons/lucide/sun";
-import XIcon from "~icons/lucide/x";
 import { REPO_URL, SERVICES } from "@/features/catalog/services";
 import { DOC_CATEGORIES } from "@/features/docs/catalog";
 import { loadMetrics } from "@/features/metrics/api";
@@ -124,10 +123,14 @@ function ThemeToggle() {
 
 // The sidebar's status dots; loaded once, after the page is up.
 const [metrics, setMetrics] = createSignal<MetricsPayload | null>(null, { name: "sidebar-metrics" });
+let metricsRequested = false;
 
 function SidebarContent() {
   onSettled(() => {
-    if (!metrics()) loadMetrics().then(setMetrics, () => {});
+    // Two sidebars are mounted (desktop and the mobile drawer); fetch once.
+    if (metricsRequested) return;
+    metricsRequested = true;
+    loadMetrics().then(setMetrics, () => {});
   });
   const statusOf = (id: string) => metrics()?.services.find((s) => s.id === id)?.status ?? "unknown";
 
@@ -203,7 +206,6 @@ export function AppShell(props: { children: JSX.Element }) {
           type="button"
           class="inline-flex h-9 items-center gap-2 rounded-lg px-2.5 text-[13px] text-muted-foreground hover:bg-foreground/5"
           aria-expanded={drawer() ? "true" : "false"}
-          aria-controls="drawer"
           onClick={() => setDrawer(true)}
         >
           <MenuIcon class="size-4" />
@@ -211,30 +213,15 @@ export function AppShell(props: { children: JSX.Element }) {
         </button>
       </div>
 
-      <Show when={drawer()}>
-        <div class="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close menu"
-            class="absolute inset-0 bg-black/40"
-            onClick={() => setDrawer(false)}
-          />
-          <aside
-            id="drawer"
-            class="absolute inset-y-0 left-0 flex w-[272px] max-w-[85vw] flex-col gap-1 overflow-y-auto border-r border-border bg-background px-2.5 py-3.5"
-          >
-            <button
-              type="button"
-              aria-label="Close menu"
-              class="absolute right-2 top-2 grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-foreground/5"
-              onClick={() => setDrawer(false)}
-            >
-              <XIcon class="size-4" />
-            </button>
-            <SidebarContent />
-          </aside>
-        </div>
-      </Show>
+      <Drawer
+        side="left"
+        open={drawer()}
+        onClose={() => setDrawer(false)}
+        title="Menu"
+        class="flex flex-col gap-1 bg-background px-2.5 py-3.5 lg:hidden"
+      >
+        <SidebarContent />
+      </Drawer>
 
       <main id="main-content" class={cn("min-w-0", wide() ? "px-4 py-6 lg:px-6" : "px-4 py-10 sm:px-8 lg:py-14")}>
         <div class={cn("mx-auto w-full", !wide() && "max-w-[760px]")}>{props.children}</div>

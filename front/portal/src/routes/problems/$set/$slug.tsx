@@ -1,10 +1,9 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
+import { PageHeader, CopyButton } from "@trieoh/ui-solid";
 import { Show } from "solid-js";
-import { CopyButton } from "@/shared/ui/CopyButton";
 import { extraDescription, findProblem, setName, statusText, type ProblemSet } from "@/features/problems/model";
 import { ProblemDetails } from "@/features/problems/ui/ProblemDetails";
 import { StatusPill } from "@/features/problems/ui/ProblemList";
-import { PageHeader } from "@/widgets/shell/PageHeader";
 
 export const Route = createFileRoute("/problems/$set/$slug")({
   loader: ({ params }) => {
@@ -28,7 +27,7 @@ function ProblemPage() {
           <span>{statusText(problem().status)}</span>
           <span>·</span>
           <code class="font-mono text-[13px] text-foreground">{problem().slug}</code>
-          <CopyButton text={() => problem().slug} label="Copy slug" />
+          <CopyButton size="sm" copiedLabel="Copied" text={() => problem().slug} label="Copy slug" />
           <span>·</span>
           <Link to="/problems/$set" params={{ set: data().set }} class="underline underline-offset-4">
             {data().set === "shared" ? "Shared problems" : `${setName(data().set)} problems`}

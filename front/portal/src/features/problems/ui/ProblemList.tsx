@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/solid-router";
-import { Badge, cn } from "@trieoh/ui-solid";
+import { Badge, cn, CopyButton } from "@trieoh/ui-solid";
 import { For, Show, createMemo, createSignal } from "solid-js";
 import ChevronIcon from "~icons/lucide/chevron-right";
-import { CopyButton } from "@/shared/ui/CopyButton";
 import {
   byStatus,
   extraDescription,
@@ -99,18 +98,15 @@ export function ProblemList(props: ProblemListProps) {
   );
 }
 
+/** The HTTP status a problem answers with: red for 5xx, amber below. */
 export function StatusPill(props: { status: number }) {
   return (
-    <span
-      class={cn(
-        "inline-flex h-5 shrink-0 items-center rounded px-1.5 font-mono text-[11px] font-medium tabular-nums",
-        props.status >= 500
-          ? "bg-destructive/20 text-destructive dark:text-destructive-foreground"
-          : "bg-warn/15 text-warn",
-      )}
+    <Badge
+      variant={props.status >= 500 ? "destructive" : "warning"}
+      class="h-5 px-1.5 font-mono tabular-nums"
     >
       {props.status}
-    </span>
+    </Badge>
   );
 }
 
@@ -143,7 +139,7 @@ function ProblemRow(props: { row: Row; open: boolean; inline: boolean; showStatu
         >
           {props.row.problem.slug}
         </Link>
-        <CopyButton text={() => props.row.problem.slug} label="Copy slug" />
+        <CopyButton size="sm" copiedLabel="Copied" text={() => props.row.problem.slug} label="Copy slug" />
         <Show when={props.shared}>
           <Badge variant="outline">shared</Badge>
         </Show>

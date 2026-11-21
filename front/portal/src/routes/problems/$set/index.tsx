@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/solid-router";
+import { PageHeader } from "@trieoh/ui-solid";
 import { isProblemSet, problemsOf, setName } from "@/features/problems/model";
 import { ProblemList } from "@/features/problems/ui/ProblemList";
-import { PageHeader } from "@/widgets/shell/PageHeader";
 
 export const Route = createFileRoute("/problems/$set/")({
   loader: ({ params }) => {
