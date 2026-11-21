@@ -15,6 +15,8 @@ import (
 	"time"
 	"uuid"
 
+	"lib/telemetry"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/otel/attribute"
@@ -152,7 +154,7 @@ func logs(logger *slog.Logger, skip []string) func(http.Handler) http.Handler {
 				slog.String("path", routePattern(r)),
 				slog.Int("status", ww.status),
 				slog.Duration("duration", time.Since(start)),
-				slog.String("remote_addr", r.RemoteAddr),
+				slog.String("remote_addr", telemetry.MaskIP(r.RemoteAddr)),
 			)
 		})
 	}
@@ -241,7 +243,7 @@ func recoverer(logger *slog.Logger) func(http.Handler) http.Handler {
 					slog.String("path", r.URL.Path),
 					slog.Any("panic", rec),
 					slog.String("stack", string(debug.Stack())),
-					slog.String("remote_addr", r.RemoteAddr),
+					slog.String("remote_addr", telemetry.MaskIP(r.RemoteAddr)),
 				)
 				WriteError(w, r, fmt.Errorf("panic: %v", rec))
 			}()
