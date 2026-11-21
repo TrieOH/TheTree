@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Generates one Backend's code from its spec, after sqlc: the bundled spec,
 # the problems package and the Worker's route list (problemgen), the
-# oapi-codegen bindings, and the strict server's Mount (strictmount). The
-# generated code is gitignored except the route list. `just gen`, CI
-# (.github/actions/go/generate) and the Dockerfiles all run this, so the
-# steps live here once.
+# oapi-codegen bindings, and the strict server's Mount and server type
+# (strictmount). The generated code is gitignored except the route list.
+# `just gen`, CI (.github/actions/go/generate) and the Dockerfiles all run
+# this, so the steps live here once.
 #
 # usage: tools/go/generate.sh <service dir>, e.g. tools/go/generate.sh api/identityx
 set -euo pipefail
@@ -32,7 +32,7 @@ cd "$1"
 go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
 oapi_codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml
 oapi_codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
-go run tools/strictmount internal/openapi/mount.gen.go
+go run tools/strictmount internal/openapi/mount.gen.go internal/app/server.gen.go
 # The generated bindings import oapi-codegen/runtime. They are not committed,
 # so `go mod tidy` drops it from go.mod: pin it at generation time.
 go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
