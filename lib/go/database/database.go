@@ -3,7 +3,9 @@ package database
 import (
 	"context"
 	"fmt"
+	"lib/telemetry"
 	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -45,15 +47,15 @@ func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int
 	RegisterPoolMetrics(pool)
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)
+		telemetry.Log().InfoContext(ctx, "waiting for database", slog.Int("attempt", attempt), slog.Int("max_attempts", maxAttempts))
 
 		err = pingOnce(ctx, pool, maxAttempts-attempt+1)
 		if err == nil {
-			log.Printf("database connected on attempt %d\n", attempt)
+			telemetry.Log().InfoContext(ctx, "database connected", slog.Int("attempt", attempt))
 			return pool, nil
 		}
 
-		log.Printf("ping failed: %v\n", err)
+		telemetry.Log().WarnContext(ctx, "database ping failed", slog.Int("attempt", attempt), telemetry.Err(err))
 
 		select {
 		case <-ctx.Done():

@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/url"
 	"time"
@@ -76,7 +75,7 @@ func SetupDB(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pg
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "constraints")
-		log.Printf("WARN %v", err)
+		telemetry.Log().WarnContext(checkCtx, "constraint registry gap", telemetry.Err(err))
 	}
 	return db, nil
 }
