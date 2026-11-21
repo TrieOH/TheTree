@@ -1,4 +1,5 @@
 import { findService, type ServiceId } from "@/features/catalog/services";
+import type { AttentionItem as Shared } from "@/shared/ui/attention";
 import { summarize } from "./cold-starts";
 import { formatCount, formatMs, formatPercent } from "./format";
 import { DEGRADED_P95_MS, PLAN, type MetricsPayload, type Usage } from "./model";
@@ -6,13 +7,7 @@ import { DEGRADED_P95_MS, PLAN, type MetricsPayload, type Usage } from "./model"
 /** Which Metrics tab explains an item. */
 export type MetricsTab = "services" | "latency" | "usage" | "database" | "workers" | "cold-starts";
 
-export interface AttentionItem {
-  id: string;
-  tone: "warning" | "destructive";
-  /** One plain sentence: what is off, with the numbers. */
-  text: string;
-  tab: MetricsTab;
-}
+export type AttentionItem = Shared<MetricsTab>;
 
 /** Cold starts failing more often than this, over at least COLD_START_MIN starts, are flagged. */
 export const COLD_START_FAILURE_SHARE = 0.1;
