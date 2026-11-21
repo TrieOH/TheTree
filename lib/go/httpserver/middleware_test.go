@@ -47,6 +47,20 @@ func TestRealIPUsesCloudflareClientIP(t *testing.T) {
 	}
 }
 
+func TestLimiterKeyGroupsIPv6By64(t *testing.T) {
+	cases := map[string]string{
+		"203.0.113.7": "203.0.113.7",
+		"2804:299c:110a:e400:cc96:8d63:9ee4:9ca8": "2804:299c:110a:e400::/64",
+		"2804:299c:110a:e400::1":                  "2804:299c:110a:e400::/64",
+		"not-an-ip":                               "not-an-ip",
+	}
+	for in, want := range cases {
+		if got := limiterKey(in); got != want {
+			t.Errorf("limiterKey(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 // TestRateLimitKeysPerClientNotConnection — a client reconnecting from a
 // new port shares its bucket.
 func TestRateLimitKeysPerClientNotConnection(t *testing.T) {

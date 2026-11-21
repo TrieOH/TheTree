@@ -321,12 +321,24 @@ func (rl *rateLimiter) allow(key string) bool {
 
 func (rl *rateLimiter) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rl.allow(r.RemoteAddr) {
+		if !rl.allow(limiterKey(r.RemoteAddr)) {
 			WriteError(w, r, ErrRateLimited)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// limiterKey is the rate limit bucket for a client address: the address
+// itself for IPv4, its /64 for IPv6. One IPv6 subscriber gets a whole /64
+// and can rotate through it freely, so a per-address bucket would be one
+// per request.
+func limiterKey(addr string) string {
+	ip, err := netip.ParseAddr(addr)
+	if err != nil || ip.Is4() {
+		return addr
+	}
+	return netip.PrefixFrom(ip, 64).Masked().String()
 }
 
 // CORSMaxAge is how long a browser may reuse a preflight answer: Chrome's
