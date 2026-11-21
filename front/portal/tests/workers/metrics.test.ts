@@ -32,7 +32,7 @@ function prometheus(url: string): Response {
       },
     });
   }
-  if (query.includes("http_server_request_duration_seconds_bucket")) {
+  if (query.includes("http_request_duration_seconds_bucket") && !query.includes("route")) {
     return vector([{ metric: { service_name: "identityx-container" }, value: "0.05" }]);
   }
   if (query.includes("http_requests_total")) {

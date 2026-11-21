@@ -9,7 +9,6 @@ package httpserver
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -137,6 +136,11 @@ func NewRouter(cfg Config) (*chi.Mux, http.Handler) {
 	}
 
 	opts := []otelhttp.Option{
+		// Traces only. otelhttp's http_server_request_duration_seconds had no
+		// route, just the method, and duplicated the harness's own per-route
+		// http_request_duration_seconds (metrics), which also keeps realtime
+		// streams out of the latency histogram.
+		otelhttp.WithMeterProvider(noop.NewMeterProvider()),
 		// Name spans from the start (method + path) so even 404s/unmatched
 		// routes are distinguishable; spanRouteNameMiddleware upgrades the
 		// name to the route template once chi has matched it.
@@ -151,18 +155,7 @@ func NewRouter(cfg Config) (*chi.Mux, http.Handler) {
 			return r.Method != http.MethodOptions
 		}),
 	}
-	measured := otelhttp.NewHandler(r, "http.server", opts...)
-	// Realtime requests are still traced, but kept out of the duration
-	// histogram: their "duration" is how long the client stayed connected.
-	unmeasured := otelhttp.NewHandler(r, "http.server",
-		append(slices.Clip(opts), otelhttp.WithMeterProvider(noop.NewMeterProvider()))...)
-	return r, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if realtime(req) {
-			unmeasured.ServeHTTP(w, req)
-			return
-		}
-		measured.ServeHTTP(w, req)
-	})
+	return r, otelhttp.NewHandler(r, "http.server", opts...)
 }
 
 // realtime reports whether r opens a long-lived stream (SSE or a WebSocket).
