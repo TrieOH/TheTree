@@ -244,5 +244,31 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 		return nil, &InvalidIssuerError{Got: claims.Issuer, Expected: expectedIssuer}
 	}
 
+	err = ensureNotRefresh(parser, tokenStr)
+	if err != nil {
+		return nil, err
+	}
+
 	return claims, nil
+}
+
+// ensureNotRefresh refuses a refresh token: it is signed by the same key and
+// decodes into AccessClaims without error, but only it carries
+// subject.access_jti.
+func ensureNotRefresh(parser *jwt.Parser, tokenStr string) error {
+	probe := &struct {
+		jwt.RegisteredClaims
+
+		Sub struct {
+			AccessJTI *string `json:"access_jti"`
+		} `json:"subject"`
+	}{}
+	_, _, err := parser.ParseUnverified(tokenStr, probe)
+	if err != nil {
+		return &InvalidTokenError{Cause: err}
+	}
+	if probe.Sub.AccessJTI != nil {
+		return &InvalidTokenError{Cause: errors.New("a refresh token is not an access token")}
+	}
+	return nil
 }

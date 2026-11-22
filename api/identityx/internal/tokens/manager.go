@@ -88,7 +88,46 @@ func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims
 		return errs.ErrInvalidToken
 	}
 
+	err = ensureKind(tokenStr, claims)
+	if err != nil {
+		return err
+	}
+
 	return m.ensureNotBlacklisted(ctx, tokenJTI(claims))
+}
+
+// kindProbe reads the one claim that tells the two token kinds apart: a
+// refresh token always carries subject.access_jti, an access token never
+// does. Both are signed by the same key, so the signature can't tell them
+// apart, and each decodes into the other's claims without error.
+type kindProbe struct {
+	jwt.RegisteredClaims
+
+	Sub struct {
+		AccessJTI *string `json:"access_jti"`
+	} `json:"subject"`
+}
+
+// ensureKind rejects a refresh token presented where an access token is
+// expected, and the other way round. Call it only on a verified token.
+func ensureKind(tokenStr string, claims jwt.Claims) error {
+	probe := &kindProbe{}
+	_, err := crypto.OpenUnverified(tokenStr, probe)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errs.ErrInvalidToken, err)
+	}
+	isRefresh := probe.Sub.AccessJTI != nil
+	switch claims.(type) {
+	case *models.AccessClaims:
+		if isRefresh {
+			return fmt.Errorf("%w: a refresh token is not an access token", errs.ErrInvalidToken)
+		}
+	case *models.RefreshClaims:
+		if !isRefresh {
+			return fmt.Errorf("%w: an access token is not a refresh token", errs.ErrInvalidToken)
+		}
+	}
+	return nil
 }
 
 // Mint signs a fresh access/refresh pair for the actor with the active

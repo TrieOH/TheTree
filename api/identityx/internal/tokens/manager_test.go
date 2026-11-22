@@ -303,6 +303,30 @@ func TestVerifyOutdatedKey(t *testing.T) {
 	}
 }
 
+func TestVerifyRejectsRefreshTokenAsAccess(t *testing.T) {
+	f := newFixture(t)
+	out := f.mint(t)
+
+	err := f.mgr.Verify(context.Background(), out.RefreshToken, &models.AccessClaims{})
+	if !errors.Is(err, errs.ErrInvalidToken) {
+		t.Fatalf("want invalid token for a refresh token used as an access token, got %v", err)
+	}
+}
+
+func TestVerifyAcceptsEachKindForItsOwnUse(t *testing.T) {
+	f := newFixture(t)
+	out := f.mint(t)
+
+	err := f.mgr.Verify(context.Background(), out.AccessToken, &models.AccessClaims{})
+	if err != nil {
+		t.Fatalf("access token as access: %v", err)
+	}
+	err = f.mgr.Verify(context.Background(), out.RefreshToken, &models.RefreshClaims{})
+	if err != nil {
+		t.Fatalf("refresh token as refresh: %v", err)
+	}
+}
+
 // ── Mint ─────────────────────────────────────────────────────────────────
 
 func TestMintPinsLifetimesFromConfig(t *testing.T) {
@@ -377,6 +401,19 @@ func TestRotateRejectsBlacklistedRefresh(t *testing.T) {
 	_, err := f.mgr.Rotate(context.Background(), old.RefreshToken)
 	if !errors.Is(err, errs.ErrTokenRevoked) {
 		t.Fatalf("want unauthorized for a revoked refresh token, got %v", err)
+	}
+}
+
+func TestRotateRejectsAccessToken(t *testing.T) {
+	f := newFixture(t)
+	old := f.mint(t)
+
+	_, err := f.mgr.Rotate(context.Background(), old.AccessToken)
+	if !errors.Is(err, errs.ErrInvalidToken) {
+		t.Fatalf("want invalid token for an access token used to refresh, got %v", err)
+	}
+	if len(f.appended) != 0 {
+		t.Fatalf("a refused rotation must blacklist nothing, got %v", appendedTargets(f.appended))
 	}
 }
 
