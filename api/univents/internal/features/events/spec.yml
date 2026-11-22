@@ -47,7 +47,7 @@ paths:
               slug: trieoh-dev-conf
               description: A yearly gathering of TrieOH developers.
               contact_email: events@trieoh.com
-      x-problems: [400, 401, 500]
+      x-problems: [400, 401, 409, 500]
       responses:
         '201':
           description: Event created
@@ -149,7 +149,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchEventRequest'
-      x-problems: [400, 401, 403, 404, 500]
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '200':
           description: Event updated
@@ -399,7 +399,7 @@ components:
         title: Event Not Draft
         description: "Cannot publish non draft event."
         error: ErrEventNotDraft
-        message: "only a draft event can be published, and this one isn't a draft"
+        detail: "only a draft event can be published, and this one isn't a draft"
 
     EventNotActive:
       x-problem:
@@ -408,4 +408,22 @@ components:
         title: Event Not Active
         description: "Cannot discontinue non active event."
         error: ErrEventNotActive
-        message: "only an active event can be discontinued, and this one isn't active"
+        detail: "only an active event can be discontinued, and this one isn't active"
+
+    EventSlugTaken:
+      x-problem:
+        slug: event-slug-taken
+        status: 409
+        title: Event Slug Taken
+        description: "Another event already uses this slug."
+        error: ErrEventSlugTaken
+        detail: "another event already uses this slug, and slugs are unique; choose a different slug"
+
+    EventMemberExists:
+      x-problem:
+        slug: event-member-exists
+        status: 409
+        title: Event Member Exists
+        description: "The person is already a member of the event."
+        error: ErrEventMemberExists
+        detail: "this person is already a member of the event; to change their role, update their membership instead of adding them again"

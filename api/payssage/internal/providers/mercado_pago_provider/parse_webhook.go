@@ -28,7 +28,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	// Only "payment" events are handled today. Other MP topics
 	// (merchant_order, chargebacks, etc.) are acknowledged but ignored.
 	if envelope.Type != "payment" {
-		return nil, &errs.UnhandledWebhookEventError{Type: envelope.Type}
+		return nil, &errs.UnhandledWebhookEventError{EventType: envelope.Type}
 	}
 	if envelope.Data.ID == "" {
 		return nil, errs.ErrWebhookMissingDataID

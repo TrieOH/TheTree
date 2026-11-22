@@ -14,88 +14,34 @@ import (
 )
 
 // Problem answers what Payssage's problems can't name for themselves
-// (ADR-0019): the typed errors, which carry the problem's members, the
-// named errors answered with a shared problem, the not-found errors and the
-// check constraints. A problem that names its sentinel (x-problem's error)
-// is answered by problems.Mapper itself, which calls Problem first and
-// tries the shared cases last; Problem is nil for an error it doesn't
-// know. Named errors don't wrap named errors, so case order never breaks a
-// tie. The detail is the named error's message, never the chain's.
+// (ADR-0019): the typed errors, which carry the problem's members, and the
+// named errors answered with a shared problem outside x-shared-errors. A
+// problem that names its sentinel (x-problem's error) and an error listed
+// in x-shared-errors are answered by problems.Mapper itself, which calls
+// Problem first and tries the shared cases last; Problem is nil for an
+// error it doesn't know. Named errors don't wrap named errors, so case
+// order never breaks a tie. The detail is the named error's message, never
+// the chain's.
 func Problem(err error) *fp.Problem {
 	var (
-		unsupported  *errs.UnsupportedProviderError
 		provider     *errs.ProviderError
-		intentStatus *errs.IntentStatusError
 		revoked      *errs.SellerRevokedError
-		mismatch     *errs.SellerProviderMismatchError
 		missingParam *errs.MissingParamError
-		unhandled    *errs.UnhandledWebhookEventError
-		noIntent     *errs.WebhookIntentNotFoundError
-		noToken      *errs.WebhookSellerTokenMissingError
 	)
 	switch {
 	// providers and intents
-	case errors.As(err, &unsupported):
-		return problems.UnsupportedProvider(unsupported.Error(), unsupported.Provider)
 	case errors.As(err, &provider):
 		return providerProblem(provider)
-	case errors.As(err, &intentStatus):
-		return problems.IntentStatus(intentStatus.Error(), intentStatus.Action, intentStatus.Status)
 	case errors.As(err, &revoked) && revoked.Op == "checkout":
-		return problems.SellerRevokedCheckout(revoked.Error(), revoked.SellerID.String())
+		return problems.SellerRevokedCheckout(revoked.Error(), revoked.SellerID)
 	case errors.As(err, &revoked):
-		return problems.SellerRevoked(revoked.Error(), revoked.SellerID.String())
-	case errors.As(err, &mismatch):
-		return problems.SellerProviderMismatch(mismatch.Error(), mismatch.SellerID.String(), mismatch.Provider)
+		return problems.SellerRevoked(revoked.Error(), revoked.SellerID)
 
 	// incoming webhooks
 	case errors.As(err, &missingParam):
 		return problems.Validation(missingParam.Error())
-	case errors.As(err, &unhandled):
-		return problems.UnhandledWebhookEvent(unhandled.Error(), unhandled.Type)
-	case errors.As(err, &noIntent):
-		return problems.WebhookIntentNotFound(noIntent.Error(), noIntent.PaymentID)
-	case errors.As(err, &noToken):
-		return problems.WebhookSellerTokenMissing(noToken.Error(), noToken.SellerID.String(), noToken.IntentID.String())
-
-	}
-	for _, target := range notFound {
-		if errors.Is(err, target) {
-			return problems.NotFound(target.Error())
-		}
-	}
-	for _, target := range invalid {
-		if errors.Is(err, target) {
-			return problems.Validation(target.Error())
-		}
 	}
 	return nil
-}
-
-// notFound are the named missing resources, answered as the shared
-// not-found problem.
-var notFound = []error{
-	errs.ErrOAuthStateNotFound,
-	errs.ErrWebhookEventNotFound,
-	errs.ErrWalletNotFound,
-	errs.ErrWebhookEndpointNotFound,
-	errs.ErrIntentNotFound,
-	errs.ErrOrganizationNotFound,
-	errs.ErrCollectorNotFound,
-	errs.ErrWebhookDeliveryNotFound,
-	errs.ErrSellerNotFound,
-}
-
-// invalid are the check constraints, answered as the shared validation
-// problem.
-var invalid = []error{
-	errs.ErrInvalidAmount,
-	errs.ErrInvalidIntentStatus,
-	errs.ErrInvalidIntentStatusDetail,
-	errs.ErrInvalidOAuthFlowType,
-	errs.ErrInvalidOrgRole,
-	errs.ErrNegativeFee,
-	errs.ErrInvalidDeliveryStatus,
 }
 
 // providerProblem answers a provider's own error by what the provider said:

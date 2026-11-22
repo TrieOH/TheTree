@@ -24,7 +24,7 @@ package problems
 
 import (
 	"encoding/json"
-	"errors"
+	"errors"%UUID%
 
 	%ERRS%
 	"lib/authz"
@@ -44,13 +44,19 @@ type BatchItem struct {
 	Problem *fp.Problem ` + "`json:\"problem\"`" + `
 }
 
-// Mapper answers err with app, the Backend's own switch for its typed
-// errors, then with the named errors its problems declare, then with the
-// shared cases. An error none knows is the generic 500.
+// Mapper answers err with app, the Backend's own switch for the errors its
+// spec can't declare (nil when it has none), then with the typed and named
+// errors its problems declare, then with the shared cases. An error none
+// knows is the generic 500.
 func Mapper(app fp.ErrorMapper) fp.ErrorMapper {
 	var m fp.ErrorMapper
 	m = func(err error) *fp.Problem {
-		if p := app(err); p != nil {
+		if app != nil {
+			if p := app(err); p != nil {
+				return p
+			}
+		}
+		if p := typed(err); p != nil {
 			return p
 		}
 		for _, c := range named {
@@ -119,7 +125,7 @@ type sentinel struct {
 }
 
 // sharedSentinels are the lib's named errors, each answered by its shared
-// problem with its own message as the detail.
+// problem with its own text as the detail.
 var sharedSentinels = []sentinel{
 	{database.ErrNotFound, NotFound},
 	{authz.ErrInsufficientRole, InsufficientRole},
@@ -147,20 +153,44 @@ func (b *bundler) goSource() ([]byte, error) {
 	if b.hasErrors() {
 		errsImport = strconv.Quote(b.module + "/errs")
 	}
-	s.WriteString(strings.Replace(prelude, "%ERRS%", errsImport, 1))
+	uuidImport := ""
+	if b.usesUUID() {
+		uuidImport = "\n\t\"uuid\""
+	}
+	s.WriteString(strings.NewReplacer("%ERRS%", errsImport, "%UUID%", uuidImport).Replace(prelude))
 	for _, p := range b.problems {
 		writeConstructor(&s, p)
 	}
 
-	s.WriteString("\n// named are the Backend's named errors its problems declare, each\n")
-	s.WriteString("// answered by its problem with its own message as the detail.\n")
+	s.WriteString("\n// named are the Backend's named errors its problems and x-shared-errors\n")
+	s.WriteString("// declare, each answered by its problem with its own text as the detail.\n")
 	s.WriteString("var named = []sentinel{\n")
 	for _, p := range b.problems {
-		if p.Error != "" {
+		if p.Error != "" && len(p.Members) == 0 {
 			fmt.Fprintf(&s, "\t{errs.%s, %s},\n", p.Error, p.Name)
 		}
 	}
+	for _, e := range b.sharedErrors {
+		fmt.Fprintf(&s, "\t{errs.%s, %s},\n", e.Error, e.problem.Name)
+	}
 	s.WriteString("}\n")
+
+	s.WriteString("\n// typed answers the typed errors the Backend's problems declare, each\n")
+	s.WriteString("// with its problem, its text as the detail and its fields as the members.\n")
+	s.WriteString("func typed(err error) *fp.Problem {\n")
+	for _, p := range b.problems {
+		if p.Error == "" || len(p.Members) == 0 {
+			continue
+		}
+		args := make([]string, 0, 1+len(p.Members))
+		args = append(args, "e.Error()")
+		for _, m := range p.Members {
+			args = append(args, "e."+m.Field)
+		}
+		fmt.Fprintf(&s, "\tif e, ok := errors.AsType[*errs.%s](err); ok {\n", p.Error)
+		fmt.Fprintf(&s, "\t\treturn %s(%s)\n\t}\n", p.Name, strings.Join(args, ", "))
+	}
+	s.WriteString("\treturn nil\n}\n")
 
 	s.WriteString("\n// Docs documents every declared problem, for GET /problems/{slug}.\n")
 	s.WriteString("var Docs = []httpserver.ProblemDoc{\n")
@@ -178,6 +208,9 @@ func (b *bundler) goSource() ([]byte, error) {
 }
 
 func (b *bundler) hasErrors() bool {
+	if len(b.sharedErrors) > 0 {
+		return true
+	}
 	for _, p := range b.problems {
 		if p.Error != "" {
 			return true
@@ -186,8 +219,12 @@ func (b *bundler) hasErrors() bool {
 	return false
 }
 
-// errsSource is the Backend's errs file: one sentinel per problem that
-// names an error, its message as the text. Nil when none does.
+// usesUUID reports whether a member is a UUID, so the package imports it.
+func (b *bundler) usesUUID() bool { return usesUUID(b.problems) }
+
+// errsSource is the Backend's errs file: one sentinel per member-less
+// problem that names an error, its detail as the text, and one typed error
+// per problem with members that names one. Nil when none does.
 func (b *bundler) errsSource() ([]byte, error) {
 	if !b.hasErrors() {
 		return nil, nil
@@ -195,25 +232,98 @@ func (b *bundler) errsSource() ([]byte, error) {
 	if b.module == "" {
 		return nil, errors.New("problems name errors, but the spec's directory has no go.mod")
 	}
+	var sentinels, typed []*problem
+	for _, p := range b.problems {
+		switch {
+		case p.Error == "":
+		case len(p.Members) == 0:
+			sentinels = append(sentinels, p)
+		default:
+			typed = append(typed, p)
+		}
+	}
 	var s strings.Builder
 	s.WriteString("// " + header + "\n\n")
-	s.WriteString("package errs\n\nimport \"errors\"\n\n")
-	s.WriteString("// The named errors the Backend's problems declare (tools/problemgen):\n")
-	s.WriteString("// each is answered by its problem, its text the detail clients read.\n")
-	s.WriteString("var (\n")
-	for _, p := range b.problems {
-		if p.Error == "" {
-			continue
-		}
-		fmt.Fprintf(&s, "\t// %s is answered as %s (%d %s).\n", p.Error, p.Slug, p.Status, p.Title)
-		fmt.Fprintf(&s, "\t%s = errors.New(%q)\n", p.Error, p.Message)
+	s.WriteString("package errs\n\nimport (\n")
+	if len(sentinels) > 0 || len(b.sharedErrors) > 0 {
+		s.WriteString("\t\"errors\"\n")
+	}
+	if len(typed) > 0 {
+		s.WriteString("\t\"fmt\"\n")
+	}
+	if usesUUID(typed) {
+		s.WriteString("\t\"uuid\"\n")
 	}
 	s.WriteString(")\n")
+	if len(sentinels) > 0 {
+		s.WriteString("\n// The named errors the Backend's problems declare (tools/problemgen):\n")
+		s.WriteString("// each is answered by its problem, its text the detail clients read.\n")
+		s.WriteString("var (\n")
+		for _, p := range sentinels {
+			fmt.Fprintf(&s, "\t// %s is answered as %s (%d %s).\n", p.Error, p.Slug, p.Status, p.Title)
+			fmt.Fprintf(&s, "\t%s = errors.New(%q)\n", p.Error, p.Detail)
+		}
+		s.WriteString(")\n")
+	}
+	for _, p := range typed {
+		writeTypedError(&s, p)
+	}
+	if len(b.sharedErrors) > 0 {
+		s.WriteString("\n// The named errors the Backend answers with a shared problem\n")
+		s.WriteString("// (x-shared-errors): repos join a not-found one with lib/database's\n")
+		s.WriteString("// ErrNotFound, and a check constraint's with its class.\n")
+		s.WriteString("var (\n")
+		for _, e := range b.sharedErrors {
+			p := e.problem
+			fmt.Fprintf(&s, "\t// %s is answered as %s (%d %s).\n", e.Error, p.Slug, p.Status, p.Title)
+			fmt.Fprintf(&s, "\t%s = errors.New(%q)\n", e.Error, e.Detail)
+		}
+		s.WriteString(")\n")
+	}
 	src, err := format.Source([]byte(s.String()))
 	if err != nil {
 		return nil, fmt.Errorf("generated errs does not parse: %w\n%s", err, s.String())
 	}
 	return src, nil
+}
+
+// usesUUID reports whether one of ps's members is a UUID.
+func usesUUID(ps []*problem) bool {
+	for _, p := range ps {
+		for _, m := range p.Members {
+			if strings.Contains(m.GoType, "uuid.") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// writeTypedError writes a problem's typed error: a field per member, and
+// an Error that fills the detail template's {member} names from them.
+func writeTypedError(s *strings.Builder, p *problem) {
+	fmt.Fprintf(s, "\n// %s is answered as %s (%d %s): %s\n", p.Error, p.Slug, p.Status, p.Title, oneLine(p.Description))
+	fmt.Fprintf(s, "type %s struct {\n", p.Error)
+	for _, m := range p.Members {
+		fmt.Fprintf(s, "\t%s %s\n", m.Field, m.GoType)
+	}
+	s.WriteString("}\n\n")
+	var args []string
+	format := placeholder.ReplaceAllStringFunc(strings.ReplaceAll(p.Detail, "%", "%%"), func(ph string) string {
+		name := ph[1 : len(ph)-1]
+		for _, m := range p.Members {
+			if m.Name == name {
+				args = append(args, "e."+m.Field)
+			}
+		}
+		return "%v"
+	})
+	fmt.Fprintf(s, "func (e *%s) Error() string {\n", p.Error)
+	if len(args) == 0 {
+		fmt.Fprintf(s, "\treturn %q\n}\n", p.Detail)
+		return
+	}
+	fmt.Fprintf(s, "\treturn fmt.Sprintf(%q, %s)\n}\n", format, strings.Join(args, ", "))
 }
 
 func writeConstructor(s *strings.Builder, p *problem) {
@@ -245,6 +355,23 @@ func (p *problem) extensionsExample() []byte {
 	}
 	s.WriteByte('}')
 	return []byte(s.String())
+}
+
+// initialisms keep Go's casing in a field name: payment_id is PaymentID.
+var initialisms = map[string]bool{"id": true, "url": true, "uri": true, "api": true, "http": true, "ip": true, "json": true, "uuid": true}
+
+// field is a member's JSON name as a typed error's field: UpperCamel, with
+// initialisms upper-cased.
+func field(name string) string {
+	var s strings.Builder
+	for part := range strings.FieldsFuncSeq(name, func(r rune) bool { return r == '_' || r == '-' || r == '.' }) {
+		if initialisms[strings.ToLower(part)] {
+			s.WriteString(strings.ToUpper(part))
+			continue
+		}
+		s.WriteString(strings.ToUpper(part[:1]) + part[1:])
+	}
+	return s.String()
 }
 
 // param is a member's JSON name as a Go parameter: lowerCamel, and never

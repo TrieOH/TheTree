@@ -59,7 +59,7 @@ No deploy runs migrations. Run the same recipe by hand against Neon's direct end
 
 A migration must also work with the release that is running now, because the old release keeps serving while the new one starts. Add tables, and columns that are nullable or have a default, first. Drop or rename only in a later release, once no running code reads the old shape. Rolling back a release tag does not change the schema back.
 
-If a constraint is missing from `Constraints()`, the boot logs `constraint registry gap` as a warning and keeps starting. A violation of that constraint then answers `internal-server-error` instead of its own problem. No test catches a missing entry, so after a release that adds a constraint, check the boot log for that warning.
+Every constraint and unique index in the schema needs an entry in `Constraints()`. Without one, a violation answers `internal-server-error` instead of its own problem. `TestConstraintsMatchSchema` in `internal/app/constraints_test.go` checks this against the migrated schema, in both directions: a constraint with no entry, and an entry that names nothing in the schema. If the two still drift apart in production, the boot logs `constraint registry drift` as a warning, with the `missing` and `unknown` names, and keeps starting.
 
 ## From the code to the database
 

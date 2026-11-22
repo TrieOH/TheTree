@@ -10,7 +10,7 @@ components:
         title: Invalid Design Data
         description: "Invalid design_data."
         error: ErrInvalidDesignData
-        message: "design_data couldn't be read; send it as the JSON object the template editor produces"
+        detail: "design_data couldn't be read; send it as the JSON object the template editor produces"
 
     # not found
 
@@ -22,7 +22,7 @@ components:
         title: Edition Overlap
         description: "This edition's dates overlap with another edition of the same event."
         error: ErrEditionOverlap
-        message: "this edition's dates overlap another edition of the same event; pick dates that don't overlap"
+        detail: "this edition's dates overlap another edition of the same event; pick dates that don't overlap"
     TicketHeld:
       x-problem:
         slug: ticket-held
@@ -30,7 +30,7 @@ components:
         title: Ticket Held
         description: "This person already has a ticket for this edition."
         error: ErrTicketHeld
-        message: "this person already holds a ticket for this edition, and each person holds one"
+        detail: "this person already holds a ticket for this edition, and each person holds one"
     ProductCodeTaken:
       x-problem:
         slug: product-code-taken
@@ -38,7 +38,7 @@ components:
         title: Product Code Taken
         description: "A product with this vendor code already exists in this edition."
         error: ErrProductCodeTaken
-        message: "another product in this edition already uses this vendor code; choose a different code"
+        detail: "another product in this edition already uses this vendor code; choose a different code"
     VariantCodeTaken:
       x-problem:
         slug: variant-code-taken
@@ -46,7 +46,7 @@ components:
         title: Variant Code Taken
         description: "A product variant with this vendor code already exists in this edition."
         error: ErrVariantCodeTaken
-        message: "another product variant in this edition already uses this vendor code; choose a different code"
+        detail: "another product variant in this edition already uses this vendor code; choose a different code"
     OccurrenceRegistrationTaken:
       x-problem:
         slug: occurrence-registration-taken
@@ -54,7 +54,7 @@ components:
         title: Occurrence Registration Taken
         description: "This person is already registered for this activity occurrence."
         error: ErrOccurrenceRegistrationTaken
-        message: "this person is already registered for this session of the activity"
+        detail: "this person is already registered for this session of the activity"
     IdempotencyKeyUsed:
       x-problem:
         slug: idempotency-key-used
@@ -62,7 +62,7 @@ components:
         title: Idempotency Key Used
         description: "This idempotency key has already been used."
         error: ErrIdempotencyKeyUsed
-        message: "a signature request with this idempotency key already exists; reuse it, or send a new key for a new request"
+        detail: "a signature request with this idempotency key already exists; reuse it, or send a new key for a new request"
     BadgeEmitted:
       x-problem:
         slug: badge-emitted
@@ -70,7 +70,7 @@ components:
         title: Badge Emitted
         description: "This person already has a badge for this edition and origin."
         error: ErrBadgeEmitted
-        message: "this person already has this badge for this edition; badges are updated in place, not emitted twice"
+        detail: "this person already has this badge for this edition; badges are updated in place, not emitted twice"
     BadgeTemplateScopeTaken:
       x-problem:
         slug: badge-template-scope-taken
@@ -78,7 +78,7 @@ components:
         title: Badge Template Scope Taken
         description: "This edition already has a template for this scope (default, ticket type, or staff)."
         error: ErrBadgeTemplateScopeTaken
-        message: "this edition already has a badge template for this scope (the default, this ticket type, or staff); edit that template instead"
+        detail: "this edition already has a badge template for this scope (the default, this ticket type, or staff); edit that template instead"
     PendingPurchaseExists:
       x-problem:
         slug: pending-purchase-exists
@@ -86,7 +86,7 @@ components:
         title: Pending Purchase Exists
         description: "This person already has a pending purchase for this edition."
         error: ErrPendingPurchaseExists
-        message: "this person already has a pending purchase for this edition; pay for or cancel it before starting another"
+        detail: "this person already has a pending purchase for this edition; pay for or cancel it before starting another"
     TicketUnitInPurchase:
       x-problem:
         slug: ticket-unit-in-purchase
@@ -94,7 +94,7 @@ components:
         title: Ticket Unit In Purchase
         description: "This ticket is already in this purchase for this person."
         error: ErrTicketUnitInPurchase
-        message: "this purchase already has this ticket for this person; each person gets one ticket"
+        detail: "this purchase already has this ticket for this person; each person gets one ticket"
     ProductLineInPurchase:
       x-problem:
         slug: product-line-in-purchase
@@ -102,7 +102,7 @@ components:
         title: Product Line In Purchase
         description: "This product is already in this purchase."
         error: ErrProductLineInPurchase
-        message: "this purchase already has a line for this product; change that line's quantity instead"
+        detail: "this purchase already has a line for this product; change that line's quantity instead"
     ProgramLineInPurchase:
       x-problem:
         slug: program-line-in-purchase
@@ -110,7 +110,7 @@ components:
         title: Program Line In Purchase
         description: "This program occurrence is already in this purchase."
         error: ErrProgramLineInPurchase
-        message: "this purchase already has a line for this activity session; a session is bought once per purchase"
+        detail: "this purchase already has a line for this activity session; a session is bought once per purchase"
     WSTokenIssued:
       x-problem:
         slug: ws-token-issued
@@ -118,4 +118,41 @@ components:
         title: WS Token Issued
         description: "This webhook token has already been issued."
         error: ErrWSTokenIssued
-        message: "this live-updates token was already issued; request a new token"
+        detail: "this live-updates token was already issued; request a new token"
+
+# Named errors answered by a shared problem (api/problems.yml), each
+# with its text as the detail. tools/problemgen generates them into
+# errs/errs.gen.go, and Mapper answers them.
+x-shared-errors:
+  not-found:
+    ErrEditionNotFound: "edition not found"
+    ErrBadgeTemplateNotFound: "badge template not found"
+    ErrBadgeEmissionNotFound: "badge emission not found"
+    ErrProgramNotFound: "program not found"
+    ErrPurchaseNotFound: "purchase not found"
+    ErrTicketTypeNotFound: "ticket type not found"
+    ErrRegistrationNotFound: "registration not found"
+    ErrCertificationNotFound: "certification not found"
+    ErrEventNotFound: "event not found"
+    ErrProductNotFound: "product not found"
+    ErrSignatureNotFound: "signature not found"
+    ErrWSTokenNotFound: "live-updates token not found"
+  validation:
+    ErrInvalidEventStatus: "event status must be one of: draft, active, discontinued"
+    ErrPublicKeyNeedsSeller: "an event's Payssage public key requires a connected seller"
+    ErrInvalidEventMemberRole: "member role must be one of: owner, admin, staff"
+    ErrEditionDates: "edition end date must be after the start date"
+    ErrRegistrationAfterStart: "registration opening date must be before or equal to the edition start date"
+    ErrInvalidRegistrationStatus: "registration status must be one of: pending, confirmed, cancelled, expired"
+    ErrInvalidProductPurchaseStatus: "product purchase status must be one of: pending, confirmed, cancelled, expired"
+    ErrInvalidProgramKind: "program kind must be one of: activity, checkpoint"
+    ErrOccurrenceDates: "program occurrence end time must be after the start time"
+    ErrInvalidParticipationStatus: "participation status must be one of: registered, attended, no_show, cancelled"
+    ErrInvalidSignatureRequestStatus: "signature request status must be one of: pending, completed, expired, cancelled"
+    ErrInvalidCertificationKind: "certification template kind must be one of: edition_attendance, program_attendance"
+    ErrInvalidBadgeEmissionOrigin: "badge emission origin must be one of: participant, staff"
+    ErrInvalidBadgeEmissionStatus: "badge emission status must be one of: active, revoked"
+    ErrInvalidBadgeTemplateScope: "badge template scope must be the edition default (null) or staff (staff, without a ticket type)"
+    ErrInvalidPurchaseStatus: "purchase status must be one of: pending, approved, expired, cancelled, failed, rejected, refunded"
+    ErrInvalidPurchaseItemType: "purchase item type must be one of: ticket, product, program_occurrence"
+    ErrPurchaseItemQuantity: "purchase item quantity must be greater than zero"

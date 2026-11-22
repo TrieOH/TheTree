@@ -52,7 +52,7 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	}
 
 	if !cancellableStatuses[intent.Status] {
-		return nil, &errs.IntentStatusError{Action: "cancelled", Status: string(intent.Status)}
+		return nil, &errs.IntentStatusError{Action: "cancelled", IntentStatus: string(intent.Status)}
 	}
 
 	providerEnum, err := providers.FromString(intent.Provider)
@@ -247,7 +247,7 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 		return intent, nil
 	}
 	if intent.Status != models.IntentStatusSucceeded {
-		return nil, &errs.IntentStatusError{Action: "refunded", Status: string(intent.Status)}
+		return nil, &errs.IntentStatusError{Action: "refunded", IntentStatus: string(intent.Status)}
 	}
 
 	providerEnum, err := providers.FromString(intent.Provider)
@@ -298,7 +298,7 @@ func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*m
 		return intent, nil // idempotent
 	}
 	if intent.Status != models.IntentStatusSucceeded {
-		return nil, &errs.IntentStatusError{Action: "refunded", Status: string(intent.Status)}
+		return nil, &errs.IntentStatusError{Action: "refunded", IntentStatus: string(intent.Status)}
 	}
 
 	var pd models.MercadoPagoIntentData

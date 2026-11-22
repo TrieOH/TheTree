@@ -496,4 +496,4 @@ components:
         title: Invalid Gallery URLs
         description: "Invalid gallery_urls."
         error: ErrInvalidGalleryURLs
-        message: "gallery_urls couldn't be read; send it as a list of image URLs"
+        detail: "gallery_urls couldn't be read; send it as a list of image URLs"

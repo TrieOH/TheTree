@@ -13,8 +13,8 @@ import (
 
 // Module connects to the database described by cfg and fills Deps.DB and
 // Deps.Tx. constraints maps the schema's constraint names to the named error a
-// violation surfaces as (ADR-0016); boot fails when the schema has a
-// constraint with no entry.
+// violation surfaces as (ADR-0016); boot warns when the two drift apart
+// (database.RegistryDrift).
 func Module(cfg libconfig.Postgres, constraints database.ConstraintErrors) backend.Module {
 	return backend.Module{
 		Name: "postgres",

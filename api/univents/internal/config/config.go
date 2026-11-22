@@ -4,7 +4,6 @@ import (
 	"uuid"
 
 	libconfig "lib/config"
-	"lib/database"
 )
 
 type Config struct {
@@ -42,10 +41,4 @@ type Config struct {
 
 	// Webhook HMAC
 	HmacSecret string `env:"HMAC_SECRET,required"`
-}
-
-// ToDBConfig is the connection only: the schema is migrated outside the
-// API process (`just migrate univents`).
-func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConnectionConfig(cfg.Postgres)
 }

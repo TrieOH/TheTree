@@ -36,7 +36,7 @@ import (
 // it.
 func Build(cfg config.Config) backend.BuildFunc {
 	return func(ctx context.Context, d *backend.Deps, r chi.Router) error {
-		storage, err := SetupObjectStorage(cfg)
+		storage, err := SetupObjectStorage(ctx, cfg)
 		if err != nil {
 			return err
 		}
@@ -50,9 +50,10 @@ func Build(cfg config.Config) backend.BuildFunc {
 				return err
 			}
 		}
-		// The store's LISTEN/NOTIFY bridge. Notify opens its own connection
-		// per call, so nothing needs starting here.
-		notifier := database.NewNotifier(cfg.ToDBConfig().DSN())
+		// The store's LISTEN/NOTIFY bridge, on the postgres module's
+		// database. Notify opens its own connection per call, so nothing
+		// needs starting here.
+		notifier := database.NewNotifier(d.DB.Config().ConnString())
 
 		q := sqlc.New(d.DB)
 		eventsRepo := events.NewRepo(q)

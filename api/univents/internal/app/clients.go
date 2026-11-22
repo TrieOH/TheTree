@@ -34,8 +34,8 @@ func VerifyPayssageWallet(ctx context.Context, client *payssage.Client, walletID
 	return nil
 }
 
-func SetupObjectStorage(cfg config.Config) (*objectstorage.Client, error) {
-	return objectstorage.New(context.Background(), objectstorage.Config{
+func SetupObjectStorage(ctx context.Context, cfg config.Config) (*objectstorage.Client, error) {
+	return objectstorage.New(ctx, objectstorage.Config{
 		Endpoint:  cfg.ObjStorageEndpoint,
 		AccessKey: cfg.ObjStorageAccessKey,
 		SecretKey: cfg.ObjStorageSecretKey,

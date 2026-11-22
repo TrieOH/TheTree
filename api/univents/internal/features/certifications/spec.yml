@@ -189,7 +189,7 @@ paths:
               $ref: '#/components/schemas/CertTemplateProgramRequest'
             example:
               program_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-      x-problems: [400, 401, 403, 404, 500]
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Program linked to the template
@@ -623,3 +623,30 @@ components:
           allOf:
             - $ref: '#/components/schemas/Certification'
           description: The certificate, when found.
+
+    CertificationProgramLinked:
+      x-problem:
+        slug: certification-program-linked
+        status: 409
+        title: Certification Program Linked
+        description: "The program is already linked to the certificate template."
+        error: ErrCertificationProgramLinked
+        detail: "this program is already linked to the certificate template, so there is nothing to add"
+
+    CertificateAlreadyIssued:
+      x-problem:
+        slug: certificate-already-issued
+        status: 409
+        title: Certificate Already Issued
+        description: "The person already holds this certificate."
+        error: ErrCertificateAlreadyIssued
+        detail: "this person already holds this certificate, so a second one isn't issued"
+
+    VerificationHashTaken:
+      x-problem:
+        slug: verification-hash-taken
+        status: 409
+        title: Verification Hash Taken
+        description: "Another certificate already uses this verification code."
+        error: ErrVerificationHashTaken
+        detail: "another certificate already uses this verification code; issue the certificate again to get a new code"

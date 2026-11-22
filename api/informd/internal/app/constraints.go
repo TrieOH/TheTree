@@ -5,17 +5,17 @@ import (
 	"lib/database"
 )
 
-// Constraints maps Informd's constraint and unique-index names to the named
-// error repos surface on violation (ADR-0016). They travel into
-// database.SetupDB as data — boot fails loudly when a migration adds a
-// constraint missing here.
+// Constraints maps every named constraint in the schema to the named error
+// repos surface on violation (ADR-0016); the postgres module takes it at
+// boot. TestConstraintsMatchSchema fails when the two drift apart: a
+// constraint missing here, or an entry naming nothing in the schema.
 func Constraints() database.ConstraintErrors {
 	return database.ConstraintErrors{
 		// forms
 		"chk_forms_valid_status":       errs.ErrInvalidFormStatus,
 		"chk_forms_valid_status_state": errs.ErrInvalidFormStatusState,
 		"uniq_form_name_per_namespace": errs.ErrFormNameTaken,
-		"uniq_name_per_user":           errs.ErrAPIKeyNameTaken,
+		"chk_valid_form_member_role":   errs.ErrInvalidFormMemberRole,
 
 		// fields
 		"chk_fields_type":       errs.ErrInvalidFieldType,

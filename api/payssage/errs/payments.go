@@ -5,13 +5,9 @@ import (
 	"uuid"
 )
 
-// UnsupportedProviderError is a provider name Payssage does not know.
-type UnsupportedProviderError struct{ Provider string }
-
-func (e *UnsupportedProviderError) Error() string { return "unsupported provider " + e.Provider }
-
 // ProviderError is a provider's own error answer. Status is the HTTP status
-// the provider answered with; the mapper derives Payssage's status from it.
+// the provider answered with; the mapper derives Payssage's status from it,
+// so it stays by hand: one error answers several problems.
 type ProviderError struct {
 	Provider         string
 	Status           int
@@ -30,19 +26,9 @@ func (e *ProviderError) Error() string {
 	return e.Provider + ": " + e.Message
 }
 
-// IntentStatusError is an intent whose status does not allow the action
-// ("refunded", "cancelled").
-type IntentStatusError struct {
-	Action string
-	Status string
-}
-
-func (e *IntentStatusError) Error() string {
-	return fmt.Sprintf("intent cannot be %s from status %q", e.Action, e.Status)
-}
-
 // SellerRevokedError is a provider operation on a seller that revoked
 // Payssage's access. Op is the operation: "checkout", "refund", "cancel".
+// It stays by hand: Op picks the problem and the message.
 type SellerRevokedError struct {
 	SellerID uuid.UUID
 	Op       string
@@ -56,14 +42,4 @@ func (e *SellerRevokedError) Error() string {
 		return fmt.Sprintf("seller %s has revoked mercadopago access; cannot cancel — payment may still be live at mercadopago and requires manual review", e.SellerID)
 	}
 	return fmt.Sprintf("seller %s has revoked provider access", e.SellerID)
-}
-
-// SellerProviderMismatchError is a seller connected through another provider.
-type SellerProviderMismatchError struct {
-	SellerID uuid.UUID
-	Provider string
-}
-
-func (e *SellerProviderMismatchError) Error() string {
-	return fmt.Sprintf("seller %s is not a mercadopago seller (got %q)", e.SellerID, e.Provider)
 }

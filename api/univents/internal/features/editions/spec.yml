@@ -81,7 +81,7 @@ paths:
               slug: "2026"
               starts_at: '2026-05-04T09:00:00Z'
               ends_at: '2026-05-06T18:00:00Z'
-      x-problems: [400, 401, 403, 404, 500]
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '201':
           description: Edition created
@@ -206,7 +206,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchEditionRequest'
-      x-problems: [400, 401, 403, 404, 500]
+      x-problems: [400, 401, 403, 404, 409, 500]
       responses:
         '200':
           description: Edition updated
@@ -367,4 +367,13 @@ components:
         title: Edition Already Published
         description: "Edition is already published."
         error: ErrEditionAlreadyPublished
-        message: "this edition is already published"
+        detail: "this edition is already published"
+
+    EditionSlugTaken:
+      x-problem:
+        slug: edition-slug-taken
+        status: 409
+        title: Edition Slug Taken
+        description: "Another edition of the event already uses this slug."
+        error: ErrEditionSlugTaken
+        detail: "this event already has an edition with this slug; choose a different slug"

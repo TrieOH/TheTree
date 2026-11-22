@@ -298,7 +298,7 @@ components:
         title: Add Self To Namespace
         description: "Users can't add themselves to namespaces."
         error: ErrAddSelfToNamespace
-        message: "you can't add yourself to a namespace; ask one of its admins or its owner to add you"
+        detail: "you can't add yourself to a namespace; ask one of its admins or its owner to add you"
 
     AddOwnerToNamespace:
       x-problem:
@@ -307,7 +307,7 @@ components:
         title: Add Owner To Namespace
         description: "Owners can't be added to namespaces they own."
         error: ErrAddOwnerToNamespace
-        message: "the namespace's owner is already part of it and can't be added as a member"
+        detail: "the namespace's owner is already part of it and can't be added as a member"
 
     AlreadyNamespaceMember:
       x-problem:
@@ -316,7 +316,7 @@ components:
         title: Already Namespace Member
         description: "User is already a member of the namespace."
         error: ErrAlreadyNamespaceMember
-        message: "that person is already a member of the namespace; to change their role, update their membership instead of adding them again"
+        detail: "that person is already a member of the namespace; to change their role, update their membership instead of adding them again"
 
     NotNamespaceMember:
       x-problem:
@@ -325,7 +325,7 @@ components:
         title: Not Namespace Member
         description: "User is not a member of the namespace."
         error: ErrNotNamespaceMember
-        message: "that person is not a member of the namespace, so there is no membership to change or remove"
+        detail: "that person is not a member of the namespace, so there is no membership to change or remove"
 
   parameters:
     NamespaceID:

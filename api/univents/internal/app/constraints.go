@@ -7,17 +7,21 @@ import (
 
 // Constraints maps every named constraint in the schema to the named error
 // repos surface on violation (ADR-0016); the postgres module takes it at
-// boot, and boot fails when the schema has a constraint missing here.
+// boot. TestConstraintsMatchSchema fails when the two drift apart: a
+// constraint missing here, or an entry naming nothing in the schema.
 func Constraints() database.ConstraintErrors {
 	return database.ConstraintErrors{
 		// events
 		"chk_event_status_valid":                        errs.ErrInvalidEventStatus,
 		"chk_event_payments_public_key_requires_seller": errs.ErrPublicKeyNeedsSeller,
+		"idx_events_slug_unique":                        errs.ErrEventSlugTaken,
 
 		// event_members
-		"chk_event_members_role_valid": errs.ErrInvalidEventMemberRole,
+		"chk_event_members_role_valid":   errs.ErrInvalidEventMemberRole,
+		"idx_one_event_member_per_event": errs.ErrEventMemberExists,
 
 		// editions
+		"idx_edition_slug_unique":                errs.ErrEditionSlugTaken,
 		"chk_editions_dates_valid":               errs.ErrEditionDates,
 		"chk_editions_registration_before_start": errs.ErrRegistrationAfterStart,
 		"excl_editions_no_overlap":               errs.ErrEditionOverlap,
@@ -48,12 +52,15 @@ func Constraints() database.ConstraintErrors {
 		"chk_signature_requests_status_valid":     errs.ErrInvalidSignatureRequestStatus,
 		"uniq_signature_requests_idempotency_key": errs.ErrIdempotencyKeyUsed,
 
-		// signatures
-		"chk_signatures_status_valid":    errs.ErrInvalidSignatureStatus,
-		"chk_signatures_ready_has_image": errs.ErrReadySignatureNeedsImage,
-
-		// certification_templates
+		// certification_templates, certification_template_programs
 		"chk_certification_templates_kind_valid": errs.ErrInvalidCertificationKind,
+		"idx_cert_template_program_unique":       errs.ErrCertificationProgramLinked,
+
+		// certifications
+		"idx_one_cert_per_registration_per_template": errs.ErrCertificateAlreadyIssued,
+		"idx_one_cert_per_user_per_program":          errs.ErrCertificateAlreadyIssued,
+		"idx_one_edition_cert_per_registration":      errs.ErrCertificateAlreadyIssued,
+		"idx_certifications_verification_hash":       errs.ErrVerificationHashTaken,
 
 		// badge_emissions
 		"chk_badge_emissions_origin_valid":         errs.ErrInvalidBadgeEmissionOrigin,

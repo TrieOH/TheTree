@@ -42,7 +42,7 @@ components:
         title: Invalid Request
         description: "Invalid request."
         error: ErrInvalidRequest
-        message: "the webhook's raw body wasn't captured, so it can't be verified; send the webhook to this endpoint directly, unmodified"
+        detail: "the webhook's raw body wasn't captured, so it can't be verified; send the webhook to this endpoint directly, unmodified"
 
     # incoming webhooks
     UnknownWebhookProvider:
@@ -52,7 +52,7 @@ components:
         title: Unknown Webhook Provider
         description: "Unknown webhook provider."
         error: ErrUnknownWebhookProvider
-        message: "there is no webhook endpoint for this provider; use the provider name in the URL Payssage gave you"
+        detail: "there is no webhook endpoint for this provider; use the provider name in the URL Payssage gave you"
 
     WebhookNotImplemented:
       x-problem:
@@ -61,4 +61,4 @@ components:
         title: Webhook Not Implemented
         description: "Webhook handling not implemented for this provider."
         error: ErrWebhookNotImplemented
-        message: "webhooks from this provider aren't handled yet, so this one was ignored"
+        detail: "webhooks from this provider aren't handled yet, so this one was ignored"

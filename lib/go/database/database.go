@@ -6,7 +6,7 @@ import (
 	"lib/telemetry"
 	"log"
 	"log/slog"
-	"strings"
+	"slices"
 	"time"
 
 	"github.com/exaring/otelpgx"
@@ -110,8 +110,8 @@ type ConstraintErrors map[string]error
 // violation. SetupDB — the one owner of DB boot — receives it as an
 // argument and stores it here for the error handlers, so there is no
 // init-order contract with callers: the registry travels as data into the
-// one function that owns DB setup, and boot fails loudly when a constraint
-// has no entry (see validateConstraints).
+// one function that owns DB setup, and boot warns when the two drift apart
+// (see RegistryDrift).
 var constraintRegistry map[string]error
 
 // UseConstraints installs the registry the error handlers read. SetupDB
@@ -121,10 +121,12 @@ func UseConstraints(constraints ConstraintErrors) {
 	constraintRegistry = constraints
 }
 
-// validateConstraints reports a constraint (or a uniq_ or one_ index) the
-// registry has no named error for: a violation of it would answer a generic
-// 500 instead of the error it means. River's leftover tables are skipped.
-func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
+// RegistryDrift compares a registry with the schema's constraints and its
+// unique indexes that back none, whatever their name. missing are constraints with no named error: a
+// violation answers a generic 500 instead of the error it means. unknown
+// are entries naming nothing in the schema: a constraint renamed or dropped
+// while its entry stayed. River's leftover tables are skipped.
+func RegistryDrift(ctx context.Context, db *pgxpool.Pool, constraints ConstraintErrors) (missing, unknown []string, err error) {
 	rows, err := db.Query(ctx, `
 		SELECT con.conname
 		FROM pg_constraint con
@@ -135,35 +137,45 @@ func validateConstraints(ctx context.Context, db *pgxpool.Pool) error {
 		AND rel.relname NOT LIKE 'river\_%'
 		AND con.contype IN ('u', 'c', 'x')
 		UNION
-		SELECT indexname
-		FROM pg_indexes
-		WHERE schemaname = 'public'
-		AND tablename != 'goose_db_version'
-		AND tablename NOT LIKE 'river\_%'
-		AND (indexname LIKE 'uniq_%' OR indexname LIKE 'one_%')
+		SELECT idx.relname
+		FROM pg_index i
+		JOIN pg_class idx ON idx.oid = i.indexrelid
+		JOIN pg_class rel ON rel.oid = i.indrelid
+		JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+		WHERE nsp.nspname = 'public'
+		AND rel.relname != 'goose_db_version'
+		AND rel.relname NOT LIKE 'river\_%'
+		AND i.indisunique
+		AND NOT i.indisprimary
+		AND NOT EXISTS (SELECT 1 FROM pg_constraint con WHERE con.conindid = i.indexrelid)
 	`)
 	if err != nil {
-		return fmt.Errorf("query constraints: %w", err)
+		return nil, nil, fmt.Errorf("query constraints: %w", err)
 	}
 	defer rows.Close()
 
-	var missing []string
+	inSchema := map[string]bool{}
 	for rows.Next() {
 		var name string
 		err = rows.Scan(&name)
 		if err != nil {
-			return fmt.Errorf("scan constraint: %w", err)
+			return nil, nil, fmt.Errorf("scan constraint: %w", err)
 		}
-		if _, ok := constraintRegistry[name]; !ok {
+		inSchema[name] = true
+		if _, ok := constraints[name]; !ok {
 			missing = append(missing, name)
 		}
 	}
 	err = rows.Err()
 	if err != nil {
-		return fmt.Errorf("read constraints: %w", err)
+		return nil, nil, fmt.Errorf("read constraints: %w", err)
 	}
-	if len(missing) > 0 {
-		return fmt.Errorf("constraints with no named error in the registry: %s", strings.Join(missing, ", "))
+	for name := range constraints {
+		if !inSchema[name] {
+			unknown = append(unknown, name)
+		}
 	}
-	return nil
+	slices.Sort(missing)
+	slices.Sort(unknown)
+	return missing, unknown, nil
 }

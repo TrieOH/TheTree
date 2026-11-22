@@ -83,7 +83,7 @@ Nothing pings IdentityX to check that it is up, because each call would wake the
 | The boot fails on `ROTATE_KEYS_JOB_DURATION` | It is not shorter than `IDENTITY_X_KEY_LIFETIME`. Fix the two values. |
 | Other APIs refuse new tokens right after a rotation | Wait up to 5 minutes for the edge copy. If the errors last longer: [Edge Worker and cache](/services/identityx/docs/edge-worker-and-cache). |
 | A verify or reset email never arrives | [Email delivery](/services/identityx/docs/email-delivery) |
-| The log says `constraint registry gap` | [Database](/services/identityx/docs/database) |
+| The log says `constraint registry drift` | [Database](/services/identityx/docs/database) |
 | A browser call fails with a CORS error | The app's origin is not in `CORS_ALLOWED_ORIGINS`. Add it in `cloudflare/wrangler.jsonc` and release. |
 | No container starts at all | The month's container budget is used up. The Metrics page shows it. Containers start again in the next billing cycle. The cap is `LIMIT_GIB_SECONDS` in `lib/ts/container-budget/src/index.ts`. Jobs queued meanwhile are lost, see [Background jobs](/services/identityx/docs/background-jobs). |
 

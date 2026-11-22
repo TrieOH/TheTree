@@ -1,14 +1,8 @@
 package errs
 
-// UnsupportedProviderError is a login provider IdentityX does not know.
-type UnsupportedProviderError struct{ Provider string }
-
-func (e *UnsupportedProviderError) Error() string {
-	return "unsupported provider: " + e.Provider
-}
-
 // ProviderNotConfiguredError is a known provider with no credentials in the
-// scope: the platform's env, or the project's provider row.
+// scope: the platform's env, or the project's provider row. It stays by
+// hand because ForProject, which isn't a member, picks the message.
 type ProviderNotConfiguredError struct {
 	Provider   string
 	ForProject bool
@@ -19,20 +13,4 @@ func (e *ProviderNotConfiguredError) Error() string {
 		return "provider not configured for this project: " + e.Provider
 	}
 	return "provider not configured: " + e.Provider
-}
-
-// ProviderDisabledError is a sign-up through a provider the project turned
-// off; existing identities still log in through it.
-type ProviderDisabledError struct{ Provider string }
-
-func (e *ProviderDisabledError) Error() string {
-	return "this project has disabled " + e.Provider + " login; contact the project to enable it"
-}
-
-// ProviderRemovedError is a login whose provider row was removed while the
-// login was in flight (between connect and callback).
-type ProviderRemovedError struct{ Provider string }
-
-func (e *ProviderRemovedError) Error() string {
-	return "this project has disabled " + e.Provider + " login; contact the project to enable it"
 }

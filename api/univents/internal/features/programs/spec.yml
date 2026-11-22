@@ -784,7 +784,7 @@ components:
         title: Ticket Required For Activity
         description: "A confirmed ticket is required to register for activities."
         error: ErrTicketRequiredForActivity
-        message: "registering for activities needs a confirmed ticket for the edition; buy a ticket, or finish paying for it, first"
+        detail: "registering for activities needs a confirmed ticket for the edition; buy a ticket, or finish paying for it, first"
 
     TicketRequiredForCheckpoint:
       x-problem:
@@ -793,7 +793,7 @@ components:
         title: Ticket Required For Checkpoint
         description: "A confirmed ticket is required to pass this checkpoint."
         error: ErrTicketRequiredForCheckpoint
-        message: "passing this checkpoint needs a confirmed ticket for the edition"
+        detail: "passing this checkpoint needs a confirmed ticket for the edition"
 
     AccessLevel:
       x-problem:
@@ -801,6 +801,8 @@ components:
         status: 403
         title: Access Level
         description: "The caller's ticket level does not grant access."
+        error: AccessLevelError
+        detail: 'your ticket level does not grant access to this {kind}'
       type: object
       required: [kind]
       properties:
@@ -813,7 +815,7 @@ components:
         title: Already Registered
         description: "You are already registered for this activity."
         error: ErrAlreadyRegistered
-        message: "you are already registered for this activity session"
+        detail: "you are already registered for this activity session"
 
     OccurrenceFull:
       x-problem:
@@ -822,7 +824,7 @@ components:
         title: Occurrence Full
         description: "This activity occurrence is full."
         error: ErrOccurrenceFull
-        message: "this activity session is full; pick another session"
+        detail: "this activity session is full; pick another session"
 
     NotRegistered:
       x-problem:
@@ -831,7 +833,7 @@ components:
         title: Not Registered
         description: "You are not registered for this activity."
         error: ErrNotRegistered
-        message: "you aren't registered for this activity session, so there's no registration to cancel"
+        detail: "you aren't registered for this activity session, so there's no registration to cancel"
 
     RegistrationLocked:
       x-problem:
@@ -840,7 +842,7 @@ components:
         title: Registration Locked
         description: "Registration is locked: attendance has been marked."
         error: ErrRegistrationLocked
-        message: "attendance was already marked for this registration, so it can no longer be changed or cancelled"
+        detail: "attendance was already marked for this registration, so it can no longer be changed or cancelled"
 
     CheckInNotCheckpoint:
       x-problem:
@@ -849,7 +851,7 @@ components:
         title: Check In Not Checkpoint
         description: "Check-in is only for checkpoint occurrences."
         error: ErrCheckInNotCheckpoint
-        message: "check-in is only for checkpoint sessions; mark attendance for this one instead"
+        detail: "check-in is only for checkpoint sessions; mark attendance for this one instead"
 
     ParticipationCancelled:
       x-problem:
@@ -858,4 +860,4 @@ components:
         title: Participation Cancelled
         description: "Cannot mark attendance: participation was cancelled."
         error: ErrParticipationCancelled
-        message: "this registration was cancelled, so attendance can't be marked for it"
+        detail: "this registration was cancelled, so attendance can't be marked for it"

@@ -25,7 +25,11 @@ const problemSuffix = "Problem"
 var (
 	slugPattern  = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 	errorPattern = regexp.MustCompile(`^Err[A-Z][A-Za-z0-9]*$`)
-	namePattern  = regexp.MustCompile(`^[A-Z][A-Za-z0-9]*$`)
+	// typedPattern names a problem's typed error, a struct with its members.
+	typedPattern = regexp.MustCompile(`^[A-Z][A-Za-z0-9]*Error$`)
+	// placeholder is a member named in a typed error's detail, {provider}.
+	placeholder = regexp.MustCompile(`\{([a-z0-9_]+)\}`)
+	namePattern = regexp.MustCompile(`^[A-Z][A-Za-z0-9]*$`)
 	// reserved are the members every problem has; an extension can't be one.
 	reserved = []string{"type", "status", "title", "detail", "instance", "errors"}
 	methods  = []string{"get", "put", "post", "delete", "options", "head", "patch", "trace"}
@@ -42,12 +46,14 @@ type problem struct {
 	Title       string
 	Description string
 	Members     []member
-	// Error names the Go sentinel the Backend returns for this problem,
-	// generated into its errs package with Message as its text, which is
-	// the problem's detail. A problem with members has a typed error
-	// instead, written and mapped by hand.
-	Error   string
-	Message string
+	// Error names the Go error the Backend returns for this problem,
+	// generated into its errs package; its text is the problem's detail.
+	// Without members it is a sentinel with Detail as its text. With
+	// members it is a typed error, a struct with a field per member, and
+	// Detail is a template naming members in braces ({provider}). A
+	// problem with no Error is answered by the Backend's own mapper.
+	Error  string
+	Detail string
 
 	xProblem *yaml.Node // the authored x-problem block, kept in the bundle
 	file     string
@@ -57,10 +63,23 @@ type problem struct {
 type member struct {
 	Name    string // JSON name
 	Param   string // the constructor's parameter
+	Field   string // the typed error's field
 	GoType  string
 	Example json.RawMessage
 
 	schema *yaml.Node
+}
+
+// sharedError is a named error the Backend answers with a shared problem,
+// declared under x-shared-errors in its problems.yml or a feature's
+// spec.yml: generated into its errs package with Detail as its text.
+type sharedError struct {
+	Error   string
+	Detail  string
+	problem *problem // the shared problem, resolved once every file is read
+
+	slug string
+	file string
 }
 
 // namedNode is a plain schema from a problem file, merged into the spec as is.
@@ -78,8 +97,9 @@ type bundler struct {
 	files    map[string]*specFile // every other file read, by clean path
 	// components are the plain components the other files declare, by
 	// kind, merged into the spec as is.
-	components map[string][]namedNode
-	problems   []*problem
+	components   map[string][]namedNode
+	problems     []*problem
+	sharedErrors []*sharedError
 }
 
 func load(specPath string) (*bundler, error) {
@@ -108,6 +128,10 @@ func load(specPath string) (*bundler, error) {
 		}
 	}
 	err = b.importPaths(b.specPath)
+	if err != nil {
+		return nil, err
+	}
+	err = b.resolveSharedErrors(shared)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +217,69 @@ func (b *bundler) loadFile(path string) error {
 			b.problems = append(b.problems, p)
 		}
 	}
+	return b.loadSharedErrors(f.root, path)
+}
+
+// loadSharedErrors reads a file's x-shared-errors: each shared problem's
+// slug, and under it the named errors it answers with their details.
+func (b *bundler) loadSharedErrors(root *yaml.Node, path string) error {
+	x := get(root, "x-shared-errors")
+	if x == nil {
+		return nil
+	}
+	if x.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s: x-shared-errors maps a shared problem's slug to its errors", path)
+	}
+	for i := 0; i < len(x.Content); i += 2 {
+		slug, errs := x.Content[i].Value, x.Content[i+1]
+		if errs.Kind != yaml.MappingNode {
+			return fmt.Errorf("%s: x-shared-errors.%s maps each error to its detail", path, slug)
+		}
+		for k := 0; k < len(errs.Content); k += 2 {
+			b.sharedErrors = append(b.sharedErrors, &sharedError{
+				Error:  errs.Content[k].Value,
+				Detail: oneLine(errs.Content[k+1].Value),
+				slug:   slug,
+				file:   path,
+			})
+		}
+	}
+	return nil
+}
+
+// resolveSharedErrors gives every x-shared-errors entry its shared problem,
+// which must be one without members, and checks the error like a problem's.
+func (b *bundler) resolveSharedErrors(shared string) error {
+	names := map[string]string{}
+	for _, p := range b.problems {
+		if p.Error != "" {
+			names[p.Error] = p.Name
+		}
+	}
+	for _, e := range b.sharedErrors {
+		if e.file == shared {
+			return fmt.Errorf("%s: x-shared-errors belongs to a Backend's problems, not the shared ones", e.file)
+		}
+		for _, p := range b.problems {
+			if p.Slug == e.slug && p.file == shared {
+				e.problem = p
+			}
+		}
+		switch {
+		case e.problem == nil:
+			return fmt.Errorf("%s: x-shared-errors.%s: no shared problem has this slug", e.file, e.slug)
+		case len(e.problem.Members) > 0:
+			return fmt.Errorf("%s: x-shared-errors.%s: a problem with members is answered from a typed error", e.file, e.slug)
+		}
+		err := checkError(e.Error, e.Detail, e.problem.Title)
+		if err != nil {
+			return fmt.Errorf("%s: x-shared-errors.%s.%s: %w", e.file, e.slug, e.Error, err)
+		}
+		if other, ok := names[e.Error]; ok {
+			return fmt.Errorf("%s: error %s is named by both %s and %s", e.file, e.Error, other, e.problem.Name)
+		}
+		names[e.Error] = e.problem.Name
+	}
 	return nil
 }
 
@@ -223,11 +310,14 @@ func parseProblem(name string, node, x *yaml.Node) (*problem, error) {
 		Title       string `yaml:"title"`
 		Description string `yaml:"description"`
 		Error       string `yaml:"error"`
-		Message     string `yaml:"message"`
+		Detail      string `yaml:"detail"`
 	}
 	err := x.Decode(&meta)
 	if err != nil {
 		return nil, fmt.Errorf("%s: x-problem: %w", name, err)
+	}
+	if get(x, "message") != nil {
+		return nil, fmt.Errorf("%s: x-problem's message is now detail, the problem member it fills", name)
 	}
 	switch {
 	case !namePattern.MatchString(name):
@@ -241,10 +331,6 @@ func parseProblem(name string, node, x *yaml.Node) (*problem, error) {
 	case meta.Description == "":
 		return nil, fmt.Errorf("%s: x-problem needs a description", name)
 	}
-	err = checkError(meta.Error, meta.Message, meta.Title)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", name, err)
-	}
 	p := &problem{
 		Name:        name,
 		Slug:        meta.Slug,
@@ -252,8 +338,8 @@ func parseProblem(name string, node, x *yaml.Node) (*problem, error) {
 		Title:       meta.Title,
 		Description: strings.TrimSpace(meta.Description),
 		Error:       meta.Error,
-		Message:     oneLine(meta.Message),
-		xProblem:    withoutKeys(x, "error", "message"),
+		Detail:      oneLine(meta.Detail),
+		xProblem:    withoutKeys(x, "error", "detail"),
 	}
 	for k := 0; k < len(node.Content); k += 2 {
 		switch key := node.Content[k].Value; key {
@@ -269,8 +355,13 @@ func parseProblem(name string, node, x *yaml.Node) (*problem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)
 	}
-	if p.Error != "" && len(p.Members) > 0 {
-		return nil, fmt.Errorf("%s: a problem with members is answered from a typed error, not a generated %s", name, p.Error)
+	if len(p.Members) > 0 {
+		err = checkTypedError(meta.Error, p.Detail, meta.Title, p.Members)
+	} else {
+		err = checkError(meta.Error, p.Detail, meta.Title)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
 	}
 	return p, nil
 }
@@ -286,6 +377,7 @@ func parseMembers(node *yaml.Node) ([]member, error) {
 	}
 	var members []member
 	params := map[string]bool{"detail": true}
+	fields := map[string]bool{}
 	if props := get(node, "properties"); props != nil {
 		for k := 0; k < len(props.Content); k += 2 {
 			m := member{Name: props.Content[k].Value, schema: props.Content[k+1]}
@@ -301,6 +393,11 @@ func parseMembers(node *yaml.Node) ([]member, error) {
 				return nil, fmt.Errorf("members collide as parameter %s", m.Param)
 			}
 			params[m.Param] = true
+			m.Field = field(m.Name)
+			if fields[m.Field] {
+				return nil, fmt.Errorf("members collide as field %s", m.Field)
+			}
+			fields[m.Field] = true
 			members = append(members, m)
 		}
 	}
@@ -353,6 +450,9 @@ func goType(s *yaml.Node, goTypes map[string]string) (string, error) {
 	}
 	switch t.Value {
 	case "string":
+		if f := get(s, "format"); f != nil && f.Value == "uuid" {
+			return "uuid.UUID", nil
+		}
 		return "string", nil
 	case "integer":
 		return "int", nil
@@ -387,6 +487,8 @@ func example(s *yaml.Node, goType string) (json.RawMessage, error) {
 	switch {
 	case goType == "string":
 		return json.RawMessage(`""`), nil
+	case goType == "uuid.UUID":
+		return json.RawMessage(`"00000000-0000-0000-0000-000000000000"`), nil
 	case goType == "int", goType == "float64":
 		return json.RawMessage(`0`), nil
 	case goType == "bool":
@@ -631,21 +733,50 @@ func oneOf(ps []*problem) *yaml.Node {
 	)
 }
 
-// checkError checks a problem's named error and its message.
-func checkError(name, message, title string) error {
+// checkError checks a member-less problem's sentinel and its detail.
+func checkError(name, detail, title string) error {
 	switch {
-	case name == "" && message != "":
-		return errors.New("a message belongs to a problem's error; name one")
+	case name == "" && detail != "":
+		return errors.New("a detail belongs to a problem's error; name one")
 	case name == "":
 		return nil
 	case !errorPattern.MatchString(name):
 		return fmt.Errorf("error %q must be an exported Go identifier starting with Err", name)
-	case strings.TrimSpace(message) == "":
-		return fmt.Errorf("error %s needs a message, the detail clients read", name)
-	case sameText(message, title):
-		return errors.New("the message repeats the title; say what went wrong and what to do about it")
-	case strings.ContainsAny(message[len(message)-1:], ".!?:\n") || capitalized(message):
-		return errors.New("the message is the sentinel's text, so it reads like any Go error string: lowercase, no final punctuation")
+	}
+	return checkDetail(name, detail, title)
+}
+
+// checkTypedError checks a problem's typed error and its detail template:
+// every name in braces is one of the members.
+func checkTypedError(name, detail, title string, members []member) error {
+	switch {
+	case name == "" && detail != "":
+		return errors.New("a detail belongs to a problem's error; name one")
+	case name == "":
+		return nil
+	case !typedPattern.MatchString(name):
+		return fmt.Errorf("error %q must be an exported Go identifier ending in Error: a problem with members has a typed error", name)
+	}
+	for _, m := range placeholder.FindAllStringSubmatch(detail, -1) {
+		if !slices.ContainsFunc(members, func(mm member) bool { return mm.Name == m[1] }) {
+			return fmt.Errorf("error %s: {%s} in the detail is not a member", name, m[1])
+		}
+	}
+	if strings.ContainsAny(placeholder.ReplaceAllString(detail, ""), "{}") {
+		return fmt.Errorf("error %s: braces in a detail only name members, like {%s}", name, members[0].Name)
+	}
+	return checkDetail(name, detail, title)
+}
+
+// checkDetail checks an error's text, the detail clients read.
+func checkDetail(name, detail, title string) error {
+	switch {
+	case strings.TrimSpace(detail) == "":
+		return fmt.Errorf("error %s needs a detail, the text clients read", name)
+	case sameText(detail, title):
+		return errors.New("the detail repeats the title; say what went wrong and what to do about it")
+	case strings.ContainsAny(detail[len(detail)-1:], ".!?:\n") || capitalized(detail):
+		return errors.New("the detail is the error's text, so it reads like any Go error string: lowercase, no final punctuation")
 	}
 	return nil
 }
