@@ -5,6 +5,11 @@ description: >
   `wrangler deploy` returns once the Worker is up, which can be before (or
   without) the container moving to the new image. It only reads Cloudflare's
   API: no request reaches the Worker or the container, so nothing is woken.
+  The containers scale to zero, and Cloudflare only calls a rollout completed
+  once a new instance boots healthy, which a sleeping app does on its next
+  request. So a rollout that has every instance assigned to this version and
+  none left on the old one counts as done too: the next boot runs this image,
+  which the boot smoke test already started.
 inputs:
   service:
     description: the service, e.g. identityx
@@ -43,17 +48,25 @@ runs:
           app=$(api "applications/$APP")
           image=$(jq -r '.result.configuration.image' <<<"$app")
           rollout=$(jq -r '.result.active_rollout_id // empty' <<<"$app")
-          status=none target=
+          status=none target= assigned= left=
           if [ -n "$rollout" ]; then
             r=$(api "applications/$APP/rollouts/$rollout")
             status=$(jq -r '.result.status' <<<"$r")
             target=$(jq -r '.result.target_configuration.image' <<<"$r")
+            assigned=$(jq -r '.result.progress.version_distribution.target_version_percentage // empty' <<<"$r")
+            left=$(jq -r '.result.progress.version_distribution.current_version_instances // empty' <<<"$r")
           fi
-          echo "[rollout] app image=${image##*:} rollout=${rollout:-none} status=$status target=${target##*:}"
+          echo "[rollout] app image=${image##*:} rollout=${rollout:-none} status=$status target=${target##*:} assigned=${assigned:-?}% old=${left:-?}"
           if [ "${target##*:}" = "$VERSION" ] || [ -z "$rollout" -a "${image##*:}" = "$VERSION" ]; then
             case "$status" in
             completed | none) echo "[rollout] $SERVICE container is on $VERSION"; exit 0 ;;
             failed | stopped | reverted) echo "::error title=$SERVICE rollout $status::Cloudflare's rollout to $VERSION ended as $status"; exit 1 ;;
+            progressing)
+              if [ "$assigned" = "100" ] && [ "$left" = "0" ]; then
+                echo "[rollout] $SERVICE is assigned to $VERSION with no instance left on the old image; it boots on its next request"
+                exit 0
+              fi
+              ;;
             esac
           fi
           if [ "$(date +%s)" -ge "$deadline" ]; then
