@@ -73,7 +73,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 func stubBlacklist() (ports.BlacklistRepo, matchers.ArgumentCaptor[models.BlacklistEntry]) {
 	bl := mock.Mock[ports.BlacklistRepo]()
 	captor := mock.Captor[models.BlacklistEntry]()
-	mock.When(bl.Append(mock.AnyContext(), captor.Capture())).ThenReturn(nil)
+	mock.When(bl.Append(mock.AnyContext(), captor.Capture())).ThenReturn(true, nil)
 	mock.When(bl.GetByTargetAndType(mock.AnyContext(), mock.Any[string](), mock.Any[models.BlacklistEntryType]())).
 		ThenReturn(nil, database.ErrNotFound)
 	return bl, captor

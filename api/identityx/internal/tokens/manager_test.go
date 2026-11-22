@@ -43,6 +43,8 @@ type fixture struct {
 	appended    []models.BlacklistEntry
 	appendErr   error
 	appendCalls int
+	// ended holds each actor's EndSessions cutoff, keyed by actor id.
+	ended map[string]time.Time
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -60,7 +62,7 @@ func newFixture(t *testing.T) *fixture {
 		PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
 	}
 
-	f := &fixture{key: key, resolvedKey: key, kp: kp, actor: actor, revoked: map[string]bool{}}
+	f := &fixture{key: key, resolvedKey: key, kp: kp, actor: actor, revoked: map[string]bool{}, ended: map[string]time.Time{}}
 
 	keys := mock.Mock[ports.CryptoKeysRepo]()
 	mock.When(keys.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
@@ -78,14 +80,32 @@ func newFixture(t *testing.T) *fixture {
 		ThenAnswer(func(args []any) []any {
 			f.appendCalls++
 			if f.appendErr != nil {
-				return []any{f.appendErr}
+				return []any{false, f.appendErr}
 			}
-			f.appended = append(f.appended, args[1].(models.BlacklistEntry))
+			entry := args[1].(models.BlacklistEntry)
+			// Like ON CONFLICT DO NOTHING: an entry already there is not added.
+			if f.revoked[entry.Target] || hasTarget(f.appended, entry.Target) {
+				return []any{false, nil}
+			}
+			f.appended = append(f.appended, entry)
+			return []any{true, nil}
+		})
+	mock.When(bl.Put(mock.AnyContext(), mock.Any[models.BlacklistEntry]())).
+		ThenAnswer(func(args []any) []any {
+			entry := args[1].(models.BlacklistEntry)
+			f.ended[entry.Target] = f.now
 			return []any{nil}
 		})
 	mock.When(bl.GetByTargetAndType(mock.AnyContext(), mock.Any[string](), mock.Any[models.BlacklistEntryType]())).
 		ThenAnswer(func(args []any) []any {
 			target := args[1].(string)
+			if args[2].(models.BlacklistEntryType) == models.BlacklistEntryTypeActor {
+				cutoff, ok := f.ended[target]
+				if !ok {
+					return []any{nil, database.ErrNotFound}
+				}
+				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeActor, CreatedAt: cutoff}, nil}
+			}
 			if f.revoked[target] {
 				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
 			}
@@ -526,5 +546,55 @@ func TestRevokeFailsClosedOnAppendError(t *testing.T) {
 	err := f.mgr.Revoke(context.Background(), pair.AccessToken, pair.RefreshToken)
 	if err == nil {
 		t.Fatal("logout must fail when the access token cannot be blacklisted")
+	}
+}
+
+// ── Concurrent rotation and ended sessions ───────────────────────────────
+
+func TestRotateRefusesARefreshTokenAnotherRotationClaimed(t *testing.T) {
+	f := newFixture(t)
+	old := f.mint(t)
+	// A rotation running at the same moment added the entry first, after
+	// this one's Verify had already passed.
+	f.appended = append(f.appended, models.BlacklistEntry{Target: openRefresh(t, old.RefreshToken).ID})
+
+	_, err := f.mgr.Rotate(context.Background(), old.RefreshToken)
+	if !errors.Is(err, errs.ErrTokenRevoked) {
+		t.Fatalf("want token revoked when another rotation claimed the refresh token, got %v", err)
+	}
+}
+
+func TestEndSessionsRefusesTokensSignedBefore(t *testing.T) {
+	f := newFixture(t)
+	old := f.mint(t)
+
+	f.now = f.now.Add(time.Minute)
+	err := f.mgr.EndSessions(context.Background(), &f.actor, "password_reset")
+	if err != nil {
+		t.Fatalf("EndSessions: %v", err)
+	}
+
+	err = f.mgr.Verify(context.Background(), old.AccessToken, &models.AccessClaims{})
+	if !errors.Is(err, errs.ErrTokenRevoked) {
+		t.Fatalf("want the old access token revoked, got %v", err)
+	}
+	_, err = f.mgr.Rotate(context.Background(), old.RefreshToken)
+	if !errors.Is(err, errs.ErrTokenRevoked) {
+		t.Fatalf("want the old refresh token revoked, got %v", err)
+	}
+}
+
+func TestEndSessionsKeepsTokensSignedAfter(t *testing.T) {
+	f := newFixture(t)
+	err := f.mgr.EndSessions(context.Background(), &f.actor, "password_reset")
+	if err != nil {
+		t.Fatalf("EndSessions: %v", err)
+	}
+
+	// A login in the same second as the reset must work.
+	fresh := f.mint(t)
+	err = f.mgr.Verify(context.Background(), fresh.AccessToken, &models.AccessClaims{})
+	if err != nil {
+		t.Fatalf("want a token minted after the cutoff to verify, got %v", err)
 	}
 }

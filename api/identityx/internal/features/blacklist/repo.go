@@ -43,7 +43,7 @@ func mapEntry(src sqlc.BlacklistEntry) models.BlacklistEntry {
 	}
 }
 
-func (repo *Repo) Append(ctx context.Context, entry models.BlacklistEntry) error {
+func (repo *Repo) Append(ctx context.Context, entry models.BlacklistEntry) (bool, error) {
 	_, err := repo.db(ctx).AppendBlacklistEntry(ctx, sqlc.AppendBlacklistEntryParams{
 		CreatedByActorID: entry.CreatedByActorID,
 		ProjectID:        entry.ProjectID,
@@ -53,7 +53,27 @@ func (repo *Repo) Append(ctx context.Context, entry models.BlacklistEntry) error
 		Metadata:         entry.Metadata,
 		ExpiresAt:        entry.ExpiresAt,
 	})
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	// ON CONFLICT DO NOTHING returns no row when the entry is already there.
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, repo.dbe(err)
+	}
+	return true, nil
+}
+
+func (repo *Repo) Put(ctx context.Context, entry models.BlacklistEntry) error {
+	err := repo.db(ctx).PutBlacklistEntry(ctx, sqlc.PutBlacklistEntryParams{
+		CreatedByActorID: entry.CreatedByActorID,
+		ProjectID:        entry.ProjectID,
+		Type:             string(entry.Type),
+		Target:           entry.Target,
+		Reason:           entry.Reason,
+		Metadata:         entry.Metadata,
+		ExpiresAt:        entry.ExpiresAt,
+	})
+	if err != nil {
 		return repo.dbe(err)
 	}
 	return nil

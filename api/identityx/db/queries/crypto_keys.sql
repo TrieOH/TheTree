@@ -31,9 +31,10 @@ FROM crypto_keys
 WHERE id = @id;
 
 -- name: GetActiveSigningKeys :many
+-- One scope's keys: a project's, or the platform's when project_id is null.
 SELECT id, public_key, algorithm
 FROM crypto_keys
-WHERE (project_id = @project_id OR @project_id IS NULL)
+WHERE (project_id = @project_id OR (project_id IS NULL AND @project_id IS NULL))
   AND type = 'signing'
   AND status IN ('active', 'retiring');
 
