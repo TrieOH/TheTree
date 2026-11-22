@@ -46,7 +46,8 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
   const sessionConfig = {
     name: config.session.name ?? "trieoh-auth",
     password: config.session.password,
-    maxAge: config.session.maxAge ?? 60 * 60 * 24 * 30,
+    // As long as IdentityX's refresh token: past it the session can't be renewed.
+    maxAge: config.session.maxAge ?? 60 * 60 * 24 * 7,
     cookie: {
       httpOnly: true,
       secure: config.session.secure ?? true,

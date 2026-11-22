@@ -67,7 +67,31 @@ export function clientIPSecret(env: object): string | undefined {
 
 type TokenResolution =
   | { success: true; tokens: AuthTokens }
-  | { success: false; error: ServerAuthResult; sessionInvalid: boolean };
+  | { success: false; error: ServerAuthResult; sessionInvalid: boolean; sessionDead?: boolean };
+
+/**
+ * Refresh refusals that no later request can turn around: the token or the key
+ * that signed it is gone for good. `token-revoked` is left out on purpose: it is
+ * also what the loser of a concurrent refresh gets, and clearing its cookie
+ * would log out the winner's fresh session in the same browser.
+ */
+const deadSessionProblems = new Set([
+  "invalid-token",
+  "outdated-token",
+  "signing-key-retired",
+  "signing-key-revoked",
+]);
+
+/** The slug of a problem answer: the last segment of its `type`. */
+async function problemSlug(response: Response): Promise<string | undefined> {
+  try {
+    const body: unknown = await response.json();
+    const type = (body as { type?: unknown } | null)?.type;
+    return typeof type === "string" ? type.split("/").pop() : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** What a Backend answered: the payload on success, else the error's code and message. */
 interface Answer<T> {
@@ -282,6 +306,23 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       };
     }
 
+    // An expired refresh token can only be refused, and asking would wake
+    // IdentityX's container and database for nothing.
+    const refreshExpiry = new Date(current.read()?.tokens?.refresh_expires_at ?? "").getTime();
+    if (Number.isFinite(refreshExpiry) && refreshExpiry <= Date.now()) {
+      await current.clear();
+      return {
+        success: false,
+        sessionInvalid: true,
+        error: {
+          success: false,
+          code: 401,
+          error_id: "REFRESH_TOKEN_EXPIRED",
+          message: "Session expired",
+        },
+      };
+    }
+
     let refresh = refreshes.get(refreshToken);
     if (!refresh) {
       refresh = (async (): Promise<TokenResolution> => {
@@ -308,6 +349,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           };
         }
 
+        const slug = response.ok ? undefined : await problemSlug(response.clone());
         const answer = await readAnswer<AuthTokens>(response);
         if (!response.ok || !answer.data?.access_token) {
           const normalized = normalize(response, answer);
@@ -315,6 +357,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           return {
             success: false,
             sessionInvalid,
+            sessionDead: sessionInvalid && slug !== undefined && deadSessionProblems.has(slug),
             error: response.ok
               ? {
                 success: false,
@@ -334,6 +377,9 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
 
     const resolution = await refresh;
     if (resolution.success) await current.write(resolution.tokens);
+    // A dead token ends the session: keeping the cookie would send it to
+    // /auth/refresh again on every request until the cookie expires.
+    else if (resolution.sessionDead) await current.clear();
     return resolution;
   }
 
