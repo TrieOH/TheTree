@@ -109,6 +109,7 @@ function stubApis(options: { coldStarts?: "ok" | "missing"; grafana?: "ok" | "do
                   { sum: { requests: 150 }, dimensions: { actionType: "write" } },
                   { sum: { requests: 20 }, dimensions: { actionType: "delete" } },
                 ],
+                emailSendingAdaptiveGroups: [{ count: 42 }],
               },
             ],
           },
@@ -205,6 +206,7 @@ describe("syncMetrics", () => {
     expect(usage.workers_requests.used).toBe(8340);
     expect(usage.workers_cpu.used).toBe(34_400);
     expect(usage.kv_writes.used).toBe(170);
+    expect(usage.emails_sent).toMatchObject({ used: 42, included: 3000 });
     expect(payload.cycle.start).toBe("2026-10-24T00:00:00Z");
 
     expect(payload.workers.map((w) => [w.script, w.kind])).toEqual([

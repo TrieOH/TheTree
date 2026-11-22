@@ -13,6 +13,7 @@ export const PLAN = {
   d1_rows_written: { label: "D1 rows written", unit: "rows", included: 50_000_000 },
   kv_reads: { label: "KV reads", unit: "reads", included: 10_000_000 },
   kv_writes: { label: "KV writes, deletes and lists", unit: "operations", included: 1_000_000 },
+  emails_sent: { label: "Emails sent", unit: "emails", included: 3_000 },
 } as const;
 
 export type PlanResource = keyof typeof PLAN;

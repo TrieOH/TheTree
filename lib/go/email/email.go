@@ -121,6 +121,7 @@ func (c *Client) deliver(ctx context.Context, msg Message, images []InlineImage)
 		}
 		span.End()
 	}()
+	defer func() { recordSend(ctx, len(msg.To), err) }()
 	err = checkHeaders(msg)
 	if err != nil {
 		return err
