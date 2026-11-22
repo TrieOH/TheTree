@@ -1,0 +1,662 @@
+# From main to the first request
+
+- **Order:** 2
+- **Summary:** One boot of Informd, traced through the real code, from the first line of main until a request gets its answer.
+
+This page follows one process from start to finish. We use Informd because it's the smallest backend: it only lists the postgres and identityx modules. The other three boot the same way, and they just list more modules.
+
+Every snippet is the real code, from the file named at its top. Some lines are cut to keep the snippets short, and the cuts are marked with `// …`. Open the files next to this page and follow along.
+
+<Callout type="tip" title="See it for yourself">Run `just gen` once, so the generated files this page quotes (`internal/openapi`, `internal/problems`) exist on your machine. Then `just run informd` and watch the boot in the logs.</Callout>
+
+## 0. Before main
+
+Go sets package variables before `main` runs. `lib/backend` uses that to record when the process started, so the boot trace also counts the time Go took to start:
+
+```go
+// lib/go/backend/bootspan.go
+var processStart = time.Now()
+```
+
+Keep that in mind. It comes back in step 4.
+
+## 1. main reads the config
+
+```go
+// api/informd/cmd/informd/main.go
+func main() {
+	cfg := libconfig.Load[config.Config]()
+	errx.Exit(backend.Run(backend.App{
+		Name:   cfg.AppName,
+		Spec:   spec.OpenAPISpec,
+		Server: cfg.Server,
+		CORS:   cfg.CORS,
+		Modules: []backend.Module{
+			postgres.Module(cfg.Postgres, app.Constraints()),
+			identityx.Module(cfg.IdentityX),
+		},
+		Build:    app.Build,
+		Errors:   problems.Mapper(nil),
+		Problems: problems.Docs,
+	}), "informd exited with error")
+}
+```
+
+That's the whole file. Everything Informd is made of shows up here: its config, its spec, the modules it needs, how it's wired (`app.Build`) and how it answers errors (`problems.Mapper`).
+
+The first line reads the environment into a struct. `Config` is built from the shared blocks in `lib/config`, plus anything only Informd needs:
+
+```go
+// api/informd/internal/config/config.go
+type Config struct {
+	libconfig.Server
+	libconfig.IdentityX
+	libconfig.CORS
+	Postgres libconfig.Postgres `envPrefix:"INFORMD_"`
+
+	// Feature fields
+	AppURL string `env:"APP_URL,required"`
+}
+```
+
+```go
+// lib/go/config/config.go
+type Server struct {
+	Port    string `env:"PORT"              envDefault:"8080"`
+	AppName string `env:"APP_NAME,required"`
+	APIURL  string `env:"API_URL,required"`
+	// …
+}
+
+func Load[T any]() T {
+	var cfg T
+	err := env.Parse(&cfg)
+	errx.Exit(err, "error loading config")
+	return cfg
+}
+```
+
+If a `required` variable is missing, `env.Parse` fails, and `errx.Exit` logs one JSON line and exits with code 1. Nothing has started yet: no telemetry, no database. A config problem is the first thing you find out about, and it's the cheapest one to find.
+
+```go
+// lib/go/errx/exit.go
+func Exit(err error, msg string) {
+	if err != nil {
+		slog.New(slog.NewJSONHandler(os.Stderr, nil)).ErrorContext(context.Background(), msg, "err", err)
+		os.Exit(1)
+	}
+}
+```
+
+`errx.Exit` is only used at the very edge of the process. Everything below it returns errors, and they all come back up to this one place.
+
+## 2. What goes into backend.App
+
+Before `Run` is called, Go evaluates the fields of `backend.App`. A few of them are worth a closer look.
+
+**`spec.OpenAPISpec`** is the bundled spec, built into the binary:
+
+```go
+// api/informd/openapi.go
+//go:embed api-spec.gen.yml
+var OpenAPISpec []byte
+```
+
+`api-spec.gen.yml` is `api-spec.yml` with every feature's `spec.yml` and every problem merged into one file, made by `just gen`. The binary carries its own contract with it. The kit reads it at boot, and it's served at `/docs/openapi.yml`.
+
+**`postgres.Module(...)` and `identityx.Module(...)`** don't connect to anything yet. Each one returns a `backend.Module`: a name and an `Open` function to call later.
+
+```go
+// lib/go/backend/backend.go
+type Module struct {
+	Name string
+	Open func(ctx context.Context, d *Deps) (Close, error)
+}
+```
+
+**`app.Constraints()`** maps each named constraint in Informd's schema to the error it should become. It's covered in [Errors](/docs/backend/errors).
+
+**`problems.Mapper(nil)`** and **`problems.Docs`** come from `internal/problems/problems.gen.go`, generated from the spec. The mapper turns any error into its problem. `nil` means Informd has no hand-written cases to add, and Payssage passes `errmap.Problem` here instead.
+
+## 3. backend.Run reads the spec
+
+```go
+// lib/go/backend/backend.go
+func Run(app App) error {
+	if app.Build == nil {
+		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
+	}
+	ops, err := openapispec.Operations(app.Spec)
+	if err != nil {
+		return fmt.Errorf("%s: read the spec: %w", app.Name, err)
+	}
+	httpserver.UseProblems(app.Errors, app.Server.APIURL)
+	httpserver.UseOperationProblems(ops, app.Server.DebugMode)
+	return boot(app, ops)
+}
+```
+
+`openapispec.Operations` parses the embedded spec once and returns every operation with its route, its security, its `x-scope`, its `x-cache` and its `x-problems`. From here on, the spec isn't just documentation. The kit makes decisions with it:
+
+- `UseProblems` installs the mapper, and the base URL every problem's `type` is built on (`{API_URL}/problems/{slug}`).
+- `UseOperationProblems` remembers which problems each operation says it can answer. When an operation answers a problem it didn't list, that's a warning in production and a panic in tests and with `DEBUG_MODE`, so a spec that lies gets caught early.
+
+## 4. boot starts telemetry and the boot span
+
+```go
+// lib/go/backend/lifecycle.go
+func boot(app App, ops []openapispec.Operation) error {
+	validator.SetupValidator()
+
+	ctx := context.Background()
+	shutdownTelemetry, err := telemetry.Start(ctx, app.Name)
+	if err != nil {
+		return fmt.Errorf("%s boot: %w", app.Name, err)
+	}
+
+	bootCtx, bootSpan := startBoot(ctx, app.Name)
+	handler, shutdown, err := start(bootCtx, app, ops)
+	// …
+```
+
+`validator.SetupValidator` sets up the one validator the process uses, with TheTree's own rules (like `uuid7`).
+
+`telemetry.Start` sets up the trace, metric and log exporters that send to Grafana Cloud. Each signal only turns on when an `OTEL_EXPORTER_OTLP_*_ENDPOINT` is set, so locally nothing leaves your machine unless you ask it to. It returns a shutdown function, which `boot` calls last, so the final batch gets flushed.
+
+`startBoot` opens the **boot span**. This is where `processStart` from step 0 comes in:
+
+```go
+// lib/go/backend/bootspan.go
+func startBoot(ctx context.Context, appName string) (context.Context, trace.Span) {
+	ctx, span := telemetry.StartSpan(ctx, "boot",
+		trace.WithTimestamp(processStart),
+		trace.WithAttributes(append(placement(), attribute.String("boot.app", appName))...))
+	_, initSpan := telemetry.StartSpan(ctx, "boot.init", trace.WithTimestamp(processStart))
+	initSpan.End()
+	return ctx, span
+}
+```
+
+The span is backdated to the moment the process started. `boot.init` covers everything up to now: Go's runtime, the config, the telemetry setup. Every later step opens a child of `bootCtx`, so a single trace in Grafana shows the whole cold start, step by step. On Cloudflare, `placement()` adds where the container is running.
+
+## 5. start opens the modules
+
+```go
+// lib/go/backend/backend.go
+func start(ctx context.Context, app App, ops []openapispec.Operation) (http.Handler, func(context.Context) error, error) {
+	d := &Deps{ops: ops}
+	closeAll, err := openModules(ctx, d, app.Modules)
+	if err != nil {
+		return nil, nil, err
+	}
+	// …
+```
+
+`Deps` starts out empty. Each module fills in its own fields:
+
+```go
+// lib/go/backend/backend.go
+type Deps struct {
+	// postgres
+	DB *pgxpool.Pool
+	Tx database.TxRunner
+	// identityx: the SDK client and the auth primitives built on it.
+	IDX *IdentityX
+	// email: the SMTP client (it satisfies email.Sender).
+	Email *email.Client
+	// jobs: enqueue right away; hand over the registry with Serve in Build.
+	Jobs Jobs
+	// …
+}
+```
+
+A field stays `nil` when its module isn't listed. Informd doesn't list email or jobs, so `d.Email` and `d.Jobs` stay `nil`.
+
+`openModules` goes through the list in order. Each module gets its own `boot.module` span. If one fails, the ones already open are closed in reverse, and the boot stops:
+
+```go
+// lib/go/backend/backend.go
+for _, m := range modules {
+	closeFn, err := openModule(ctx, m, d)
+	if err != nil {
+		_ = closeAll(ctx)
+		return nil, fmt.Errorf("open %s: %w", m.Name, err)
+	}
+	if closeFn != nil {
+		closes = append(closes, namedClose{name: m.Name, close: closeFn})
+	}
+}
+```
+
+### The postgres module
+
+```go
+// lib/go/backend/postgres/postgres.go
+Open: func(ctx context.Context, d *backend.Deps) (backend.Close, error) {
+	pool, err := database.SetupDB(ctx, libconfig.DBConnectionConfig(cfg), constraints)
+	if err != nil {
+		return nil, err
+	}
+	d.DB = pool
+	d.Tx = database.NewPGXTxRunner(pool)
+	return func(context.Context) error {
+		database.CloseDB(pool)
+		return nil
+	}, nil
+},
+```
+
+`SetupDB` waits up to 30 seconds for Postgres to answer. That matters on Neon, which can be asleep too. Then it checks that the constraint map from `app.Constraints()` still matches the real schema:
+
+```go
+// lib/go/database/config.go
+db, err := WaitForDB(connectCtx, 30*time.Second, cfg)
+// …
+UseConstraints(constraints)
+// …
+// A registry gap degrades one error to a 500; it must never stop a boot.
+missing, unknown, err := RegistryDrift(checkCtx, db, constraints)
+```
+
+If they've drifted apart, it logs a warning and the boot carries on. The tests are what's meant to catch the drift.
+
+The module never runs migrations. The schema changes only through `just migrate informd`, which keeps schema changes as a deliberate step that someone runs on purpose.
+
+After this, `d.DB` is the connection pool and `d.Tx` runs a function inside a transaction.
+
+### The identityx module
+
+```go
+// lib/go/backend/identityx/identityx.go
+// It makes no call at boot: the JWKS is fetched on the first token to verify.
+Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {
+	client, err := idx.NewClient(libconfig.IdentityXConfig(cfg, o.debug))
+	if err != nil {
+		return nil, err
+	}
+	d.IDX = &backend.IdentityX{
+		Client: client,
+		Auth:   primitives(client, cfg.URL, o),
+	}
+	return backend.NoClose, nil
+},
+```
+
+This module only builds things. It makes no network call. Fetching the signing keys at boot used to wake IdentityX's container every time a consumer cold-started, so now that waits for the first request that carries a token. It holds nothing open, so it returns `NoClose`.
+
+## 6. The router frame
+
+With the modules open, `start` builds the router every backend shares:
+
+```go
+// lib/go/backend/backend.go
+mux, handler := httpserver.NewRouter(httpserver.Config{
+	AppName:            app.Name,
+	CorsAllowedOrigins: app.CORS.AllowedOrigins,
+	OpenAPISpec:        app.Spec,
+	Problems:           app.Problems,
+	// …
+})
+```
+
+`NewRouter` adds the standard middleware stack and the routes every backend has:
+
+```go
+// lib/go/httpserver/httpserver.go
+func NewRouter(cfg Config) (*chi.Mux, http.Handler) {
+	r := chi.NewRouter()
+
+	r.Use(spanRouteNameMiddleware)
+	for _, mw := range stack(cfg) {
+		r.Use(mw)
+	}
+
+	r.Get("/health", health(cfg.AppName))
+	if len(cfg.Problems) > 0 {
+		r.Get("/problems/{slug}", serveProblemDocs(cfg.Problems))
+	}
+	// … GET /docs/openapi.yml serves the embedded spec
+	return r, otelhttp.NewHandler(r, "http.server", opts...)
+}
+```
+
+```go
+// lib/go/httpserver/httpserver.go
+mwStack := []func(http.Handler) http.Handler{
+	realIP(cfg.ClientIPSecret),
+	requestID,
+	logs(telemetry.Log(), skipLog),
+	metrics(collectors, []string{"/health"}),
+	recoverer(telemetry.Log()),
+	timeout(60 * time.Second),
+	maxBodySize(1 << 20),
+	httpcache.Middleware,
+}
+// … then the rate limiter (unless disabled), then CORS
+```
+
+It returns two things. `mux` is the chi router, which `Build` mounts routes on. `handler` is that same router wrapped in OpenTelemetry, and that's what the HTTP server will serve. What each middleware does is in [A request, end to end](/docs/backend/request).
+
+## 7. Build wires Informd
+
+Now the kit hands control to the backend:
+
+```go
+// lib/go/backend/backend.go
+func build(ctx context.Context, app App, d *Deps, r chi.Router) error {
+	ctx, span := telemetry.StartSpan(ctx, "boot.build")
+	defer span.End()
+	err := app.Build(ctx, d, r)
+	if err == nil {
+		err = mountJobs(d, r)
+	}
+	endBootStep(span, err)
+	return err
+}
+```
+
+`app.Build` is the one function that's really Informd's own. It reads like a list, and that's on purpose:
+
+```go
+// api/informd/internal/app/build.go
+func Build(_ context.Context, d *backend.Deps, r chi.Router) error {
+	q := sqlc.New(d.DB)
+	namespacesRepo := namespaces.NewRepo(q)
+	formsRepo := forms.NewRepo(q)
+	stepsRepo := steps.NewRepo(q)
+	// … one line per repo
+	az := authz.New(formsRepo, namespacesRepo)
+
+	srv := &server{
+		// …
+		stepsHandlers: steps.NewHandlers(steps.New(steps.Deps{
+			Forms: formsRepo, Steps: stepsRepo, Namespaces: namespacesRepo, Authz: az,
+		})),
+		// … one entry per feature
+	}
+
+	chains, err := d.Chains(d.IDX.Auth)
+	if err != nil {
+		return err
+	}
+	openapi.Mount(r, srv, chains)
+	return nil
+}
+```
+
+Read it in three parts.
+
+**Repos.** `sqlc.New(d.DB)` is the generated query set over the pool from step 5. Every feature's repo wraps it.
+
+**Features.** Each feature gets a `Deps` literal with exactly the repos it uses. `New` builds its operations, and `NewHandlers` puts HTTP on top of them. The whole dependency graph is here, in order, in plain Go. If you want to know what a feature can touch, look at its `Deps`.
+
+**The server.** `server` is generated (`internal/app/server.gen.go`). It embeds every feature's `Handlers`, so together they satisfy the generated `StrictServerInterface` without any glue code:
+
+```go
+// api/informd/internal/app/server.gen.go
+type (
+	fieldsHandlers     = fields.Handlers
+	formsHandlers      = forms.Handlers
+	namespacesHandlers = namespaces.Handlers
+	responsesHandlers  = responses.Handlers
+	stepsHandlers      = steps.Handlers
+)
+
+type server struct {
+	*fieldsHandlers
+	*formsHandlers
+	*namespacesHandlers
+	// …
+}
+```
+
+### d.Chains turns the spec's security into middleware
+
+`d.Chains` goes through the operations parsed in step 3 and builds the middleware chain for each one, based on its `security` and `x-scope`. It also refuses a spec that can't be enforced: a security scheme with no middleware behind it, or an `x-cache` on anything but a public GET. Those are boot errors, so a spec mistake stops the deploy instead of opening a hole in production.
+
+### openapi.Mount puts the routes on the router
+
+```go
+// api/informd/internal/openapi/mount.gen.go (generated by tools/strictmount)
+func Mount(r chi.Router, s StrictServerInterface, chains map[string][]func(http.Handler) http.Handler, mws ...MiddlewareFunc) {
+	harness := httpserver.StrictStack(chains)
+	// … adapts each harness middleware to the generated types
+	strict := NewStrictHandlerWithOptions(s, stack, StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  httpserver.WriteBodyError,
+		ResponseErrorHandlerFunc: httpserver.WriteError,
+	})
+	HandlerWithOptions(strict, ChiServerOptions{
+		BaseRouter:       r,
+		Middlewares:      append([]MiddlewareFunc{httpserver.OperationSlot}, mws...),
+		ErrorHandlerFunc: httpserver.WriteParamError,
+	})
+}
+```
+
+This is where every route in the spec gets onto the chi router, and where every error handler points to the same `httpserver.WriteError`. The strict middleware is the same list in every backend:
+
+```go
+// lib/go/httpserver/strict.go
+func StrictStack(chains map[string][]func(http.Handler) http.Handler) []StrictMiddlewareFunc {
+	return []StrictMiddlewareFunc{
+		ValidateMiddleware(),
+		AuthDispatch(chains),
+		TraceMiddleware(),
+		operationMiddleware(),
+	}
+}
+```
+
+After `Build`, `mountJobs` would mount `/_jobs` if the jobs module were listed. It also refuses to boot a backend that lists jobs but never handed over its registry, because that backend would drop every job without anyone noticing. Informd has no jobs, so this does nothing.
+
+## 8. The port opens
+
+Back in `boot`:
+
+```go
+// lib/go/backend/lifecycle.go
+srv := newServer(handler, app.Server.Port)
+stopCtx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+defer stop()
+go func() {
+	<-stopCtx.Done()
+	drainCtx, cancel := context.WithTimeout(ctx, shutdownTimeout)
+	defer cancel()
+	_ = srv.Shutdown(drainCtx)
+}()
+
+// The boot ends once the port is bound: from then on the platform's
+// readiness check gets an answer.
+ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", srv.Addr)
+if err != nil {
+	failBoot(bootSpan, err)
+	serveErr = err
+} else {
+	bootSpan.End()
+	// …
+	telemetry.Log().InfoContext(ctx, app.Name+" listening", slog.String("port", app.Server.Port))
+	serveErr = srv.Serve(ln)
+}
+```
+
+The boot span ends as soon as the port is bound, because that's when the container can actually answer. You'll see `informd listening` in the logs, and `srv.Serve` blocks until shutdown.
+
+If anything from step 4 on failed, `failBoot` marks the boot span failed and logs why, and then telemetry gets up to 5 seconds to flush. A container that dies during boot leaves no other trace, so that log line is the only way Grafana can tell you what happened.
+
+## 9. The first request
+
+The container is up. Someone creates a step:
+
+```
+POST /forms/3f6c…/steps
+Authorization: Bearer eyJ…
+{"title": "Personal Info"}
+```
+
+Here is the path it takes, outermost layer first.
+
+### The router frame
+
+`otelhttp` starts the request's root span. `spanRouteNameMiddleware` renames it to `POST /forms/{form_id}/steps` once chi has matched the route. Then the stack from step 6 runs: real IP, request ID, logs, metrics, panic recovery, a 60 second timeout, a 1 MB body limit, cache headers, rate limit and CORS.
+
+### The generated route
+
+chi finds the route that `Mount` registered:
+
+```go
+// api/informd/internal/openapi/server.gen.go
+r.Post(options.BaseURL+"/forms/{form_id}/steps", wrapper.CreateStep)
+```
+
+The wrapper parses the path parameter. A bad UUID is answered here, through `httpserver.WriteParamError`, before any of Informd's code runs:
+
+```go
+// api/informd/internal/openapi/server.gen.go
+err = runtime.BindStyledParameterWithOptions("simple", "form_id", chi.URLParam(r, "form_id"), &formId, /* … */)
+if err != nil {
+	siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "form_id", Err: err})
+	return
+}
+```
+
+Then `OperationSlot` puts an empty slot on the request context, which the strict middleware fills with the operation's ID. After that, the strict handler decodes the body into a typed request object:
+
+```go
+// api/informd/internal/openapi/server.gen.go
+func (sh *strictHandler) CreateStep(w http.ResponseWriter, r *http.Request, formId FormID) {
+	var request CreateStepRequestObject
+	request.FormId = formId
+
+	var body CreateStepJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStep(ctx, request.(CreateStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+	// …
+```
+
+### The strict middleware
+
+The loop wraps the handler in the `StrictStack` list in order, so the last one in the list runs first:
+
+1. `operationMiddleware` writes `CreateStep` into the slot, so a problem written later knows which operation answered it.
+2. `TraceMiddleware` opens a span named `CreateStep`. Everything below shows up inside it.
+3. `AuthDispatch` runs the chain `d.Chains` built for `CreateStep`. It verifies the bearer token and stores the caller's identity on the context. This is the first token this process has seen, so the identityx module fetches IdentityX's signing keys now, as promised in step 5.
+4. `ValidateMiddleware` checks the body against its `validate` tags.
+
+If any of these rejects the request, the error goes to `WriteError`, and Informd's own code never runs.
+
+### Informd's code
+
+Now the request reaches the feature. The handler turns the generated request into the operation's input:
+
+```go
+// api/informd/internal/features/steps/handlers.go
+func (h *Handlers) CreateStep(ctx context.Context, req openapi.CreateStepRequestObject) (openapi.CreateStepResponseObject, error) {
+	step, err := h.ops.Create(ctx, models.CreateFormStepInput{
+		FormID:       req.FormId,
+		Title:        req.Body.Title,
+		Description:  req.Body.Description,
+		PositionHint: req.Body.PositionHint,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateStep201JSONResponse(*step), nil
+}
+```
+
+The operation holds the rules. It validates the step, checks that the caller is an admin of the form, then asks the repo to save it:
+
+```go
+// api/informd/internal/features/steps/operations.go
+func (o *Operations) Create(ctx context.Context, payload models.CreateFormStepInput) (*models.Step, error) {
+	step := &models.Step{
+		FormID:       payload.FormID,
+		Title:        payload.Title,
+		Description:  payload.Description,
+		PositionHint: payload.PositionHint,
+	}
+	err := validator.Validate(step)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = o.Authz.Form(ctx, payload.FormID, models.FormMemberRoleAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := o.Steps.Create(ctx, *step)
+	if err != nil {
+		return nil, err
+	}
+
+	return created, nil
+}
+```
+
+The repo calls the sqlc query and maps the row to the domain type:
+
+```go
+// api/informd/internal/features/steps/repo.go
+func (repo *Repo) Create(ctx context.Context, toCreate models.Step) (*models.Step, error) {
+	sqlcStep, err := repo.db(ctx).CreateStep(ctx, sqlc.CreateStepParams{
+		FormID:       toCreate.FormID,
+		Title:        toCreate.Title,
+		Description:  toCreate.Description,
+		PositionHint: toCreate.PositionHint,
+	})
+	return database.One(sqlcStep, err, repo.dbe, mapStep)
+}
+```
+
+```sql
+-- api/informd/db/queries/steps.sql
+-- name: CreateStep :one
+INSERT INTO steps (form_id, title, description, position_hint)
+VALUES (@form_id, @title, @description, @position_hint)
+    RETURNING *;
+```
+
+`repo.db(ctx)` uses the transaction on the context if there is one, and the pool otherwise. `database.One` either maps the row or turns the driver's error into one of Informd's named errors. The pgx tracer records the query as a span of its own, so the repo never opens one.
+
+### The way back out
+
+The handler returns `CreateStep201JSONResponse`, and the generated code writes it as a `201` with the step as JSON. If any layer had returned an error instead, it would have gone up to the strict handler's `ResponseErrorHandlerFunc`, which is `httpserver.WriteError`. That turns it into a problem through the mapper from step 1.
+
+The spans close in reverse order, the log and metrics middleware record the request, and the response leaves the container.
+
+## 10. Shutdown
+
+When Cloudflare puts the container to sleep, it sends `SIGTERM`, and the goroutine from step 8 wakes up:
+
+1. `srv.Shutdown` stops taking new connections and gives in-flight requests up to 10 seconds to finish.
+2. `srv.Serve` returns, and `boot` calls the shutdown function that `start` returned. It closes every module in reverse order, so the database pool closes last of all.
+3. `telemetry.Shutdown` flushes the last traces, metrics and logs.
+4. `Run` returns `nil`, `errx.Exit` does nothing, and the process exits with 0.
+
+The next request starts again from step 0.
+
+## Where each step lives
+
+| Step | File |
+| --- | --- |
+| Config | `lib/go/config/config.go`, `api/<api>/internal/config/config.go` |
+| `main` | `api/<api>/cmd/<api>/main.go` |
+| Spec parsing, `Run`, modules, `Deps` | `lib/go/backend/backend.go` |
+| Telemetry, boot span, serving, shutdown | `lib/go/backend/lifecycle.go`, `lib/go/backend/bootspan.go` |
+| Modules | `lib/go/backend/postgres`, `identityx`, `email`, `jobs` |
+| Router frame | `lib/go/httpserver/httpserver.go` |
+| Wiring | `api/<api>/internal/app/build.go` |
+| Routes and strict server | `api/<api>/internal/openapi/*.gen.go`, `lib/go/httpserver/strict.go` |
