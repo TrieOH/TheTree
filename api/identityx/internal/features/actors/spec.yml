@@ -55,7 +55,7 @@ paths:
               auth_method: api_key
               type: service
               email: checkout@example.com
-      x-problems: [400, 401, 404, 500, 503]
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '201':
           description: Actor created
@@ -79,7 +79,7 @@ paths:
       parameters:
         - $ref: '../../../api-spec.yml#/components/parameters/ProjectID'
         - $ref: '../../../api-spec.yml#/components/parameters/ActorID'
-      x-problems: [401, 404, 500, 503]
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: The requested actor
@@ -111,7 +111,7 @@ paths:
             x-go-type: string
             type: string
             format: email
-      x-problems: [401, 404, 500, 503]
+      x-problems: [401, 403, 404, 500, 503]
       responses:
         '200':
           description: The requested actor

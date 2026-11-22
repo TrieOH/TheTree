@@ -56,7 +56,12 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 		return errs.ErrAddOwnerToProject
 	}
 
-	err = o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
+	// Granting owner takes an owner; admins grant member and admin.
+	minRole := models.ProjectRoleAdmin
+	if payload.Role == models.ProjectRoleOwner {
+		minRole = models.ProjectRoleOwner
+	}
+	err = o.Authz.CheckProject(ctx, payload.ProjectID, minRole)
 	if err != nil {
 		return err
 	}
@@ -190,12 +195,20 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveProj
 		return err
 	}
 
-	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
+	member, err := o.Projects.GetMember(ctx, actor.ID, project.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
 		return errs.ErrNotProjectMember
+	}
+
+	// Removing an admin or an owner takes an owner.
+	if member.Role != models.ProjectRoleMember {
+		err = o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleOwner)
+		if err != nil {
+			return err
+		}
 	}
 
 	return o.Projects.RemoveMember(ctx, actor.ID, payload.ProjectID)

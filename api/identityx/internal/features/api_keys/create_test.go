@@ -6,6 +6,7 @@ import (
 	"testing"
 	"uuid"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -18,6 +19,7 @@ import (
 // testOps bundles the per-test mockio mocks backing the operations.
 type testOps struct {
 	apiKeys  ports.APIKeysRepo
+	actors   ports.ActorRepo
 	projects ports.ProjectRepo
 	orgs     ports.OrganizationRepo
 	ops      *Operations
@@ -31,6 +33,7 @@ func newTestOps(t *testing.T, project *models.Project, role models.ProjectRole) 
 	mock.SetUp(t)
 	o := &testOps{
 		apiKeys:  mock.Mock[ports.APIKeysRepo](),
+		actors:   mock.Mock[ports.ActorRepo](),
 		projects: mock.Mock[ports.ProjectRepo](),
 		orgs:     mock.Mock[ports.OrganizationRepo](),
 	}
@@ -47,7 +50,7 @@ func newTestOps(t *testing.T, project *models.Project, role models.ProjectRole) 
 	}
 	o.ops = New(Deps{
 		HmacSecret:   []byte("test-hmac-secret"),
-		Actors:       mock.Mock[ports.ActorRepo](),
+		Actors:       o.actors,
 		APIKeys:      o.apiKeys,
 		Capabilities: mock.Mock[ports.CapabilityRepo](),
 		Projects:     o.projects,
@@ -138,11 +141,17 @@ func TestCreateAPIKeyImpersonationMemberForbidden(t *testing.T) {
 	}
 }
 
+// stubSubject makes the actor repo resolve the key's subject.
+func stubSubject(o *testOps, subject *models.Actor) {
+	mock.When(o.actors.GetByID(mock.AnyContext(), mock.Equal(subject.ID))).ThenReturn(subject, nil)
+}
+
 func TestCreateAPIKeyImpersonationAdminPasses(t *testing.T) {
 	project := projectFixture()
 	o := newTestOps(t, project, models.ProjectRoleAdmin)
 	stubCreate(o)
 	subject := uuid.New()
+	stubSubject(o, &models.Actor{ID: subject, ProjectID: &project.ID, Type: models.ServiceActorType})
 
 	key, _, err := o.ops.Create(ctxAs(uuid.New()), withSubject(baseInput(project.ID), subject))
 	if err != nil {
@@ -150,5 +159,33 @@ func TestCreateAPIKeyImpersonationAdminPasses(t *testing.T) {
 	}
 	if key.SubjectID != subject {
 		t.Fatalf("key subject = %v, want %v", key.SubjectID, subject)
+	}
+}
+
+// A key acts as its subject, so an admin can't mint one for anyone outside
+// the project's own service and machine actors.
+func TestCreateAPIKeySubjectRefused(t *testing.T) {
+	project := projectFixture()
+	other := uuid.New()
+	cases := []struct {
+		name    string
+		subject models.Actor
+		want    error
+	}{
+		{"platform actor", models.Actor{Type: models.HumanActorType}, errs.ErrActorOutsideProject},
+		{"another project's service", models.Actor{ProjectID: &other, Type: models.ServiceActorType}, errs.ErrActorOutsideProject},
+		{"human of the project", models.Actor{ProjectID: &project.ID, Type: models.HumanActorType}, libauthz.ErrInsufficientRole},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			o := newTestOps(t, project, models.ProjectRoleOwner)
+			tc.subject.ID = uuid.New()
+			stubSubject(o, &tc.subject)
+
+			_, _, err := o.ops.Create(ctxAs(uuid.New()), withSubject(baseInput(project.ID), tc.subject.ID))
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("expected %v, got %v", tc.want, err)
+			}
+		})
 	}
 }

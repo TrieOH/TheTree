@@ -14,6 +14,9 @@ import (
 	"lib/telemetry"
 	"log/slog"
 	"time"
+	"uuid"
+
+	libauthz "lib/authz"
 )
 
 type Deps struct {
@@ -108,6 +111,24 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInpu
 	return created, generated.Raw, nil
 }
 
+// requireKeySubject limits whom a key can be minted for besides the caller:
+// a service or machine actor of the same project. A key acts as its subject,
+// so minting one for anyone else (a platform admin, a human, an actor of
+// another project) would let the caller act as them.
+func (o *Operations) requireKeySubject(ctx context.Context, subjectID, projectID uuid.UUID) error {
+	subject, err := o.Actors.GetByID(ctx, subjectID)
+	if err != nil {
+		return err
+	}
+	if subject.ProjectID == nil || *subject.ProjectID != projectID {
+		return errs.ErrActorOutsideProject
+	}
+	if subject.Type == models.HumanActorType {
+		return libauthz.ErrInsufficientRole
+	}
+	return nil
+}
+
 func (o *Operations) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *apikeys.GeneratedAPIKey, error) {
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
@@ -124,7 +145,11 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 	}
 
 	actorID := ident.Sub.ID
-	if payload.SubjectID != nil {
+	if payload.SubjectID != nil && *payload.SubjectID != ident.Sub.ID {
+		err = o.requireKeySubject(ctx, *payload.SubjectID, project.ID)
+		if err != nil {
+			return nil, nil, err
+		}
 		actorID = *payload.SubjectID
 	}
 

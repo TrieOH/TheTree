@@ -35,6 +35,20 @@ type Operations struct{ Deps }
 
 func New(d Deps) *Operations { return &Operations{Deps: d} }
 
+// projectInOrg returns the project when it belongs to the organization. An
+// org route that names a project of another org (or a standalone one) gets
+// not found: an org role reaches only the org's own projects.
+func (o *Operations) projectInOrg(ctx context.Context, orgID, projectID uuid.UUID) (*models.Project, error) {
+	project, err := o.Projects.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if project.OrganizationID == nil || *project.OrganizationID != orgID {
+		return nil, errs.ErrProjectNotFound
+	}
+	return project, nil
+}
+
 func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizationMemberInput) error {
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
@@ -59,7 +73,12 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 		return errs.ErrAddOwnerToOrg
 	}
 
-	err = o.Authz.CheckOrg(ctx, payload.OrganizationID, models.OrganizationRoleAdmin)
+	// Granting owner takes an owner; admins grant member and admin.
+	minRole := models.OrganizationRoleAdmin
+	if payload.Role == models.OrganizationRoleOwner {
+		minRole = models.OrganizationRoleOwner
+	}
+	err = o.Authz.CheckOrg(ctx, payload.OrganizationID, minRole)
 	if err != nil {
 		return err
 	}
@@ -110,7 +129,17 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 		return errs.ErrOrgOwnerAlreadyInProject
 	}
 
-	err = o.Authz.CheckOrg(ctx, org.ID, models.OrganizationRoleAdmin)
+	// Granting owner takes an org owner; org admins grant member and admin.
+	minRole := models.OrganizationRoleAdmin
+	if payload.Role == models.ProjectRoleOwner {
+		minRole = models.OrganizationRoleOwner
+	}
+	err = o.Authz.CheckOrg(ctx, org.ID, minRole)
+	if err != nil {
+		return err
+	}
+
+	project, err := o.projectInOrg(ctx, org.ID, payload.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -121,11 +150,6 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 	}
 	if err == nil {
 		return errs.ErrOrgMemberAlreadyInProject
-	}
-
-	project, err := o.Projects.GetByID(ctx, payload.ProjectID)
-	if err != nil {
-		return err
 	}
 
 	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
@@ -251,7 +275,7 @@ func (o *Operations) GetActorByID(ctx context.Context, id, projectID uuid.UUID) 
 		return nil, err
 	}
 
-	if actor.ProjectID != nil && *actor.ProjectID != projectID {
+	if actor.ProjectID == nil || *actor.ProjectID != projectID {
 		return nil, errs.ErrActorOutsideProject
 	}
 
@@ -310,7 +334,11 @@ func (o *Operations) ListProjectActors(ctx context.Context, projectID uuid.UUID)
 }
 
 func (o *Operations) ListOrgProjectMembers(ctx context.Context, orgID, projectID uuid.UUID) ([]models.ProjectMember, error) {
-	err := o.Authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
+	_, err := o.projectInOrg(ctx, orgID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	err = o.Authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}
@@ -364,12 +392,20 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrga
 		return err
 	}
 
-	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
+	member, err := o.Orgs.GetMember(ctx, actor.ID, org.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
 		return errs.ErrNotOrgMember
+	}
+
+	// Removing an admin or an owner takes an owner.
+	if member.Role != models.OrganizationRoleMember {
+		err = o.Authz.CheckOrg(ctx, org.ID, models.OrganizationRoleOwner)
+		if err != nil {
+			return err
+		}
 	}
 
 	return o.Orgs.RemoveMember(ctx, actor.ID, payload.OrganizationID)
@@ -404,6 +440,14 @@ func (o *Operations) RemoveProjectMember(ctx context.Context, payload models.Rem
 		return err
 	}
 
+	project, err := o.projectInOrg(ctx, org.ID, payload.ProjectID)
+	if err != nil {
+		return err
+	}
+	if actor.ID == project.OwnerID {
+		return errs.ErrRemoveOrgOwnerFromProject
+	}
+
 	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
@@ -412,17 +456,20 @@ func (o *Operations) RemoveProjectMember(ctx context.Context, payload models.Rem
 		return errs.ErrRemoveOrgMemberFromProject
 	}
 
-	project, err := o.Projects.GetByID(ctx, payload.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
+	member, err := o.Projects.GetMember(ctx, actor.ID, project.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
 		return errs.ErrNotProjectMember
+	}
+
+	// Removing a project admin or owner takes an org owner.
+	if member.Role != models.ProjectRoleMember {
+		err = o.Authz.CheckOrg(ctx, org.ID, models.OrganizationRoleOwner)
+		if err != nil {
+			return err
+		}
 	}
 
 	return o.Projects.RemoveMember(ctx, actor.ID, payload.ProjectID)
