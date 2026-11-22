@@ -1,0 +1,41 @@
+name: Go release binary
+description: >
+  Builds the service's binary and the healthcheck probe, static for
+  linux/amd64 with the flags the service's Dockerfile uses, from the code
+  this job generated and tested, and uploads them as the run's release-bin
+  artifact. publish puts exactly these files in the image (api/Dockerfile.release)
+  instead of compiling again. Requires setup/go and go/generate.
+inputs:
+  dir:
+    description: the service module, e.g. api/identityx
+    required: true
+  service:
+    description: the service, e.g. identityx (its main package is cmd/<service>)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+      env:
+        SERVICE: ${{ inputs.service }}
+        CGO_ENABLED: '0'
+        GOOS: linux
+        GOARCH: amd64
+      run: |
+        set -euo pipefail
+        OUT="$RUNNER_TEMP/release-bin"
+        mkdir -p "$OUT"
+        go build -o "$OUT/server" "./cmd/$SERVICE"
+        go build -o "$OUT/healthcheck" tools/healthcheck
+        ls -l "$OUT"
+
+    - name: Upload
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: release-bin
+        path: ${{ runner.temp }}/release-bin
+        if-no-files-found: error
+        retention-days: 1
+        overwrite: true

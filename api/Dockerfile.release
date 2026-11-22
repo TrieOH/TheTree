@@ -1,0 +1,14 @@
+# The release image every backend ships: the binary and healthcheck probe the
+# deploy's checks job built and tested (.github/actions/go/release-binary),
+# nothing compiled again here. The build context is that job's release-bin
+# artifact. Each service's own Dockerfile still builds from source, for
+# compose and local runs; its runtime stage matches this one.
+FROM gcr.io/distroless/static-debian12:nonroot
+WORKDIR /app
+COPY --chmod=755 server ./server
+COPY --chmod=755 healthcheck /usr/local/bin/healthcheck
+USER nonroot:nonroot
+EXPOSE 8080
+ENV PORT=8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
+CMD ["./server"]

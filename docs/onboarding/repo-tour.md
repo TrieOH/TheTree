@@ -37,7 +37,7 @@ Every API has the same layout. Using `api/identityx`:
 | `ports/` | Interfaces a feature uses to reach another feature's data |
 | `errs/` | Named errors, each mapped to an HTTP problem |
 | `cloudflare/` | The Worker that runs this API in production |
-| `Dockerfile` | The image the Worker runs |
+| `Dockerfile` | The image built from source, for compose and local runs. Releases ship `api/Dockerfile.release` instead, with the binary the deploy's checks tested. |
 
 A feature folder, using `internal/features/projects`:
 

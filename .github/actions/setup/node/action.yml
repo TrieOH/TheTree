@@ -12,7 +12,7 @@ description: >
   workspace or one filter.
 inputs:
   install:
-    description: "run `pnpm install --frozen-lockfile` (true/false)"
+    description: "run `pnpm install --frozen-lockfile`: true, false, or background (wait with `.github/scripts/bg wait pnpm-install`)"
     required: false
     default: "false"
   filter:
@@ -62,19 +62,17 @@ runs:
       shell: bash
       env:
         FILTER: ${{ inputs.filter }}
-      run: |
-        set -euo pipefail
-        LOG="$RUNNER_TEMP/pnpm-install.log"
-        pnpm install --frozen-lockfile ${FILTER:+--filter "$FILTER..."} 2>&1 | tee "$LOG"
-        # last progress line: "Progress: resolved N, reused R, downloaded D, added A, done"
-        LINE=$(grep -oE 'resolved [0-9]+, reused [0-9]+, downloaded [0-9]+' "$LOG" | tail -1 || true)
-        if [ -n "$LINE" ]; then
-          read -r RESOLVED REUSED DOWNLOADED <<< "$(grep -oE '[0-9]+' <<< "$LINE" | xargs)"
-          M="$GITHUB_WORKSPACE/.github/scripts/metric"
-          "$M" setup/node pnpm_resolved "$RESOLVED"
-          "$M" setup/node pnpm_reused "$REUSED"
-          "$M" setup/node pnpm_downloaded "$DOWNLOADED"
-        fi
+        HERE: ${{ github.action_path }}
+      run: '"$HERE/install.sh" "$FILTER"'
+
+    # wait for it with `.github/scripts/bg wait pnpm-install`
+    - name: Start install in the background
+      if: inputs.install == 'background'
+      shell: bash
+      env:
+        FILTER: ${{ inputs.filter }}
+        HERE: ${{ github.action_path }}
+      run: '"$GITHUB_WORKSPACE/.github/scripts/bg" start pnpm-install "$HERE/install.sh" "$FILTER"'
 
     - name: Report
       shell: bash

@@ -2,7 +2,8 @@ name: Service release
 # Called by deploy.yml for <service>/v* tags. checks: parse the tag, then the
 # ordered R-chain (generate → compile → unit → lint → trivy → integration;
 # express lane stops after unit); trivy scans in the background from right
-# after generate. publish: build the image once, push it to GHCR by digest,
+# after generate; then the release binary, built from the code just tested.
+# publish: put that binary in the image (no compile there), push it to GHCR,
 # ship that same image to Cloudflare.
 
 on:
@@ -52,8 +53,11 @@ jobs:
       - name: Setup Go tools
         uses: ./.github/actions/setup/go-tools
 
+      # stamps the bundled spec's info.version, as the image used to
       - name: Generate
         uses: ./.github/actions/go/generate
+        env:
+          SPEC_VERSION: ${{ steps.tag.outputs.version }}
         with:
           dir: ${{ steps.tag.outputs.dir }}
 
@@ -96,6 +100,13 @@ jobs:
           dir: ${{ steps.tag.outputs.dir }}
           mode: integration
 
+      # only once every check passed: what publish ships is what was tested
+      - name: Release binary
+        uses: ./.github/actions/go/release-binary
+        with:
+          dir: ${{ steps.tag.outputs.dir }}
+          service: ${{ steps.tag.outputs.artifact }}
+
       - name: Flush metrics
         id: metrics
         if: always()
@@ -133,13 +144,36 @@ jobs:
         if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/setup/versions
 
+      # Background work, so it overlaps the build and the smoke test: the
+      # Worker package's install (wrangler and what the Worker bundles) and
+      # the smoke test's Postgres image.
+      - name: Setup Node + pnpm
+        if: steps.guard.outputs.superseded != 'true'
+        uses: ./.github/actions/setup/node
+        with:
+          install: background
+          filter: ./api/${{ env.SERVICE }}/cloudflare
+
+      - name: Prefetch Postgres
+        if: steps.guard.outputs.superseded != 'true'
+        uses: ./.github/actions/release/smoke-boot
+        with:
+          mode: prefetch
+
+      - name: Download release binary
+        if: steps.guard.outputs.superseded != 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-bin
+          path: ${{ runner.temp }}/release-bin
+
       # Registry: GHCR, auth via the job's own GITHUB_TOKEN. The build runs
       # through Blacksmith's cached builder (docs.blacksmith.sh/blacksmith-caching/docker-builds).
       - name: Setup Docker builder
         if: steps.guard.outputs.superseded != 'true'
         uses: useblacksmith/setup-docker-builder@06dd9c83a5d541274d2e3ac67625560979275267 # v2.3.0
         with:
-          cache-key: api/${{ env.SERVICE }}/Dockerfile
+          cache-key: release/${{ env.SERVICE }}
 
       - name: Login to GHCR
         if: steps.guard.outputs.superseded != 'true'
@@ -149,6 +183,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The image is checks' release binary in distroless (api/Dockerfile.release),
+      # also loaded into this job's Docker for the smoke test and the
+      # Cloudflare push.
       - name: Build & push image
         id: img
         if: steps.guard.outputs.superseded != 'true'
@@ -156,13 +193,11 @@ jobs:
         # own build reporting; it runs whatever DOCKER_BUILD_SUMMARY says.
         uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
         with:
-          context: .
-          file: api/${{ env.SERVICE }}/Dockerfile
-          build-args: |
-            GO_VERSION=${{ env.GO_VERSION }}
-            SPEC_VERSION=${{ env.VERSION }}
+          context: ${{ runner.temp }}/release-bin
+          file: api/Dockerfile.release
           tags: ${{ env.IMAGE }}
           push: true
+          load: true
 
       # the digest output can be a full ref (registry/repo@sha256:…); keep
       # the bare digest, the Cloudflare step pulls the image by it
@@ -178,6 +213,19 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "[release] pushed $IMAGE → $DIGEST"
 
+      # in the background, during the smoke test; a failed smoke test means
+      # the image sits unused in Cloudflare's registry, nothing deploys
+      - name: Push to Cloudflare's registry
+        if: steps.guard.outputs.superseded != 'true'
+        uses: ./.github/actions/deploy/container
+        with:
+          mode: push
+          service: ${{ env.SERVICE }}
+          version: ${{ env.VERSION }}
+          image: ${{ env.IMAGE }}
+          api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       # The image must boot before it ships: a throwaway Postgres, a stub
       # for the other services, /health within a minute. Nothing in prod is
       # touched.
@@ -188,22 +236,14 @@ jobs:
           service: ${{ env.SERVICE }}
           image: ${{ env.IMAGE }}
 
-      # wrangler only: the service's Worker package, not the whole workspace
-      - name: Setup Node + pnpm
-        if: steps.guard.outputs.superseded != 'true'
-        uses: ./.github/actions/setup/node
-        with:
-          install: 'true'
-          filter: ./api/${{ env.SERVICE }}/cloudflare
-
       - name: Deploy to Cloudflare
         id: deploy
         if: steps.guard.outputs.superseded != 'true'
         uses: ./.github/actions/deploy/container
         with:
+          mode: deploy
           service: ${{ env.SERVICE }}
           version: ${{ env.VERSION }}
-          digest: ${{ steps.digest.outputs.digest }}
           api-token: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
