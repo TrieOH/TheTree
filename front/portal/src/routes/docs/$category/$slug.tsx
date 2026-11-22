@@ -1,5 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
-import { PageHeader } from "@trieoh/ui-solid";
+import { Badge, PageHeader } from "@trieoh/ui-solid";
 import { Dynamic } from "@solidjs/web";
 import { Show } from "solid-js";
 import { findCategory, findDoc, neighboursOf } from "@/features/docs/catalog";
@@ -8,6 +8,8 @@ import { DocPager } from "@/features/docs/DocPager";
 import { DocStatus } from "@/features/docs/DocStatus";
 import { formatDate } from "@/features/docs/adr";
 import { AdrFacts, SupersededNotice } from "@/features/docs/ui/AdrFacts";
+import { IncidentFacts } from "@/features/docs/ui/IncidentFacts";
+import { SEVERITY_BADGE, severityLabel, severityOf } from "@/features/docs/incident";
 
 export const Route = createFileRoute("/docs/$category/$slug")({
   loader: async ({ params }) => {
@@ -33,6 +35,13 @@ function DocPage() {
           <Show when={data().meta.number}>
             <span class="font-mono text-[12px]">{data().meta.number}</span>
           </Show>
+          <Show when={severityOf(data().meta)}>
+            {(level) => (
+              <Badge variant={SEVERITY_BADGE[level()]}>
+                {severityLabel(level())}
+              </Badge>
+            )}
+          </Show>
           <DocStatus status={data().meta.status} />
           <Show when={data().meta.date}>
             <span>
@@ -52,6 +61,9 @@ function DocPage() {
           <SupersededNotice meta={data().meta} />
           <AdrFacts meta={data().meta} />
         </div>
+      </Show>
+      <Show when={data().category.id === "incident-reports"}>
+        <IncidentFacts meta={data().meta} />
       </Show>
       <article class="prose-doc">
         {/* Dynamic, so moving to another doc swaps the body, not just the header. */}
