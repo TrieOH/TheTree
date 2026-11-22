@@ -7,11 +7,14 @@
 //     fails outright or answers 5xx is tried again a couple of times, so a
 //     blip on the way to the queue doesn't lose the job.
 //   - Handler serves Path: it receives one Envelope per POST, from the queue
-//     consumer or a scheduler, and dispatches it. 2xx means done; 5xx means
-//     the job failed and should be retried; 4xx means it never will succeed.
+//     consumer or a scheduler, with the delivery's attempt and dead-letter
+//     flag in headers, hands it to jobs.Registry.Handle and answers with the
+//     Outcome (done, retry after N seconds, drop). The consumer applies it
+//     and decides nothing itself.
 //
-// The Envelope is the whole contract, so any queue that can POST JSON can sit
-// in between. Mount Handler only where the outside world cannot reach it.
+// The Envelope and the Outcome are the whole contract, so any queue that can
+// POST JSON can sit in between. Mount Handler only where the outside world
+// cannot reach it.
 package httpjobs
 
 import (
@@ -22,13 +25,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	"lib/jobs"
-	"lib/telemetry"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
@@ -40,6 +41,14 @@ const Path = "/_jobs"
 // DelayHeader carries a delayed job's delay, in whole seconds, to the queue
 // producer.
 const DelayHeader = "Job-Delay-Seconds"
+
+// AttemptHeader carries a delivery's attempt, 1 on the first, from the
+// queue consumer.
+const AttemptHeader = "Job-Attempt"
+
+// DeadHeader is "true" on a delivery from the dead-letter queue: the queue
+// gave up redelivering the job, and only its give-up runs.
+const DeadHeader = "Job-Dead"
 
 // SecretHeader carries the jobs secret on a delivery to Path, from the
 // queue consumer.
@@ -133,9 +142,18 @@ func (e *Enqueuer) send(ctx context.Context, body []byte, delay time.Duration) (
 	return false, nil
 }
 
-// Handler dispatches the posted Envelope into registry. With a secret set,
-// a delivery must carry it in SecretHeader or it's refused (401); the queue
-// consumer sends it.
+// Outcome is Handler's answer to a delivery: the jobs.Result, which the
+// queue consumer applies as it stands.
+type Outcome struct {
+	Outcome           jobs.Outcome `json:"outcome"`
+	RetryAfterSeconds int64        `json:"retry_after_seconds,omitempty"`
+}
+
+// Handler hands the posted Envelope to registry.Handle, with the delivery's
+// AttemptHeader and DeadHeader, and answers 200 with its Outcome. With a
+// secret set, a delivery must carry it in SecretHeader or it's refused
+// (401); the queue consumer sends it. A body that isn't an Envelope is a
+// 400, which the consumer drops.
 func Handler(registry *jobs.Registry, secret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -157,15 +175,17 @@ func Handler(registry *jobs.Registry, secret string) http.Handler {
 			http.Error(w, "decode envelope", http.StatusBadRequest)
 			return
 		}
-		err = registry.Dispatch(r.Context(), env)
-		switch {
-		case errors.Is(err, jobs.ErrUnknownKind):
-			http.Error(w, "unknown job kind", http.StatusBadRequest)
-		case err != nil:
-			telemetry.Log().ErrorContext(r.Context(), "job failed", slog.String("kind", env.Kind), telemetry.Err(err))
-			http.Error(w, "job failed", http.StatusInternalServerError)
-		default:
-			w.WriteHeader(http.StatusNoContent)
+		attempt, _ := strconv.Atoi(r.Header.Get(AttemptHeader))
+		res := registry.Handle(r.Context(), jobs.Delivery{
+			Envelope: env,
+			Attempt:  attempt,
+			Dead:     r.Header.Get(DeadHeader) == "true",
+		})
+		out := Outcome{Outcome: res.Outcome}
+		if res.Outcome == jobs.Retry {
+			out.RetryAfterSeconds = int64((res.After + time.Second - 1) / time.Second)
 		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
 	})
 }

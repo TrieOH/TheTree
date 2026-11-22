@@ -41,8 +41,10 @@
 
 	// Background jobs: the container enqueues through the producer (delayed
 	// jobs carry their delay), the consumer delivers each job back to the
-	// container's /events. Retries back off per message (src/index.ts); a
-	// job out of retries lands on the dead-letter queue, kept for inspection.
+	// container's /_jobs and applies the outcome it answers. Retries and
+	// give-ups are the container's (lib/jobs.DefaultPolicy, 10 attempts);
+	// max_retries stays above that, so the dead-letter queue, kept for
+	// inspection, only catches jobs the container never answered.
 	"queues": {
 		"producers": [{ "queue": "univents-jobs", "binding": "JOBS" }],
 		"consumers": [

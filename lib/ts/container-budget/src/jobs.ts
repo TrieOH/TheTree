@@ -2,8 +2,10 @@ import { PURGE_RETRY_SECONDS, cached, isPurgeJob } from "./edge";
 
 // The Worker half of background jobs (ADR-0011): the container enqueues
 // through the Worker, the queue hands each job back to the Worker, and the
-// Worker delivers it to the container's job endpoint. Every API Worker with
-// jobs uses these; what's left in each Worker is what only that API does.
+// Worker delivers it to the container's job endpoint. The Worker is only a
+// carrier: retries, backoff and give-ups are decided by the container
+// (lib/jobs.Registry.Handle) and come back as an Outcome. Every API Worker
+// with jobs uses these; what's left in each Worker is what only that API does.
 
 // The container enqueues by POSTing a job here (JOBS_URL). The request never
 // leaves Cloudflare: the outbound handler hands it to the queue.
@@ -66,20 +68,37 @@ export function jobsOutbound<E extends JobsEnv>(intercept?: (job: Job, env: E) =
 	};
 }
 
-// Retry backoff: 30s, doubling per attempt, capped at an hour.
-export function backoff(attempts: number): number {
-	return Math.min(30 * 2 ** (attempts - 1), 60 * 60);
-}
+// A delivery's attempt (1 on the first), and "true" on one from the
+// dead-letter queue (lib/jobs/httpjobs.AttemptHeader, DeadHeader).
+export const ATTEMPT_HEADER = "Job-Attempt";
+export const DEAD_HEADER = "Job-Dead";
+
+// What the container decided for a delivered job (lib/jobs/httpjobs.Outcome).
+// The Worker applies it and decides nothing about the job itself.
+export type Outcome = { outcome: "done" | "retry" | "drop"; retry_after_seconds?: number };
+
+// Retry delay when the container never answered with an Outcome (it was
+// unreachable or crashed): the carrier's own concern, not the job's.
+export const UNREACHABLE_RETRY_SECONDS = 30;
+
+// One delivery of a job to the container.
+export type Delivery = { attempt: number; dead: boolean };
 
 // Delivers one job to a container, with the jobs secret when there is one
-// (jobsSecret). True when the job is done or can never succeed (4xx); false
-// when it should be retried.
+// (jobsSecret), and returns the container's Outcome. A 4xx (a body that
+// isn't a job, a wrong secret) can never succeed and is a drop; anything
+// else that isn't an Outcome is a retry.
 export async function deliver(
 	container: Fetcher | { fetch(req: Request): Promise<Response> },
 	job: Job,
+	delivery: Delivery,
 	secret?: string,
-): Promise<boolean> {
-	const headers: Record<string, string> = { "Content-Type": "application/json" };
+): Promise<Outcome> {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		[ATTEMPT_HEADER]: String(delivery.attempt),
+	};
+	if (delivery.dead) headers[DEAD_HEADER] = "true";
 	if (secret) headers[SECRET_HEADER] = secret;
 	const res = await container.fetch(
 		new Request(`http://container${JOBS_PATH}`, {
@@ -90,56 +109,44 @@ export async function deliver(
 	);
 	if (res.status >= 400 && res.status < 500) {
 		console.error(`job ${job.kind} rejected: ${res.status} ${await res.text()}`);
-		return true;
+		return { outcome: "drop" };
 	}
-	return res.ok;
+	if (res.ok && res.headers.get("Content-Type")?.startsWith("application/json")) {
+		return res.json<Outcome>();
+	}
+	// A container from before Outcomes answers 204 for done.
+	if (res.status === 204) return { outcome: "done" };
+	return { outcome: "retry", retry_after_seconds: UNREACHABLE_RETRY_SECONDS };
 }
 
 export type JobsOptions = {
 	// Delivers one job; see deliver.
-	deliver: (job: Job) => Promise<boolean>;
-	// Seconds before a failed job is retried. Unset, the queue's own retry
-	// delay applies.
-	retryDelay?: (attempts: number) => number;
-	// Jobs whose retries ran out arrive on this dead-letter queue, and
-	// onDead maps each to the job that records the give-up. A dead job with
-	// no entry is logged and dropped.
-	deadLetter?: { queue: string; onDead: Record<string, string> };
+	deliver: (job: Job, delivery: Delivery) => Promise<Outcome>;
+	// The dead-letter queue: jobs the queue gave up redelivering arrive
+	// here, and are delivered dead so the container runs their give-up.
+	deadLetterQueue?: string;
 };
 
-// The queue handler: cache purges retried, dead jobs turned into their
-// give-up job, everything else delivered to the container.
+// The queue handler: cache purges (edge work) run here; every other job is
+// delivered to the container, and its Outcome applied to the message.
 export async function runJobs(batch: MessageBatch<Job>, ctx: ExecutionContext, opts: JobsOptions): Promise<void> {
+	const dead = batch.queue === opts.deadLetterQueue;
 	for (const message of batch.messages) {
 		if (isPurgeJob(message.body)) {
 			if (await cached(ctx).purge(message.body.args.tags)) message.ack();
 			else message.retry({ delaySeconds: PURGE_RETRY_SECONDS });
 			continue;
 		}
-		const job = jobFor(batch.queue, message.body, opts.deadLetter);
-		if (!job) {
-			message.ack();
-			continue;
-		}
-		const retry = opts.retryDelay ? { delaySeconds: opts.retryDelay(message.attempts) } : undefined;
+		let out: Outcome;
 		try {
-			if (await opts.deliver(job)) message.ack();
-			else message.retry(retry);
+			out = await opts.deliver(message.body, { attempt: message.attempts, dead });
 		} catch (err) {
 			console.error("job delivery failed", err);
-			message.retry(retry);
+			out = { outcome: "retry", retry_after_seconds: UNREACHABLE_RETRY_SECONDS };
 		}
+		if (out.outcome === "retry") message.retry({ delaySeconds: out.retry_after_seconds ?? UNREACHABLE_RETRY_SECONDS });
+		else message.ack();
 	}
-}
-
-function jobFor(queue: string, job: Job, deadLetter: JobsOptions["deadLetter"]): Job | null {
-	if (!deadLetter || queue !== deadLetter.queue) return job;
-	const kind = deadLetter.onDead[job.kind];
-	if (!kind) {
-		console.error(`dead job ${job.kind} dropped: no give-up job`);
-		return null;
-	}
-	return { kind, args: job.args };
 }
 
 // The jobs a cron runs. Each Worker's table mirrors jobs.Periodic in its

@@ -7,19 +7,24 @@ import (
 	"uuid"
 
 	"lib/database"
+	libjobs "lib/jobs"
 	"lib/telemetry"
 	"payssage/models"
 	"payssage/ports"
 )
 
-// FailWebhookDeliveryArgs is sent when the carrier has given up on a
-// webhook.deliver job: on Cloudflare, the Worker's dead-letter consumer
-// turns each dead webhook.deliver message into one of these.
+// FailWebhookDeliveryArgs records the give-up of a webhook.deliver job
+// whose retries ran out (FailDelivery), on every carrier.
 type FailWebhookDeliveryArgs struct {
 	DeliveryID uuid.UUID `json:"delivery_id"`
 }
 
 func (FailWebhookDeliveryArgs) Kind() string { return "webhook.fail" }
+
+// FailDelivery is webhook.deliver's give-up (jobs.GiveUpWith).
+func FailDelivery(job DeliverWebhookArgs) libjobs.Job {
+	return FailWebhookDeliveryArgs(job)
+}
 
 // FailWebhookDeliveryWorker marks a still-pending delivery failed, keeping
 // the last attempt's response on the row.
