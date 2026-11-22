@@ -199,6 +199,18 @@ func (c *Client) transmit(ctx context.Context, msg Message, payload []byte) erro
 		return fmt.Errorf("email: set deadline: %w", err)
 	}
 
+	tlsConfig := &tls.Config{
+		ServerName:         c.cfg.Host,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: c.cfg.Insecure, //nolint:gosec
+	}
+	// Port 465 is SMTPS: TLS from the first byte, no STARTTLS. Cloudflare
+	// Email Service only offers this.
+	implicitTLS := c.cfg.TLS && c.cfg.Port == 465
+	if implicitTLS {
+		conn = tls.Client(conn, tlsConfig)
+	}
+
 	client, err := smtp.NewClient(conn, c.cfg.Host)
 	if err != nil {
 		return fmt.Errorf("email: failed to create SMTP client: %w", err)
@@ -207,12 +219,7 @@ func (c *Client) transmit(ctx context.Context, msg Message, payload []byte) erro
 		_ = client.Quit()
 	}()
 
-	if c.cfg.TLS {
-		tlsConfig := &tls.Config{
-			ServerName:         c.cfg.Host,
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: c.cfg.Insecure, //nolint:gosec
-		}
+	if c.cfg.TLS && !implicitTLS {
 		err = client.StartTLS(tlsConfig)
 		if err != nil {
 			return fmt.Errorf("email: STARTTLS failed: %w", err)

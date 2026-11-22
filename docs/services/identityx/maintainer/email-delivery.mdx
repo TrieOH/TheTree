@@ -67,10 +67,10 @@ The app at that address reads the link: `/auth/verify` and `/auth/reset` send th
 
 | Variable | Locally | In production |
 | --- | --- | --- |
-| `SMTP_HOST`, `SMTP_PORT` | `mailpit`, `1025` | `mail.trieoh.com`, `587` |
+| `SMTP_HOST`, `SMTP_PORT` | `mailpit`, `1025` | `smtp.mx.cloudflare.net`, `465` (Cloudflare Email Service, implicit TLS) |
 | `SMTP_FROM` | `noreply@identityx.dev` | `identityx@trieoh.com` |
 | `SMTP_TLS` | `false` | `true` |
-| `SMTP_USERNAME`, `SMTP_PASSWORD` | empty | Worker secrets |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | empty | Worker secrets: `api_token` and a Cloudflare API token with Email Sending: Edit |
 
 `EMAIL_VERIFY_TOKEN_TTL` and `EMAIL_RESET_TOKEN_TTL` set how long each link works. Both default to `10m`.
 
