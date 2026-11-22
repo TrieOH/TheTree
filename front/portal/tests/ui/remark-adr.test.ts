@@ -1,14 +1,46 @@
 import { compile } from "@mdx-js/mdx";
 import { describe, expect, it } from "vitest";
+import remarkFrontmatter from "remark-frontmatter";
 import { remarkAdr } from "../../mdx/remark-adr";
 
 async function metaOf(source: string) {
-  const code = String(await compile(source, { format: "md", remarkPlugins: [remarkAdr] }));
+  const code = String(await compile(source, { format: "md", remarkPlugins: [remarkFrontmatter, remarkAdr] }));
   const match = /export const meta = (\{.*?\});/s.exec(code);
   return { meta: match ? Function(`return ${match[1]}`)() : undefined, code };
 }
 
 describe("remarkAdr", () => {
+  it("reads an ADR's YAML preamble, keeping lists as lists", async () => {
+    const { meta, code } = await metaOf(
+      [
+        "---",
+        "number: ADR-0011",
+        "title: Backends run on Cloudflare Containers",
+        "status: accepted",
+        "date: 2026-10-19",
+        "scope: [lib/go/jobs, api/identityx]",
+        "supersedes: [ADR-0010]",
+        "superseded_by:",
+        "---",
+        "",
+        "## Why",
+        "",
+        "Body text.",
+      ].join("\n"),
+    );
+
+    expect(meta).toEqual({
+      number: "ADR-0011",
+      title: "Backends run on Cloudflare Containers",
+      status: "accepted",
+      date: "2026-10-19",
+      scope: ["lib/go/jobs", "api/identityx"],
+      supersedes: ["ADR-0010"],
+    });
+    expect(code).not.toContain("number: ADR-0011");
+    expect(code).toContain("Body text.");
+  });
+
   it("lifts the ADR number, title and fields out of the body", async () => {
     const { meta, code } = await metaOf(
       [

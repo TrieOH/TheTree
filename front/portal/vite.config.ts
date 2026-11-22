@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import { apiModels } from "./mdx/api-plugin.ts";
 import { problems } from "./mdx/problems-plugin.ts";
 import { rehypeHeadingIds } from "./mdx/rehype-heading-ids.ts";
+import remarkFrontmatter from "remark-frontmatter";
 import { remarkAdr } from "./mdx/remark-adr.ts";
 import { remarkMermaid } from "./mdx/remark-mermaid.ts";
 
@@ -38,7 +39,7 @@ export default defineConfig(({ mode }) => ({
         jsxImportSource: fileURLToPath(new URL("./src/shared/mdx", import.meta.url)),
         mdExtensions: [".md"],
         mdxExtensions: [".mdx"],
-        remarkPlugins: [remarkAdr, remarkGfm, remarkMermaid],
+        remarkPlugins: [remarkFrontmatter, remarkAdr, remarkGfm, remarkMermaid],
         // Highlighted at build time, in both themes: App.css picks one.
         rehypePlugins: [
           rehypeHeadingIds,

@@ -42,6 +42,7 @@
     "openapi-sampler": "catalog:",
     "oxlint": "catalog:",
     "rehype-stringify": "catalog:",
+    "remark-frontmatter": "catalog:",
     "remark-gfm": "catalog:",
     "remark-parse": "catalog:",
     "remark-rehype": "catalog:",

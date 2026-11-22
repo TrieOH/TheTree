@@ -11,16 +11,23 @@ describe("docs catalog", () => {
     expect(decisions.every((doc) => doc.meta.number?.startsWith("ADR-"))).toBe(true);
   });
 
-  it("renders an ADR through the MDX pipeline without its header", async () => {
+  it("renders an ADR through the MDX pipeline without its preamble", async () => {
     const doc = findDoc("decisions", "adr-0019");
-    expect(doc?.meta).toMatchObject({ number: "ADR-0019", status: "accepted", date: "2026-10-29" });
+    expect(doc?.meta).toMatchObject({
+      number: "ADR-0019",
+      status: "accepted",
+      date: "2026-10-29",
+      amends: ["ADR-0016", "ADR-0017"],
+    });
+    expect(doc?.meta.title).toBeTruthy();
+    expect(doc?.meta.summary).toBeTruthy();
 
     const { default: Content } = await doc!.load();
     const { container } = render(() => <Content />);
 
-    expect(container.querySelector("h2")).toHaveTextContent("Context");
+    expect(container.querySelector("h2")).toHaveTextContent("Why");
     expect(container.querySelector("code")).not.toBeNull();
-    expect(container).not.toHaveTextContent("ADR-0019 —");
-    expect(container).not.toHaveTextContent("Status:");
+    expect(container).not.toHaveTextContent("number: ADR-0019");
+    expect(container).not.toHaveTextContent("status: accepted");
   });
 });
