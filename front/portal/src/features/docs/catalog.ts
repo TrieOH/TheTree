@@ -96,6 +96,18 @@ export function findDoc(category: string, slug: string): DocEntry | undefined {
   return known ? DOCS[known.id].find((doc) => doc.slug === slug) : undefined;
 }
 
+/** A doc without its loader: safe to hand through route loader data. */
+export type DocLink = Pick<DocEntry, "category" | "slug" | "meta">;
+
+/** The docs on either side of one, in the category's listed order. */
+export function neighboursOf(doc: DocEntry): { previous?: DocLink; next?: DocLink } {
+  const docs = DOCS[doc.category];
+  const at = docs.findIndex((other) => other.slug === doc.slug);
+  const link = (entry?: DocEntry): DocLink | undefined =>
+    entry && { category: entry.category, slug: entry.slug, meta: entry.meta };
+  return at < 0 ? {} : { previous: link(docs[at - 1]), next: link(docs[at + 1]) };
+}
+
 /** "accepted; `repo/` amended …" → "accepted" */
 export function statusWord(status: string | undefined): string | undefined {
   return status?.match(/^[a-z]+/i)?.[0].toLowerCase();

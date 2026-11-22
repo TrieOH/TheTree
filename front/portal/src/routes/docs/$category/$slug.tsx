@@ -2,8 +2,9 @@ import { Link, createFileRoute, notFound } from "@tanstack/solid-router";
 import { PageHeader } from "@trieoh/ui-solid";
 import { Dynamic } from "@solidjs/web";
 import { Show } from "solid-js";
-import { findCategory, findDoc } from "@/features/docs/catalog";
+import { findCategory, findDoc, neighboursOf } from "@/features/docs/catalog";
 import { docComponents } from "@/features/docs/components";
+import { DocPager } from "@/features/docs/DocPager";
 import { DocStatus } from "@/features/docs/DocStatus";
 
 export const Route = createFileRoute("/docs/$category/$slug")({
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/docs/$category/$slug")({
     const doc = findDoc(params.category, params.slug);
     if (!doc) throw notFound();
     const { default: Content } = await doc.load();
-    return { meta: doc.meta, category: findCategory(params.category)!, Content };
+    return { meta: doc.meta, category: findCategory(params.category)!, Content, ...neighboursOf(doc) };
   },
   head: ({ loaderData }) => ({ meta: [{ title: `${loaderData?.meta.title ?? "Doc"} · TrieOH dev` }] }),
   component: DocPage,
@@ -40,6 +41,7 @@ function DocPage() {
         {/* Dynamic, so moving to another doc swaps the body, not just the header. */}
         <Dynamic component={data().Content} components={docComponents} />
       </article>
+      <DocPager previous={data().previous} next={data().next} />
     </>
   );
 }
