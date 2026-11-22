@@ -79,7 +79,8 @@ function rank(doc: DocEntry): number {
 const DOCS: Record<DocCategoryId, readonly DocEntry[]> = {
   decisions,
   runbooks: guides("runbooks"),
-  "incident-reports": guides("incident-reports"),
+  // Newest incident first; their files are named by date.
+  "incident-reports": guides("incident-reports").toSorted((a, b) => b.slug.localeCompare(a.slug)),
   onboarding: guides("onboarding"),
 };
 
