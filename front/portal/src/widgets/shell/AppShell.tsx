@@ -173,7 +173,7 @@ function SidebarContent() {
       <div class="flex-1" />
       <div class="grid gap-0.5 border-t border-border pt-2.5">
         <ExternalLink href="https://linear.app/trieoh" label="Linear" team />
-        <ExternalLink href="https://grafana.com/auth/sign-in" label="Grafana" team />
+        <ExternalLink href="https://trieoh.grafana.net" label="Grafana" team />
         <ExternalLink href={REPO_URL} label="TheTree" />
         <ExternalLink href="https://components.trieoh.com" label="Components" />
         <ThemeToggle />
@@ -188,7 +188,7 @@ export function AppShell(props: { children: JSX.Element }) {
   // The API reference lays out its own floating columns.
   const wide = () => /^\/services\/[^/]+\/api\/?$/.test(location().pathname);
   // Dashboards compare across columns and need more room than reading pages.
-  const dashboard = () => /^\/(metrics|delivery)\/?$/.test(location().pathname);
+  const dashboard = () => /^\/(metrics|delivery|services\/[^/]+)\/?$/.test(location().pathname);
   createEffect(
     () => location().pathname,
     () => {
