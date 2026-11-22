@@ -28,9 +28,20 @@ describe("problems model", () => {
     expect(problemsOf("payssage").map((p) => p.slug)).not.toContain("not-found");
   });
 
+  it("reads the problems a feature declares in its own spec.yml", () => {
+    expect(findProblem("identityx", "setup-complete")?.status).toBe(409);
+    expect(problemsOf("identityx").length).toBeGreaterThan(37);
+  });
+
   it("hides a description that only restates the title", () => {
     expect(extraDescription({ ...findProblem("identityx", "invalid-access-token")! })).toBeNull();
     expect(extraDescription(findProblem("payssage", "provider-unauthorized")!)).toContain("refused");
+  });
+
+  it("carries a named error's message as the example detail", () => {
+    const problem = findProblem("identityx", "platform-only")!;
+    expect(problem.message).toMatch(/^this operation manages the IdentityX platform/);
+    expect(JSON.parse(exampleBody(problem)).detail).toBe(problem.message);
   });
 
   it("builds an example body with the problem's own members", () => {
@@ -87,6 +98,16 @@ describe("<ProblemList>", () => {
     fireEvent.click(view.getByRole("button", { name: "Show details" }));
     await waitFor(() => expect(container.textContent).toContain("This problem adds"));
     expect(view.getByRole("button", { name: "Copy example body" })).toBeInTheDocument();
+  });
+
+  it("shows a named error's message as the detail, and says when the detail varies", async () => {
+    const named = await renderList({ set: "identityx", only: ["platform-only"], open: true });
+    expect(named.container.textContent).toContain(findProblem("identityx", "platform-only")!.message);
+    expect(named.container.textContent).not.toContain("varies");
+    cleanup();
+
+    const varies = await renderList({ set: "shared", only: ["validation"], open: true });
+    expect(varies.container.textContent).toContain("varies: the message of the error that matched");
   });
 
   it("puts descriptions inline only when asked", async () => {
