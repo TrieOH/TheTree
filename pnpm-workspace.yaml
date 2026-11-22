@@ -80,6 +80,7 @@ catalog:
   '@shikijs/rehype': ^4.6.0
   shiki: ^4.6.0
   remark-gfm: ^4.0.1
+  remark-frontmatter: ^5.0.0
   yaml: ^2.9.1
   mermaid: ^12.3.0
   '@scalar/openapi-parser': ^0.29.19

@@ -1,7 +1,10 @@
 // Lifts a doc's header into `export const meta = {...}` so pages can render
-// the title, number, status and date themselves. The repo's ADRs open with
-// `# ADR-0019 — Title` and a list of `**Status:** accepted`-style fields;
-// both are removed from the body once read.
+// the title, number, status and date themselves. ADRs open with a YAML
+// preamble (needs remark-frontmatter before this plugin). Other docs open with
+// `# Title` and a list of `**Order:** 2`-style fields. Either header is removed
+// from the body once read.
+
+import { parse } from "yaml";
 
 interface MdNode {
   type: string;
@@ -29,11 +32,30 @@ function field(item: MdNode): [string, string] | undefined {
   return [match[1].toLowerCase().replace(/\s+/g, "_"), rest.map(text).join("").trim()];
 }
 
+type MetaValue = string | string[];
+
+/** Keeps strings and lists of strings; numbers and dates become strings. */
+function preamble(source: string): Record<string, MetaValue> {
+  const data: unknown = parse(source);
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  const meta: Record<string, MetaValue> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === null || value === undefined) continue;
+    meta[key] = Array.isArray(value) ? value.map(String) : String(value);
+  }
+  return meta;
+}
+
 function literal(value: string) {
   return { type: "Literal", value, raw: JSON.stringify(value) };
 }
 
-function metaExport(meta: Record<string, string>): MdNode {
+function expression(value: MetaValue) {
+  if (typeof value === "string") return literal(value);
+  return { type: "ArrayExpression", elements: value.map(literal) };
+}
+
+function metaExport(meta: Record<string, MetaValue>): MdNode {
   const value = `export const meta = ${JSON.stringify(meta)};`;
   const program = {
     type: "Program",
@@ -59,7 +81,7 @@ function metaExport(meta: Record<string, string>): MdNode {
                   shorthand: false,
                   computed: false,
                   key: literal(key),
-                  value: literal(val),
+                  value: expression(val),
                 })),
               },
             },
@@ -74,7 +96,16 @@ function metaExport(meta: Record<string, string>): MdNode {
 export function remarkAdr() {
   return (tree: MdNode) => {
     const children = tree.children ?? [];
-    const meta: Record<string, string> = {};
+
+    if (children[0]?.type === "yaml") {
+      const meta = preamble(children[0].value ?? "");
+      children.shift();
+      children.unshift(metaExport(meta));
+      tree.children = children;
+      return;
+    }
+
+    const meta: Record<string, MetaValue> = {};
 
     const heading = children[0];
     if (heading?.type === "heading" && heading.depth === 1) {
