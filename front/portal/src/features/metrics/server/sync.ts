@@ -120,6 +120,9 @@ const ACCOUNT = `query($account: string!, $since: Time!, $until: Time!, $sinceDa
       sum { requests }
       dimensions { actionType }
     }
+    emailSendingAdaptiveGroups(limit: 100, filter: { date_geq: $sinceDate, isLastEvent: 1, isVerifiedRecipient: 0 }) {
+      count
+    }
   } } }`;
 
 interface AccountData {
@@ -132,6 +135,7 @@ interface AccountData {
       }[];
       d1AnalyticsAdaptiveGroups: { sum: { rowsRead: number; rowsWritten: number } }[];
       kvOperationsAdaptiveGroups: { sum: { requests: number }; dimensions: { actionType: string } }[];
+      emailSendingAdaptiveGroups?: { count: number }[];
     }[];
   };
 }
@@ -149,6 +153,9 @@ async function syncAccount(env: Env, now: Date): Promise<D1PreparedStatement[]> 
   const sum = <T>(list: T[], pick: (item: T) => number) => list.reduce((total, item) => total + pick(item), 0);
   const kv = account?.kvOperationsAdaptiveGroups ?? [];
   const d1 = account?.d1AnalyticsAdaptiveGroups ?? [];
+  // One last event per email: delivered or failed, both count toward the
+  // quota. Sends to verified destination addresses are free.
+  const emails = account?.emailSendingAdaptiveGroups ?? [];
   const at = now.toISOString();
 
   const usage: [string, number, number][] = [
@@ -159,6 +166,7 @@ async function syncAccount(env: Env, now: Date): Promise<D1PreparedStatement[]> 
     ["d1_rows_written", sum(d1, (g) => g.sum.rowsWritten), 50_000_000],
     ["kv_reads", sum(kv.filter((g) => g.dimensions.actionType === "read"), (g) => g.sum.requests), 10_000_000],
     ["kv_writes", sum(kv.filter((g) => g.dimensions.actionType !== "read"), (g) => g.sum.requests), 1_000_000],
+    ["emails_sent", sum(emails, (g) => g.count), 3_000],
   ];
 
   const usageUpsert = env.DB.prepare(

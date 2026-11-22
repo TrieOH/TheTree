@@ -51,11 +51,28 @@ var _ Sender = (*Client)(nil)
 
 // Client is the SMTP Sender.
 type Client struct {
-	cfg Config
+	cfg   Config
+	quota Quota
 }
 
 func NewClient(cfg Config) *Client {
 	return &Client{cfg: cfg}
+}
+
+// ErrMonthlyLimit is a send refused because this month's email budget is
+// spent. Cloudflare bills past its included quota, so the cap is ours.
+var ErrMonthlyLimit = errors.New("email: monthly send limit reached")
+
+// Quota reserves n sends against this month's budget. It returns
+// ErrMonthlyLimit when they don't fit, and reserves nothing then.
+type Quota interface {
+	Reserve(ctx context.Context, n int) error
+}
+
+// WithQuota makes every send reserve its recipients against q first.
+func (c *Client) WithQuota(q Quota) *Client {
+	c.quota = q
+	return c
 }
 
 type Message struct {
@@ -104,9 +121,16 @@ func (c *Client) deliver(ctx context.Context, msg Message, images []InlineImage)
 		}
 		span.End()
 	}()
+	defer func() { recordSend(ctx, len(msg.To), err) }()
 	err = checkHeaders(msg)
 	if err != nil {
 		return err
+	}
+	if c.quota != nil {
+		err = c.quota.Reserve(ctx, len(msg.To))
+		if err != nil {
+			return err
+		}
 	}
 	return c.transmit(ctx, msg, c.buildPayload(msg, images))
 }
@@ -199,6 +223,18 @@ func (c *Client) transmit(ctx context.Context, msg Message, payload []byte) erro
 		return fmt.Errorf("email: set deadline: %w", err)
 	}
 
+	tlsConfig := &tls.Config{
+		ServerName:         c.cfg.Host,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: c.cfg.Insecure, //nolint:gosec
+	}
+	// Port 465 is SMTPS: TLS from the first byte, no STARTTLS. Cloudflare
+	// Email Service only offers this.
+	implicitTLS := c.cfg.TLS && c.cfg.Port == 465
+	if implicitTLS {
+		conn = tls.Client(conn, tlsConfig)
+	}
+
 	client, err := smtp.NewClient(conn, c.cfg.Host)
 	if err != nil {
 		return fmt.Errorf("email: failed to create SMTP client: %w", err)
@@ -207,12 +243,7 @@ func (c *Client) transmit(ctx context.Context, msg Message, payload []byte) erro
 		_ = client.Quit()
 	}()
 
-	if c.cfg.TLS {
-		tlsConfig := &tls.Config{
-			ServerName:         c.cfg.Host,
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: c.cfg.Insecure, //nolint:gosec
-		}
+	if c.cfg.TLS && !implicitTLS {
 		err = client.StartTLS(tlsConfig)
 		if err != nil {
 			return fmt.Errorf("email: STARTTLS failed: %w", err)

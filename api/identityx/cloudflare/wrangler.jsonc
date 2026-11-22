@@ -82,9 +82,10 @@
 		"GOOGLE_REDIRECT_URI": "https://dev.identityx.com.br/auth/google/callback",
 		"GITHUB_REDIRECT_URI": "https://dev.identityx.com.br/auth/github/callback",
 		"SMTP_FROM": "identityx@trieoh.com",
-		"SMTP_HOST": "mail.trieoh.com",
-		"SMTP_PORT": "587",
+		"SMTP_HOST": "smtp.mx.cloudflare.net",
+		"SMTP_PORT": "465",
 		"SMTP_TLS": "true",
+		"SMTP_MONTHLY_LIMIT": "1800",
 		// Grafana Cloud OTLP gateway; the container appends /v1/<signal> (lib/go/telemetry).
 		"OTEL_EXPORTER_OTLP_ENDPOINT": "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp",
 		// <svc>-container in Grafana, next to the <svc>-api Worker and the <svc> front; APP_NAME stays the product name (emails, UI)
