@@ -248,38 +248,53 @@ func TestRejects(t *testing.T) {
 			spec: spec,
 			want: "slug not-found is declared by both",
 		},
-		"message without error": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., message: why }\n"),
+		"detail without error": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., detail: why }\n"),
 			spec: spec,
-			want: "a message belongs to a problem's error",
+			want: "a detail belongs to a problem's error",
 		},
-		"error without message": {
+		"error without detail": {
 			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad }\n"),
 			spec: spec,
-			want: "needs a message",
+			want: "needs a detail",
 		},
-		"message repeats the title": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad Thing, description: Bad., error: ErrBad, message: bad thing. }\n"),
+		"detail repeats the title": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad Thing, description: Bad., error: ErrBad, detail: bad thing. }\n"),
 			spec: spec,
 			want: "repeats the title",
 		},
-		"message ends a sentence": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: you did a bad thing. }\n"),
+		"detail ends a sentence": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, detail: you did a bad thing. }\n"),
 			spec: spec,
 			want: "reads like any Go error string",
 		},
-		"message capitalized": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: You did a bad thing }\n"),
+		"detail capitalized": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, detail: You did a bad thing }\n"),
 			spec: spec,
 			want: "reads like any Go error string",
 		},
-		"error on a problem with members": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: why it failed }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
+		"sentinel on a problem with members": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, detail: why it failed }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
 			spec: spec,
-			want: "answered from a typed error",
+			want: "ending in Error",
+		},
+		"old message key": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: ErrBad, message: why it failed }\n"),
+			spec: spec,
+			want: "message is now detail",
+		},
+		"typed error naming no member": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: BadError, detail: 'it failed: {how}' }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
+			spec: spec,
+			want: "{how} in the detail is not a member",
+		},
+		"typed error with a stray brace": {
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: BadError, detail: 'it failed: {why' }\n      required: [why]\n      properties:\n        why: { type: string }\n"),
+			spec: spec,
+			want: "braces in a detail only name members",
 		},
 		"error not a Go name": {
-			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: badError, message: why it failed }\n"),
+			own:  problem("      x-problem: { slug: bad, status: 400, title: Bad, description: Bad., error: badError, detail: why it failed }\n"),
 			spec: spec,
 			want: "must be an exported Go identifier starting with Err",
 		},
@@ -449,7 +464,7 @@ components:
         title: Add Self
         description: The caller tried to add themselves.
         error: ErrAddSelf
-        message: you can't add yourself to the project; ask an admin to add you
+        detail: you can't add yourself to the project; ask an admin to add you
 `
 
 func TestNamedErrors(t *testing.T) {
@@ -480,10 +495,139 @@ func TestNamedErrors(t *testing.T) {
 	}
 }
 
+func TestTypedErrors(t *testing.T) {
+	own := `
+components:
+  schemas:
+    SellerMismatch:
+      x-problem:
+        slug: seller-mismatch
+        status: 409
+        title: Seller Mismatch
+        description: The seller is elsewhere.
+        error: SellerMismatchError
+        detail: 'seller {seller_id} is not ours (got "{provider}"), 100% sure'
+      type: object
+      required: [seller_id, provider]
+      properties:
+        seller_id: { type: string, format: uuid }
+        provider: { type: string }
+`
+	specPath := fixture(t, own, "openapi: 3.1.0\npaths:\n  /x:\n    post:\n      x-problems: [seller-mismatch]\n")
+	dir := filepath.Dir(specPath)
+	err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module svc\n\ngo 1.27\n"), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundled, src := generate(t, specPath)
+
+	for _, want := range []string{
+		`"uuid"`,
+		"func SellerMismatch(detail string, sellerId uuid.UUID, provider string) *fp.Problem",
+		"errors.AsType[*errs.SellerMismatchError](err)",
+		"return SellerMismatch(e.Error(), e.SellerID, e.Provider)",
+	} {
+		if !strings.Contains(src, want) {
+			t.Errorf("package lacks %s:\n%s", want, src)
+		}
+	}
+	if strings.Contains(src, "{errs.SellerMismatchError") {
+		t.Error("a typed error is listed as a sentinel")
+	}
+	x := dig(t, bundled, "components", "schemas", "SellerMismatchProblem", "x-problem").(map[string]any)
+	if _, ok := x["detail"]; ok {
+		t.Error("the bundle shows the detail template")
+	}
+	errsSrc, err := os.ReadFile(filepath.Join(dir, errsFile)) //nolint:gosec // test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"type SellerMismatchError struct {\n\tSellerID uuid.UUID\n\tProvider string\n}",
+		`return fmt.Sprintf("seller %v is not ours (got \"%v\"), 100%% sure", e.SellerID, e.Provider)`,
+	} {
+		if !strings.Contains(string(errsSrc), want) {
+			t.Errorf("errs lacks %s:\n%s", want, errsSrc)
+		}
+	}
+}
+
+func TestField(t *testing.T) {
+	for in, want := range map[string]string{
+		"provider":      "Provider",
+		"seller_id":     "SellerID",
+		"intent_status": "IntentStatus",
+		"callback-url":  "CallbackURL",
+	} {
+		if got := field(in); got != want {
+			t.Errorf("field(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestSharedErrors(t *testing.T) {
+	own := ownProblems + `
+x-shared-errors:
+  not-found:
+    ErrFormNotFound: form not found
+  validation:
+    ErrInvalidStatus: "status must be one of: draft, open"
+`
+	specPath := fixture(t, own, spec)
+	dir := filepath.Dir(specPath)
+	err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module svc\n\ngo 1.27\n"), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundled, src := generate(t, specPath)
+
+	for _, want := range []string{"{errs.ErrFormNotFound, NotFound}", "{errs.ErrInvalidStatus, Validation}"} {
+		if !strings.Contains(src, want) {
+			t.Errorf("package lacks %s", want)
+		}
+	}
+	if _, ok := bundled["x-shared-errors"]; ok {
+		t.Error("the bundle carries x-shared-errors")
+	}
+	errsSrc, err := os.ReadFile(filepath.Join(dir, errsFile)) //nolint:gosec // test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `ErrFormNotFound = errors.New("form not found")`
+	if !strings.Contains(string(errsSrc), want) {
+		t.Errorf("errs lacks %s:\n%s", want, errsSrc)
+	}
+}
+
+func TestSharedErrorsRejects(t *testing.T) {
+	for name, tc := range map[string]struct{ block, want string }{
+		"unknown slug":  {"  gone:\n    ErrGone: it is gone", "no shared problem"},
+		"own problem":   {"  payment-rejected:\n    ErrRejected: it was rejected", "no shared problem"},
+		"with members":  {"  batch-failed:\n    ErrBatch: some items failed", "typed error"},
+		"bad name":      {"  not-found:\n    FormNotFound: form not found", "exported Go identifier"},
+		"bad detail":    {"  not-found:\n    ErrFormNotFound: Form not found.", "lowercase"},
+		"named twice":   {"  not-found:\n    ErrFormNotFound: form not found\n  validation:\n    ErrFormNotFound: form is invalid", "named by both"},
+		"not a mapping": {"  not-found: [ErrFormNotFound]", "maps each error"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			specPath := fixture(t, ownProblems+"\nx-shared-errors:\n"+tc.block+"\n", spec)
+			dir := filepath.Dir(specPath)
+			err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module svc\n\ngo 1.27\n"), 0o600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = run(specPath, filepath.Join(dir, "out.yml"), filepath.Join(dir, "p", "problems.gen.go"))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
 func TestSharedProblemNamesNoError(t *testing.T) {
 	specPath := fixture(t, ownProblems, spec)
 	root := filepath.Dir(filepath.Dir(specPath))
-	shared := strings.Replace(sharedProblems, "description: Missing. }", "description: Missing., error: ErrGone, message: it is gone for good }", 1)
+	shared := strings.Replace(sharedProblems, "description: Missing. }", "description: Missing., error: ErrGone, detail: it is gone for good }", 1)
 	err := os.WriteFile(filepath.Join(root, "problems.yml"), []byte(shared), 0o600)
 	if err != nil {
 		t.Fatal(err)

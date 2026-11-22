@@ -103,7 +103,7 @@ components:
         title: Invalid Request
         description: "Invalid request."
         error: ErrInvalidRequest
-        message: "the webhook's raw body wasn't captured, so its signature can't be checked; send the webhook to this endpoint directly, unmodified"
+        detail: "the webhook's raw body wasn't captured, so its signature can't be checked; send the webhook to this endpoint directly, unmodified"
 
     InvalidPayssageWebhookSignature:
       x-problem:
@@ -112,4 +112,4 @@ components:
         title: Invalid Payssage Webhook Signature
         description: "Invalid webhook signature."
         error: ErrInvalidPayssageWebhookSignature
-        message: "the Payssage webhook's signature doesn't match its body and Univents' secret, so it was rejected as forged or altered"
+        detail: "the Payssage webhook's signature doesn't match its body and Univents' secret, so it was rejected as forged or altered"

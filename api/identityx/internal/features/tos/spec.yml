@@ -235,7 +235,7 @@ components:
         title: Actor Not In Project
         description: "Actor does not belong to this project."
         error: ErrActorNotInProject
-        message: "that actor doesn't belong to this project; use an actor of the project, or the project the actor belongs to"
+        detail: "that actor doesn't belong to this project; use an actor of the project, or the project the actor belongs to"
 
     TosExists:
       x-problem:
@@ -244,4 +244,4 @@ components:
         title: ToS Exists
         description: "Project already has terms of service; update them instead."
         error: ErrTosExists
-        message: "this project already has terms of service; update them instead of creating new ones"
+        detail: "this project already has terms of service; update them instead of creating new ones"

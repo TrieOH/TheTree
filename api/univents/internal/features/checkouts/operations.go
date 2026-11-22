@@ -434,7 +434,7 @@ func (o *Operations) RefundPurchase(ctx context.Context, actorID, purchaseID uui
 	case models.PurchaseStatusRefunded:
 		return nil, errs.ErrAlreadyRefunded
 	default:
-		return nil, &errs.PurchaseStatusError{Status: string(purchase.Status)}
+		return nil, &errs.PurchaseStatusError{PurchaseStatus: string(purchase.Status)}
 	}
 	if purchase.PayssageIntentID == nil {
 		return nil, errs.ErrFreeOrderRefund

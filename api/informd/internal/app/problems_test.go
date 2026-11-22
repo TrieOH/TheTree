@@ -1,4 +1,4 @@
-package errmap
+package app_test
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 // through the whole mapper, with a declared problem of its own status: a
 // unique violation (uniq_* or a *_key index) is a 409, a check a 400.
 func TestConstraintErrorsAreMapped(t *testing.T) {
-	m := problems.Mapper(Problem)
+	m := problems.Mapper(nil)
 	for name, named := range app.Constraints() {
 		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if strings.HasPrefix(name, "uniq_") || strings.HasSuffix(name, "_key") {
@@ -43,7 +43,7 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 // identityx kit's authenticators) answers with its declared problem, never
 // the generic 500: the auth middleware writes them through the mapper.
 func TestAuthErrorsAreMapped(t *testing.T) {
-	m := problems.Mapper(Problem)
+	m := problems.Mapper(nil)
 	cases := []struct {
 		err  error
 		want int

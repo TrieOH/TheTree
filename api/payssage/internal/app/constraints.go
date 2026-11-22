@@ -7,7 +7,8 @@ import (
 
 // Constraints maps every named constraint in the schema to the named error
 // repos surface on violation (ADR-0016); the postgres module takes it at
-// boot, and boot fails when the schema has a constraint missing here.
+// boot. TestConstraintsMatchSchema fails when the two drift apart: a
+// constraint missing here, or an entry naming nothing in the schema.
 func Constraints() database.ConstraintErrors {
 	return database.ConstraintErrors{
 		// intents
@@ -35,9 +36,6 @@ func Constraints() database.ConstraintErrors {
 
 		// organizations
 		"uniq_organizations_slug": errs.ErrOrgSlugTaken,
-
-		// provider_credentials
-		"uniq_provider_credentials_active": errs.ErrCredentialsConnected,
 
 		// collectors
 		"uniq_collectors_org_active":      errs.ErrOrgCollectorConnected,

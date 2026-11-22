@@ -3,7 +3,6 @@ package main
 import (
 	spec "Informd"
 	"Informd/internal/app"
-	"Informd/internal/app/errmap"
 	"Informd/internal/config"
 	"Informd/internal/problems"
 	"lib/backend"
@@ -25,7 +24,7 @@ func main() {
 			identityx.Module(cfg.IdentityX),
 		},
 		Build:    app.Build,
-		Errors:   problems.Mapper(errmap.Problem),
+		Errors:   problems.Mapper(nil),
 		Problems: problems.Docs,
 	}), "informd exited with error")
 }

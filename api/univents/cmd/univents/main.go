@@ -10,7 +10,6 @@ import (
 	"lib/errx"
 	spec "univents"
 	"univents/internal/app"
-	"univents/internal/app/errmap"
 	"univents/internal/config"
 	"univents/internal/problems"
 )
@@ -29,7 +28,7 @@ func main() {
 			jobs.Module(cfg.Jobs),
 		},
 		Build:    app.Build(cfg),
-		Errors:   problems.Mapper(errmap.Problem),
+		Errors:   problems.Mapper(nil),
 		Problems: problems.Docs,
 	}), "univents exited with error")
 }

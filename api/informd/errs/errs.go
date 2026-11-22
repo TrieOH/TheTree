@@ -3,10 +3,13 @@
 // and the HTTP mapper (internal/app) can all match on these errors without
 // importing each other.
 //
-// A problem the API answers names its sentinel in problems.yml or in its
-// feature's spec.yml (x-problem's error and message): tools/problemgen
-// generates it into errs.gen.go, its message the detail a client reads, and
-// maps it to its problem. Written by hand here are the errors that carry
-// data (typed, mapped by internal/app's problem switch), the not-found errors
-// and the schema's check constraints, answered with the shared problems.
+// Every error a problem answers is declared in the spec, in problems.yml or
+// its feature's spec.yml, and tools/problemgen generates it into
+// errs.gen.go along with its Mapper case: x-problem's error and detail for
+// a sentinel, a typed error (a field per member, the detail a template
+// over them) for a problem with members, and x-shared-errors for the
+// not-found errors and check constraints answered with a shared problem.
+// The detail is the text a client reads. Declare errors there first.
+// An error the spec can't express is written by hand here and answered by a
+// problem switch passed to problems.Mapper (Informd has none today).
 package errs

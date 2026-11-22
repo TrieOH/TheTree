@@ -11,7 +11,7 @@ components:
         title: Namespace Owner Already In Form
         description: "Owner of the namespace is already a member of the form."
         error: ErrNamespaceOwnerAlreadyInForm
-        message: "the namespace's owner already has access to every form in it, so they can't be added as a member"
+        detail: "the namespace's owner already has access to every form in it, so they can't be added as a member"
     NamespaceMemberAlreadyInForm:
       x-problem:
         slug: namespace-member-already-in-form
@@ -19,7 +19,7 @@ components:
         title: Namespace Member Already In Form
         description: "Namespace member is already a member of the form."
         error: ErrNamespaceMemberAlreadyInForm
-        message: "this person already has access to the form through its namespace; change their namespace role instead"
+        detail: "this person already has access to the form through its namespace; change their namespace role instead"
     RemoveNamespaceOwnerFromForm:
       x-problem:
         slug: remove-namespace-owner-from-form
@@ -27,7 +27,7 @@ components:
         title: Remove Namespace Owner From Form
         description: "Cannot remove owner of the namespace from form."
         error: ErrRemoveNamespaceOwnerFromForm
-        message: "the namespace's owner has access to every form in it and can't be removed from one"
+        detail: "the namespace's owner has access to every form in it and can't be removed from one"
     RemoveNamespaceMemberFromForm:
       x-problem:
         slug: remove-namespace-member-from-form
@@ -35,7 +35,7 @@ components:
         title: Remove Namespace Member From Form
         description: "Cannot remove namespace member from form."
         error: ErrRemoveNamespaceMemberFromForm
-        message: "this person has access to the form through its namespace; remove them from the namespace instead"
+        detail: "this person has access to the form through its namespace; remove them from the namespace instead"
 
     # not found
 
@@ -47,15 +47,7 @@ components:
         title: Form Name Taken
         description: "A form with this name already exists in this namespace."
         error: ErrFormNameTaken
-        message: "this namespace already has a form with this name; choose a different name"
-    APIKeyNameTaken:
-      x-problem:
-        slug: api-key-name-taken
-        status: 409
-        title: API Key Name Taken
-        description: "An API key with this name already exists."
-        error: ErrAPIKeyNameTaken
-        message: "an API key with this name already exists; choose a different name"
+        detail: "this namespace already has a form with this name; choose a different name"
     FieldKeyTaken:
       x-problem:
         slug: field-key-taken
@@ -63,7 +55,7 @@ components:
         title: Field Key Taken
         description: "A field with this key already exists in this step."
         error: ErrFieldKeyTaken
-        message: "this step already has a field with this key, and keys are unique within a step; choose a different key"
+        detail: "this step already has a field with this key, and keys are unique within a step; choose a different key"
     NamespaceNameTaken:
       x-problem:
         slug: namespace-name-taken
@@ -71,7 +63,7 @@ components:
         title: Namespace Name Taken
         description: "A namespace with this name already exists."
         error: ErrNamespaceNameTaken
-        message: "a namespace with this name already exists; choose a different name"
+        detail: "a namespace with this name already exists; choose a different name"
     FieldAlreadyAnswered:
       x-problem:
         slug: field-already-answered
@@ -79,7 +71,7 @@ components:
         title: Field Already Answered
         description: "This field already has an answer in this response."
         error: ErrFieldAlreadyAnswered
-        message: "this response already has an answer for this field; update that answer instead of adding another"
+        detail: "this response already has an answer for this field; update that answer instead of adding another"
     ResponderEmailTaken:
       x-problem:
         slug: responder-email-taken
@@ -87,7 +79,7 @@ components:
         title: Responder Email Taken
         description: "A responder with this email already exists on this system."
         error: ErrResponderEmailTaken
-        message: "a responder with this email already exists; reuse that responder instead of creating another"
+        detail: "a responder with this email already exists; reuse that responder instead of creating another"
     InviteTokenTaken:
       x-problem:
         slug: invite-token-taken
@@ -95,4 +87,28 @@ components:
         title: Invite Token Taken
         description: "An invite with this token already exists."
         error: ErrInviteTokenTaken
-        message: "an invite with this token already exists; create the invite again to get a new token"
+        detail: "an invite with this token already exists; create the invite again to get a new token"
+
+# Named errors answered by a shared problem (api/problems.yml), each
+# with its text as the detail. tools/problemgen generates them into
+# errs/errs.gen.go, and Mapper answers them.
+x-shared-errors:
+  not-found:
+    ErrFormNotFound: "form not found"
+    ErrNamespaceNotFound: "namespace not found"
+    ErrStepNotFound: "step not found"
+    ErrFieldNotFound: "field not found"
+    ErrAnswerNotFound: "answer not found"
+    ErrResponseNotFound: "response not found"
+    ErrResponderNotFound: "responder not found"
+  validation:
+    ErrInvalidFormStatus: "status must be one of: draft, open, closed, archived"
+    ErrInvalidFormStatusState: "opened_at, closed_at or archived_at must be set when status is open, closed or archived"
+    ErrInvalidFieldType: "field type must be one of: string, email, int, float, bool, date, time, datetime, select, file, phone, url"
+    ErrInvalidFieldKeyFormat: "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores"
+    ErrInvalidSelectBehavior: "select fields must have a behaviour of checkbox or radio"
+    ErrEmptySelectOptions: "select fields must have a non-empty options array"
+    ErrInvalidSelectType: "select_type must be one of: email, int, float, date, time, datetime, phone, url"
+    ErrInvalidNamespaceMemberRole: "namespace member role must be one of: owner, admin, member"
+    ErrInvalidFormMemberRole: "form member role must be one of: owner, admin, member"
+    ErrInviteBothNamed: "an invite cannot have both responder_id and email set"

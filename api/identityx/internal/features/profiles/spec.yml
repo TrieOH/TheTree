@@ -254,7 +254,7 @@ components:
         title: Not Profile Owner
         description: "Insufficient permissions."
         error: ErrNotProfileOwner
-        message: "this is someone else's platform profile, and only its owner may change it"
+        detail: "this is someone else's platform profile, and only its owner may change it"
 
     ProfileSchemaViolation:
       x-problem:

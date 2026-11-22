@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/url"
 	"time"
@@ -71,11 +72,17 @@ func SetupDB(ctx context.Context, cfg Config, constraints ConstraintErrors) (*pg
 	checkCtx, cancel := context.WithTimeout(checkCtx, 10*time.Second)
 	defer cancel()
 	// A registry gap degrades one error to a 500; it must never stop a boot.
-	err = validateConstraints(checkCtx, db)
-	if err != nil {
+	// Each Backend's tests fail on drift in either direction before a deploy.
+	missing, unknown, err := RegistryDrift(checkCtx, db, constraints)
+	switch {
+	case err != nil:
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "constraints")
-		telemetry.Log().WarnContext(checkCtx, "constraint registry gap", telemetry.Err(err))
+		telemetry.Log().WarnContext(checkCtx, "constraint registry check failed", telemetry.Err(err))
+	case len(missing) > 0 || len(unknown) > 0:
+		span.SetStatus(codes.Error, "constraints")
+		telemetry.Log().WarnContext(checkCtx, "constraint registry drift",
+			slog.Any("missing", missing), slog.Any("unknown", unknown))
 	}
 	return db, nil
 }

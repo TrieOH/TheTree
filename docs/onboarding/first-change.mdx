@@ -95,7 +95,7 @@ func (o *Operations) Rename(ctx context.Context, projectID uuid.UUID, name strin
 
 The access check comes first. It answers 404 when the project doesn't exist and 403 when the caller isn't an admin, so the operation doesn't have to.
 
-Return named errors, like `errs.ErrProjectNotFound`. A new error is one entry in the feature's `spec.yml` (or the API's `problems.yml`): its problem names the Go error and the message a client reads, and `just gen` generates both the error and its mapping.
+Return named errors, like `errs.ErrProjectNotFound`. A new error is one entry in the feature's `spec.yml` (or the API's `problems.yml`): its problem names the Go error and the detail a client reads, and `just gen` generates both the error and its mapping.
 
 ```yaml
 # internal/features/projects/spec.yml, under components.schemas
@@ -106,10 +106,30 @@ Return named errors, like `errs.ErrProjectNotFound`. A new error is one entry in
         title: Project Name Taken
         description: "Another project already has this name."
         error: ErrProjectNameTaken
-        message: "another project in this organization already has this name; pick another"
+        detail: "another project in this organization already has this name; pick another"
 ```
 
-Add its slug (or its status) to the route's `x-problems`. Only errors that carry data (typed errors) are written by hand in `errs/` and mapped in the API's `Problem` switch in `internal/app`.
+Add its slug (or its status) to the route's `x-problems`.
+
+An error that carries data is declared the same way. Give the problem its members, name the error with an `Error` suffix, and write the detail as a template that names members in braces. `just gen` generates a struct with one field per member:
+
+```yaml
+    IntentStatus:
+      x-problem:
+        slug: intent-status
+        status: 400
+        title: Intent Status
+        description: "The intent's status does not allow the action."
+        error: IntentStatusError
+        detail: 'intent cannot be {action} from status "{intent_status}"'
+      type: object
+      required: [action, intent_status]
+      properties:
+        action: { type: string }
+        intent_status: { type: string }
+```
+
+The operation returns `&errs.IntentStatusError{Action: "refunded", IntentStatus: "pending"}`. A member with `format: uuid` becomes a `uuid.UUID` field. Write an error by hand in `errs/`, mapped in the API's `Problem` switch in `internal/app/errmap`, only when the spec can't express it: one error that answers several problems, or a detail that depends on something other than the members.
 
 ### Connect the handler
 

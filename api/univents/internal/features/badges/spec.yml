@@ -453,7 +453,7 @@ components:
         title: Invalid Badge Origin
         description: "Origin must be null or \"staff\"."
         error: ErrInvalidBadgeOrigin
-        message: "origin must be null (a participant badge) or \"staff\""
+        detail: "origin must be null (a participant badge) or \"staff\""
 
     StaffTemplateWithTicketType:
       x-problem:
@@ -462,4 +462,4 @@ components:
         title: Staff Template With Ticket Type
         description: "A staff badge template cannot target a ticket type."
         error: ErrStaffTemplateWithTicketType
-        message: "a staff badge template applies to all staff, so it can't target a ticket type; leave ticket_type_id empty"
+        detail: "a staff badge template applies to all staff, so it can't target a ticket type; leave ticket_type_id empty"

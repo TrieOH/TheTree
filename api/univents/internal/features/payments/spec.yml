@@ -123,4 +123,4 @@ components:
         title: Seller Not In Platform Wallet
         description: "Seller does not belong to the platform payssage wallet."
         error: ErrSellerNotInPlatformWallet
-        message: "that payment account isn't connected to Univents' Payssage wallet; connect it through Univents and try again"
+        detail: "that payment account isn't connected to Univents' Payssage wallet; connect it through Univents and try again"

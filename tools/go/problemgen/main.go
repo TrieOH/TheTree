@@ -29,12 +29,16 @@
 // It also writes the route list the Backend's Worker checks before it wakes
 // the container (cloudflare/src/routes.ts, committed; lib/edgeroutes).
 //
-// A problem without members may name its Go error and the error's text:
-// x-problem's error (ErrAddSelf) and message, the detail clients read. The
-// error is generated into the Backend's errs package (errs/errs.gen.go,
-// next to the spec) and Mapper answers it with its problem, so the
-// Backend's own mapper keeps only its typed errors. A message that only
-// repeats the title fails: the detail says what went wrong and what to do.
+// A problem may name its Go error and the error's text: x-problem's error
+// and detail, the text clients read. Without members the error is a
+// sentinel (ErrAddSelf); with members it is a typed error
+// (IntentStatusError), a struct with a field per member, and its detail a
+// template naming members in braces ({intent_status}). x-shared-errors
+// names errors answered by a shared problem the same way. Every one is
+// generated into the Backend's errs package (errs/errs.gen.go, next to the
+// spec) and Mapper answers it with its problem, so the Backend's own mapper
+// keeps only the errors the spec can't express. A detail that only repeats
+// the title fails: the detail says what went wrong and what to do.
 package main
 
 import (

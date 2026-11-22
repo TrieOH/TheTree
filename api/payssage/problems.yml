@@ -10,7 +10,7 @@ components:
         title: Not Resource Owner
         description: "Insufficient permissions."
         error: ErrNotResourceOwner
-        message: "this resource belongs to someone else's personal account, and only its owner may change it"
+        detail: "this resource belongs to someone else's personal account, and only its owner may change it"
 
     ProviderRequestFailed:
       x-problem:
@@ -21,13 +21,15 @@ components:
         # ErrProviderRequestFailed is a provider call that never got an answer
         # (network, timeout); the transport error is wrapped for the logs.
         error: ErrProviderRequestFailed
-        message: "the payment provider didn't answer (a network error or a timeout), so nothing changed on its side; retry in a moment"
+        detail: "the payment provider didn't answer (a network error or a timeout), so nothing changed on its side; retry in a moment"
     UnsupportedProvider:
       x-problem:
         slug: unsupported-provider
         status: 400
         title: Unsupported Provider
         description: "Payssage has no payment provider by this name."
+        error: UnsupportedProviderError
+        detail: 'unsupported provider {provider}'
       type: object
       required: [provider]
       properties:
@@ -105,7 +107,7 @@ components:
         title: No Transaction To Refund
         description: "Intent has no mercadopago transaction to refund."
         error: ErrNoTransactionToRefund
-        message: "this intent never reached the payment provider, so there is no payment to refund"
+        detail: "this intent never reached the payment provider, so there is no payment to refund"
     NoTransactionToCancel:
       x-problem:
         slug: no-transaction-to-cancel
@@ -113,13 +115,15 @@ components:
         title: No Transaction To Cancel
         description: "Intent has no mercadopago transaction to cancel."
         error: ErrNoTransactionToCancel
-        message: "this intent never reached the payment provider, so there is no payment to cancel"
+        detail: "this intent never reached the payment provider, so there is no payment to cancel"
     IntentStatus:
       x-problem:
         slug: intent-status
         status: 400
         title: Intent Status
         description: "The intent's status does not allow the action."
+        error: IntentStatusError
+        detail: 'intent cannot be {action} from status "{intent_status}"'
       type: object
       required: [action, intent_status]
       properties:
@@ -134,7 +138,7 @@ components:
       type: object
       required: [seller_id]
       properties:
-        seller_id: { type: string, description: "The seller." }
+        seller_id: { type: string, format: uuid, description: "The seller." }
     SellerRevoked:
       x-problem:
         slug: seller-revoked
@@ -144,17 +148,19 @@ components:
       type: object
       required: [seller_id]
       properties:
-        seller_id: { type: string, description: "The seller." }
+        seller_id: { type: string, format: uuid, description: "The seller." }
     SellerProviderMismatch:
       x-problem:
         slug: seller-provider-mismatch
         status: 409
         title: Seller Provider Mismatch
         description: "The seller is connected through another payment provider."
+        error: SellerProviderMismatchError
+        detail: 'seller {seller_id} is not a mercadopago seller (got "{provider}")'
       type: object
       required: [seller_id, provider]
       properties:
-        seller_id: { type: string, description: "The seller." }
+        seller_id: { type: string, format: uuid, description: "The seller." }
         provider: { type: string, description: "The provider's name." }
 
     WebhookPayloadInvalid:
@@ -164,7 +170,7 @@ components:
         title: Webhook Payload Invalid
         description: "Mercadopago webhook: invalid payload."
         error: ErrWebhookPayloadInvalid
-        message: "the MercadoPago webhook's body isn't the JSON MercadoPago sends, so it was ignored"
+        detail: "the MercadoPago webhook's body isn't the JSON MercadoPago sends, so it was ignored"
     WebhookMissingDataID:
       x-problem:
         slug: webhook-missing-data-id
@@ -172,7 +178,7 @@ components:
         title: Webhook Missing Data ID
         description: "Mercadopago webhook: missing data.id."
         error: ErrWebhookMissingDataID
-        message: "the MercadoPago webhook has no data.id, so Payssage can't tell which payment it is about"
+        detail: "the MercadoPago webhook has no data.id, so Payssage can't tell which payment it is about"
     WebhookSignatureMissing:
       x-problem:
         slug: webhook-signature-missing
@@ -180,7 +186,7 @@ components:
         title: Webhook Signature Missing
         description: "Mercadopago webhook: missing ts or v1 in x-signature header."
         error: ErrWebhookSignatureMissing
-        message: "the MercadoPago webhook's x-signature header lacks its ts or v1 part, so it can't be verified and was rejected"
+        detail: "the MercadoPago webhook's x-signature header lacks its ts or v1 part, so it can't be verified and was rejected"
     WebhookSignatureMismatch:
       x-problem:
         slug: webhook-signature-mismatch
@@ -188,13 +194,15 @@ components:
         title: Webhook Signature Mismatch
         description: "Mercadopago webhook: signature mismatch."
         error: ErrWebhookSignatureMismatch
-        message: "the MercadoPago webhook's signature doesn't match its content and Payssage's secret, so it was rejected as forged or altered"
+        detail: "the MercadoPago webhook's signature doesn't match its content and Payssage's secret, so it was rejected as forged or altered"
     UnhandledWebhookEvent:
       x-problem:
         slug: unhandled-webhook-event
         status: 404
         title: Unhandled Webhook Event
         description: "Payssage does not handle this webhook event type."
+        error: UnhandledWebhookEventError
+        detail: 'mercadopago webhook: unhandled event type "{event_type}"'
       type: object
       required: [event_type]
       properties:
@@ -205,6 +213,8 @@ components:
         status: 404
         title: Webhook Intent Not Found
         description: "No intent was created for the webhook's payment."
+        error: WebhookIntentNotFoundError
+        detail: 'mercadopago webhook: no intent found for payment {payment_id}'
       type: object
       required: [payment_id]
       properties:
@@ -215,11 +225,13 @@ components:
         status: 409
         title: Webhook Seller Token Missing
         description: "The intent's seller has no provider access token, so the webhook cannot be resolved."
+        error: WebhookSellerTokenMissingError
+        detail: 'seller {seller_id} has no mercadopago access token; cannot resolve webhook for intent {intent_id}'
       type: object
       required: [seller_id, intent_id]
       properties:
-        seller_id: { type: string, description: "The seller." }
-        intent_id: { type: string, description: "The intent." }
+        seller_id: { type: string, format: uuid, description: "The seller." }
+        intent_id: { type: string, format: uuid, description: "The intent." }
 
     # not found
 
@@ -231,7 +243,7 @@ components:
         title: Org Wallet Name Taken
         description: "A wallet with this name already exists in this organization."
         error: ErrOrgWalletNameTaken
-        message: "this organization already has a wallet with this name; choose a different name"
+        detail: "this organization already has a wallet with this name; choose a different name"
     PersonalWalletTaken:
       x-problem:
         slug: personal-wallet-taken
@@ -239,7 +251,7 @@ components:
         title: Personal Wallet Taken
         description: "A wallet with this name already exists."
         error: ErrPersonalWalletTaken
-        message: "you already have a personal wallet with this name; choose a different name"
+        detail: "you already have a personal wallet with this name; choose a different name"
     DeliveryExists:
       x-problem:
         slug: delivery-exists
@@ -247,7 +259,7 @@ components:
         title: Delivery Exists
         description: "A delivery for this event and endpoint already exists."
         error: ErrDeliveryExists
-        message: "this event was already queued for delivery to this endpoint; it is delivered once"
+        detail: "this event was already queued for delivery to this endpoint; it is delivered once"
     WebhookEventExists:
       x-problem:
         slug: webhook-event-exists
@@ -255,7 +267,7 @@ components:
         title: Webhook Event Exists
         description: "A webhook event for this external id and type already exists for this provider."
         error: ErrWebhookEventExists
-        message: "this provider event was already received, so the duplicate was ignored"
+        detail: "this provider event was already received, so the duplicate was ignored"
     OrgSlugTaken:
       x-problem:
         slug: org-slug-taken
@@ -263,15 +275,7 @@ components:
         title: Org Slug Taken
         description: "An organization with this slug already exists."
         error: ErrOrgSlugTaken
-        message: "another organization already uses this slug, and slugs are unique; choose a different slug"
-    CredentialsConnected:
-      x-problem:
-        slug: credentials-connected
-        status: 409
-        title: Credentials Connected
-        description: "Credentials for this provider are already connected to this wallet."
-        error: ErrCredentialsConnected
-        message: "this wallet already has credentials connected for this provider; revoke them before connecting new ones"
+        detail: "another organization already uses this slug, and slugs are unique; choose a different slug"
     OrgCollectorConnected:
       x-problem:
         slug: org-collector-connected
@@ -279,7 +283,7 @@ components:
         title: Org Collector Connected
         description: "This collector is already connected to this organization."
         error: ErrOrgCollectorConnected
-        message: "this provider account is already connected to the organization as a collector; use the existing collector"
+        detail: "this provider account is already connected to the organization as a collector; use the existing collector"
     PersonalCollectorConnected:
       x-problem:
         slug: personal-collector-connected
@@ -287,7 +291,7 @@ components:
         title: Personal Collector Connected
         description: "This collector is already connected to your account."
         error: ErrPersonalCollectorConnected
-        message: "this provider account is already connected to your account as a collector; use the existing collector"
+        detail: "this provider account is already connected to your account as a collector; use the existing collector"
     SellerConnected:
       x-problem:
         slug: seller-connected
@@ -295,10 +299,33 @@ components:
         title: Seller Connected
         description: "This seller is already connected to this wallet."
         error: ErrSellerConnected
-        message: "this provider account is already connected to the wallet as a seller; use the existing seller"
+        detail: "this provider account is already connected to the wallet as a seller; use the existing seller"
 
     # providerStatus answers a provider's own error by what the provider said:
 
     # its auth failures are ours to fix (401), a provider outage is a bad
 
     # gateway, and its 4xx answers pass through.
+
+# Named errors answered by a shared problem (api/problems.yml), each
+# with its text as the detail. tools/problemgen generates them into
+# errs/errs.gen.go, and Mapper answers them.
+x-shared-errors:
+  not-found:
+    ErrOAuthStateNotFound: "OAuth state not found; start the connection again"
+    ErrWebhookEventNotFound: "webhook event not found"
+    ErrWalletNotFound: "wallet not found"
+    ErrWebhookEndpointNotFound: "webhook endpoint not found"
+    ErrIntentNotFound: "intent not found"
+    ErrOrganizationNotFound: "organization not found"
+    ErrCollectorNotFound: "collector not found"
+    ErrWebhookDeliveryNotFound: "webhook delivery not found"
+    ErrSellerNotFound: "seller not found"
+  validation:
+    ErrInvalidAmount: "amount must be greater than zero"
+    ErrInvalidIntentStatus: "intent status must be one of: pending, processing, succeeded, cancelled, failed, rejected, refunded"
+    ErrInvalidIntentStatusDetail: "intent status detail must be empty or one of: insufficient_funds, high_risk, invalid_card, card_disabled, expired_card, invalid_security_code, pending_review, other"
+    ErrInvalidOAuthFlowType: "OAuth flow must be one of: collector, seller"
+    ErrInvalidOrgRole: "organization role must be one of: owner, admin, member"
+    ErrNegativeFee: "fee (bps) must be non-negative"
+    ErrInvalidDeliveryStatus: "webhook delivery status must be one of: pending, delivered, failed"

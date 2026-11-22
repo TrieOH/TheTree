@@ -12,8 +12,3 @@ var (
 var (
 	ErrInvalidAPIKey = errors.New("this API key is unknown, revoked or malformed; check the key you sent, or create a new one")
 )
-
-// Login, registration and setup.
-var (
-	ErrTermsNotAccepted = errors.New("you must accept the terms of service to register")
-)
