@@ -1,0 +1,99 @@
+# Jobs, caching and telemetry
+
+- **Order:** 7
+- **Summary:** Work that runs after the response, responses the edge may cache, and what every backend records without asking.
+
+None of these three need much code in a backend. Each one is a small API in `lib/go`, plus a line or two in the spec or in `Build`.
+
+## Background jobs
+
+A job is work that shouldn't hold up the response, like delivering a webhook. `lib/jobs` describes the work, and a **carrier** moves it. The backend's code never knows which carrier is in use (ADR-0011, ADR-0023).
+
+### A job is a value with a kind
+
+```go
+// api/payssage/internal/features/webhooks/jobs/deliver.go
+type DeliverWebhookArgs struct {
+	DeliveryID uuid.UUID `json:"delivery_id"`
+}
+
+func (DeliverWebhookArgs) Kind() string { return "webhook.deliver" }
+```
+
+A job's arguments are turned into JSON, so keep them small: IDs, not payloads. The job loads fresh data when it runs.
+
+### Registering and enqueueing
+
+Each backend declares its jobs in one place, `internal/jobs`. Each handler lives in its feature:
+
+```go
+// api/payssage/internal/jobs/jobs.go
+func Registry(d Deps) *libjobs.Registry {
+	reg := libjobs.NewRegistry()
+	libjobs.Register(reg, webhooks.NewDeliverWebhookWorker(d.Deliveries, d.Events, d.Endpoints, d.HTTPClient).Work,
+		libjobs.GiveUpWith(webhooks.FailDelivery))
+	// ...
+	return reg
+}
+```
+
+`Build` hands the registry to the jobs module, and features get `d.Jobs` in their `Deps` to enqueue with:
+
+```go
+// api/payssage/internal/app/build.go
+d.Jobs.Serve(jobs.Registry(jobs.Deps{ /* ... */ Enqueuer: d.Jobs }), jobs.Periodic()...)
+```
+
+```go
+// api/payssage/internal/features/webhooks/operations.go
+err = o.Jobs.Enqueue(ctx, jobs.DeliverWebhookArgs{DeliveryID: id})
+```
+
+If the jobs module is listed but `Serve` never runs, the boot fails. Otherwise every job would be dropped without anyone noticing.
+
+### Carriers
+
+The jobs module picks a carrier from `JOBS_URL`:
+
+| `JOBS_URL` | Carrier | Where |
+| --- | --- | --- |
+| empty | `jobs/inprocess`: a worker pool and timers inside the process | Locally |
+| set | `jobs/httpjobs`: the job is POSTed to the API Worker, which puts it on a Cloudflare Queue and later delivers it back to the container's `/_jobs` | Production |
+
+With either carrier, `lib/jobs` decides what happens to a job that fails: retry after a backoff, or give up and run its give-up function. The carrier only applies that decision. Locally, periodic jobs run on timers in-process. On Cloudflare, the Worker's cron triggers fire them. The two schedules have to stay in step.
+
+## Caching at the edge
+
+Every response is `private, no-store` by default. A public GET can opt in to being cached at the edge by adding one line to its spec (ADR-0020):
+
+```yaml
+# api/univents/internal/features/editions/spec.yml
+x-cache: shared
+```
+
+The response then has to say what it contains, and any write that changes that data has to say what it made stale. Each is one call in the handler, using tag names from the backend's `internal/cachetags`:
+
+```go
+// api/univents/internal/features/editions/handlers.go
+httpcache.Tag(ctx, cachetags.EventEditions(req.EventId))    // in ListPublicEditions
+// ...
+httpcache.Purge(ctx, cachetags.EventEditions(edition.EventID)) // in PatchEdition
+```
+
+The edge reads those headers, removes them, and purges on writes. A cached response never includes data from other entities. For example, Univents' edition list carries no ticket stock, so a purge never has to reach past the data it names. `d.Chains` refuses `x-cache` on anything other than a public GET, because a cached response is the same for every caller.
+
+## Telemetry
+
+Traces, metrics and logs go to Grafana Cloud over OTLP, but only when the `OTEL_EXPORTER_OTLP_*` variables are set. Every backend gets the following without writing any code:
+
+| Signal | What you get |
+| --- | --- |
+| Traces | A boot trace for every process start. For every request, one span named after the route and one named after the operation. A span for every SQL query (pgx tracer), and one for every job. |
+| Metrics | Requests counted and timed by route and status, problems counted by slug, database pool stats, Go runtime stats |
+| Logs | One `http_request` line per request, plus the cause of every 5xx, all linked to their trace |
+
+In your own code:
+
+- **Logging:** `telemetry.Log()` is the process's `slog` logger. Pass the context (`InfoContext`, `ErrorContext`) so the line gets linked to its trace.
+- **Spans:** `telemetry.StartSpan(ctx, name)`, but only for one step you want to see on its own, like a call to a payment provider. Don't add a span to every repo method, since the query spans are already there.
+- **Errors:** return them. `WriteError` logs a 5xx, and `TraceMiddleware` records it on the span.

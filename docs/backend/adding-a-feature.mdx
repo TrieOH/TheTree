@@ -1,0 +1,219 @@
+# Adding a feature
+
+- **Order:** 9
+- **Summary:** A new feature folder from the table to the route: every file you touch, in order.
+
+[Your first change](/docs/onboarding/first-change) adds one endpoint to a feature that already exists. This page adds a new feature. The example is a made-up `labels` feature in Informd, which lets you put labels on a form. The code is a sketch that follows the real patterns. When you write the real thing, copy from `internal/features/steps`.
+
+You touch these files, in this order:
+
+| File | Why |
+| --- | --- |
+| `db/migrations/NNN_labels.sql` | The table |
+| `db/queries/labels.sql` | The queries |
+| `internal/features/labels/spec.yml` | The routes, schemas and problems |
+| `api-spec.yml` | One `$ref` per path |
+| `models/labels.go`, `ports/labels.go` | The domain type and the repo interface |
+| `internal/features/labels/repo.go`, `operations.go`, `handlers.go` | The code |
+| `internal/app/build.go` | The wiring |
+| `internal/app/constraints.go` | Any named constraints |
+
+<Steps>
+
+### Write the migration
+
+```sql
+-- api/informd/db/migrations/008_labels.sql
+-- +goose Up
+CREATE TABLE labels (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+    name VARCHAR(64) NOT NULL,
+    CONSTRAINT uniq_label_name_per_form UNIQUE (form_id, name)
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS labels;
+```
+
+Give every constraint a name. The name is how a violation becomes a named error, as described in [Errors](/docs/backend/errors). Apply it locally with `just migrate informd`.
+
+### Write the queries
+
+```sql
+-- api/informd/db/queries/labels.sql
+-- name: CreateLabel :one
+INSERT INTO labels (form_id, name)
+VALUES (@form_id, @name)
+    RETURNING *;
+
+-- name: ListLabelsByFormID :many
+SELECT * FROM labels
+WHERE form_id = $1
+ORDER BY name;
+```
+
+### Describe the routes
+
+Create `internal/features/labels/spec.yml` with the paths, the request schemas, and any problems only this feature answers. Then point `api-spec.yml` at each path:
+
+```yaml
+# api/informd/api-spec.yml
+paths:
+  # ...
+  /forms/{form_id}/labels:
+    $ref: './internal/features/labels/spec.yml#/paths/~1forms~1{form_id}~1labels'
+```
+
+The not-found error goes under `x-shared-errors` in `api/informd/problems.yml`. The constraint's error goes there too, or in the feature's spec as an `x-problem` with its own slug:
+
+```yaml
+# api/informd/problems.yml
+x-shared-errors:
+  not-found:
+    # ...
+    ErrLabelNotFound: "label not found"
+```
+
+### Generate
+
+```sh
+just gen informd
+```
+
+You now have `sqlc.CreateLabel`, the `openapi` request and response types, and `errs.ErrLabelNotFound`. The build fails from here on, because the generated server wants handlers that don't exist yet. This is expected. The next steps fix it.
+
+### Add the model and the port
+
+```go
+// api/informd/models/labels.go
+type Label struct {
+	ID     uuid.UUID `json:"id"`
+	FormID uuid.UUID `json:"form_id"`
+	Name   string    `json:"name" validate:"required,max=64"`
+}
+```
+
+```go
+// api/informd/ports/labels.go
+type LabelRepo interface {
+	Create(ctx context.Context, toCreate models.Label) (*models.Label, error)
+	List(ctx context.Context, formID uuid.UUID) ([]models.Label, error)
+}
+```
+
+### Write the repo
+
+```go
+// api/informd/internal/features/labels/repo.go
+type Repo struct {
+	q   *sqlc.Queries
+	dbe database.ErrorHandler
+}
+
+var _ ports.LabelRepo = (*Repo)(nil)
+
+func NewRepo(q *sqlc.Queries) *Repo {
+	return &Repo{q: q, dbe: database.NewErrorHandler(errs.ErrLabelNotFound)}
+}
+
+func (repo *Repo) db(ctx context.Context) *sqlc.Queries { return database.Queries(ctx, repo.q) }
+
+func (repo *Repo) Create(ctx context.Context, l models.Label) (*models.Label, error) {
+	row, err := repo.db(ctx).CreateLabel(ctx, sqlc.CreateLabelParams{FormID: l.FormID, Name: l.Name})
+	return database.One(row, err, repo.dbe, mapLabel)
+}
+```
+
+### Write the operations
+
+```go
+// api/informd/internal/features/labels/operations.go
+type Deps struct {
+	Labels ports.LabelRepo
+	Authz  *authz.Service
+}
+
+type Operations struct{ Deps }
+
+func New(d Deps) *Operations { return &Operations{Deps: d} }
+
+func (o *Operations) Create(ctx context.Context, in models.Label) (*models.Label, error) {
+	err := validator.Validate(in)
+	if err != nil {
+		return nil, err
+	}
+	_, err = o.Authz.Form(ctx, in.FormID, models.FormMemberRoleAdmin)
+	if err != nil {
+		return nil, err
+	}
+	return o.Labels.Create(ctx, in)
+}
+```
+
+Put only what the feature uses in `Deps`. If it needs another feature's data, add that feature's port, not the feature itself.
+
+### Write the handlers
+
+```go
+// api/informd/internal/features/labels/handlers.go
+type Handlers struct{ ops *Operations }
+
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
+
+func (h *Handlers) CreateLabel(ctx context.Context, req openapi.CreateLabelRequestObject) (openapi.CreateLabelResponseObject, error) {
+	label, err := h.ops.Create(ctx, models.Label{FormID: req.FormId, Name: req.Body.Name})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateLabel201JSONResponse(*label), nil
+}
+```
+
+The method names and types come from `internal/openapi`. If you're not sure of a signature, look up the operation in `StrictServerInterface`.
+
+### Wire it in Build
+
+```go
+// api/informd/internal/app/build.go
+labelsRepo := labels.NewRepo(q)
+// ...
+srv := &server{
+	// ...
+	labelsHandlers: labels.NewHandlers(labels.New(labels.Deps{
+		Labels: labelsRepo, Authz: az,
+	})),
+}
+```
+
+`labelsHandlers` exists because `just gen` saw the new folder declare `Handlers` and added it to `internal/app/server.gen.go`. Run `just gen informd` again if the field is missing.
+
+### Map the constraint
+
+```go
+// api/informd/internal/app/constraints.go
+"uniq_label_name_per_form": errs.ErrLabelNameTaken,
+```
+
+`TestConstraintsMatchSchema` fails until every named constraint in the schema is in this map.
+
+### Test and run
+
+```sh
+just test informd       # unit tests
+just test-all informd   # with the database tests, needs Docker
+just run informd
+```
+
+Write unit tests for the operations with fake ports. Write database tests in `package labels_test` with `lib/testdb`. `just test` skips those, so run `just test-all` before you open the pull request. Then call the route and check that its span `CreateLabel` shows up with its query underneath it.
+
+</Steps>
+
+## Checklist
+
+- The spec lists every problem the operation can answer in `x-problems`
+- Every constraint is named, and is in `Constraints()`
+- Handlers only translate; the rules are in the operations
+- No feature imports another feature's package
+- No spans added by hand unless one step really needs its own
+- `just gen`, `just test-all informd` and `just lint informd` pass

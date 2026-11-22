@@ -1,0 +1,189 @@
+# Errors
+
+- **Order:** 6
+- **Summary:** Code returns named Go errors. The spec declares which problem answers each one, and one generated mapper writes it as RFC 9457.
+
+The rule: **code returns a named error, and only the mapper knows about HTTP.** An operation never picks a status code. It returns `errs.ErrStepsAcrossForms`, and the mapper knows that's a 400 (ADR-0016, ADR-0019, ADR-0022).
+
+## Declare it in the spec first
+
+A problem is declared as a schema with an `x-problem` block, in the spec of the feature that uses it:
+
+```yaml
+# api/informd/internal/features/steps/spec.yml
+StepsAcrossForms:
+  x-problem:
+    slug: steps-across-forms
+    status: 400
+    title: Steps Across Forms
+    description: "All steps must belong to the same form."
+    error: ErrStepsAcrossForms
+    detail: "a bulk edit changes the steps of one form, and the request mixes steps from several; send one request per form"
+```
+
+`just gen` turns it into a Go error, with the `detail` as its message:
+
+```go
+// api/informd/errs/errs.gen.go
+// ErrStepsAcrossForms is answered as steps-across-forms (400 Steps Across Forms).
+ErrStepsAcrossForms = errors.New("a bulk edit changes the steps of one form, and the request mixes steps from several; send one request per form")
+```
+
+The operation returns it:
+
+```go
+// api/informd/internal/features/steps/operations.go
+for _, p := range payload {
+	if p.FormID != formID {
+		return errs.ErrStepsAcrossForms
+	}
+}
+```
+
+The client gets this:
+
+```json
+{
+  "type": "https://api.informd.trieoh.com/problems/steps-across-forms",
+  "status": 400,
+  "title": "Steps Across Forms",
+  "detail": "a bulk edit changes the steps of one form, and the request mixes steps from several; send one request per form",
+  "instance": "/forms/3f6c.../steps"
+}
+```
+
+A person reads the `detail`, so say what went wrong and what to do about it. The `type` URL is a real page: the harness serves each problem's docs at `/problems/{slug}`, and the portal's Problems pages are built from the same declarations.
+
+## Where a problem is declared
+
+| File | For |
+| --- | --- |
+| A feature's `spec.yml` | Problems only that feature answers |
+| `api/<api>/problems.yml` | Problems several features of one backend share |
+| `api/problems.yml` | Problems every backend answers, like `not-found`, `validation` and `unauthenticated` |
+
+An operation lists what it can answer in `x-problems`, as slugs or statuses. The harness checks each answered problem against that list. One that isn't listed is a warning in production, and a panic in tests and with `DEBUG_MODE`.
+
+## Errors with data
+
+When a problem carries extra members, declare them as properties. The generated error then becomes a type with a field for each member, and the `detail` is a template over them:
+
+```yaml
+# api/payssage/problems.yml
+UnsupportedProvider:
+  x-problem:
+    slug: unsupported-provider
+    status: 400
+    title: Unsupported Provider
+    error: UnsupportedProviderError
+    detail: 'unsupported provider {provider}'
+  type: object
+  required: [provider]
+  properties:
+    provider: { type: string, description: "The provider's name." }
+```
+
+```go
+// api/payssage/errs/errs.gen.go
+type UnsupportedProviderError struct {
+	Provider string
+}
+
+func (e *UnsupportedProviderError) Error() string {
+	return fmt.Sprintf("unsupported provider %v", e.Provider)
+}
+```
+
+```go
+// api/payssage/internal/providers/providers.go
+return "", &errs.UnsupportedProviderError{Provider: s}
+```
+
+The mapper answers generated typed errors on its own. Only an error the spec can't express needs code by hand, like one Go error that becomes different problems depending on its fields. That goes in a small switch that `main` passes to the mapper. Payssage's is `internal/app/errmap`. Informd has none, so it passes `nil`.
+
+## Database errors
+
+Repos don't build errors themselves. Each one holds a `database.ErrorHandler` made with its not-found error:
+
+```go
+// api/informd/internal/features/steps/repo.go
+dbe: database.NewErrorHandler(errs.ErrStepNotFound),
+```
+
+It handles a driver error like this:
+
+- **No rows** becomes the resource's not-found error, which is answered as `not-found` with the error's text.
+- **A violated constraint** becomes the named error `app.Constraints()` maps it to:
+
+  ```go
+  // api/informd/internal/app/constraints.go
+  "uniq_form_name_per_namespace": errs.ErrFormNameTaken,
+  ```
+
+- **A constraint missing from that map** is answered as a 500. The boot logs a warning when the map and the schema drift apart, and `TestConstraintsMatchSchema` fails before a deploy.
+- **Anything else** is returned as it is, and answered as a 500.
+
+So name every constraint in a migration, and add it to `Constraints()` with the error it means.
+
+Errors that only say "this resource doesn't exist" don't need a problem of their own. List them under `x-shared-errors` in the backend's `problems.yml`, and they're answered with the shared `not-found`:
+
+```yaml
+# api/informd/problems.yml
+x-shared-errors:
+  not-found:
+    ErrStepNotFound: "step not found"
+```
+
+## The mapper
+
+`main` passes `problems.Mapper(...)` as `backend.App.Errors`. It's generated, and it tries the cases in this order:
+
+```go
+// api/informd/internal/problems/problems.gen.go
+func Mapper(app fp.ErrorMapper) fp.ErrorMapper {
+	var m fp.ErrorMapper
+	m = func(err error) *fp.Problem {
+		if app != nil {
+			if p := app(err); p != nil {
+				return p
+			}
+		}
+		if p := typed(err); p != nil {
+			return p
+		}
+		for _, c := range named {
+			if errors.Is(err, c.target) {
+				return c.problem(c.target.Error())
+			}
+		}
+		if p := shared(err, m); p != nil {
+			return p
+		}
+		return InternalServerError("Internal Server Error")
+	}
+	return m
+}
+```
+
+1. The backend's hand-written switch, if it has one
+2. Generated typed errors
+3. Named errors from `x-problem` and `x-shared-errors`
+4. Errors from `lib/go` that every backend answers the same way: not found, validation, bad tokens, rate limits, batch failures
+5. Anything else is a 500
+
+A 5xx never puts its cause in the body. `WriteError` logs the cause and records it on the span, and the client only sees `Internal Server Error`.
+
+## Errors about specific fields
+
+To point at the request fields that caused an error, wrap it with `lib/fielderr`. It still matches as the named error, and `WriteError` lists the fields under `errors` in the problem. Validation failures from `lib/validator` do this already.
+
+## In tests
+
+Tests check the status a client would get, not the error's text:
+
+```go
+// api/univents/internal/features/checkouts/status_test.go
+func statusOf(err error) int {
+	return problems.Mapper(nil)(err).Status
+}
+```

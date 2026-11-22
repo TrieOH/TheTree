@@ -1,0 +1,142 @@
+# Features
+
+- **Order:** 5
+- **Summary:** A feature is one folder: its spec, repo, operations and handlers. How it gets its dependencies, shares data and runs transactions.
+
+A backend's code is split by feature, not by layer. Everything about Informd's steps is in `internal/features/steps`, in one Go package (ADR-0015):
+
+```
+internal/features/steps/
+  spec.yml        the routes this feature serves, and its own schemas and problems
+  handlers.go     Handlers, NewHandlers: HTTP in and out
+  operations.go   Deps, Operations, New, and every operation
+  repo.go         Repo, NewRepo: the database calls
+```
+
+Not every feature has all four. Informd's `answers` and `responders` serve no routes of their own, so they only have a repo. When `operations.go` gets too long, split it by flow, the way Univents' `checkouts` has `reserve.go`, `payment.go` and `checkout.go`. A feature's own subpackages, like its jobs, go inside its folder (`features/checkouts/jobs`).
+
+## Operations take a Deps struct
+
+```go
+// api/informd/internal/features/steps/operations.go
+type Deps struct {
+	Forms      ports.FormsRepo
+	Steps      ports.StepRepo
+	Namespaces ports.NamespaceRepo
+	Authz      *authz.Service
+}
+
+type Operations struct{ Deps }
+
+func New(d Deps) *Operations { return &Operations{Deps: d} }
+```
+
+`Deps` lists everything the feature needs, as exported fields. `Operations` embeds it, so an operation reads `o.Steps` or `o.Tx` directly. `Build` fills it with a struct literal, so you can see the whole dependency graph in one file.
+
+When an operation needs state it works out for itself, like a retry budget or a WebSocket hub, that goes in an unexported field on `Operations`, set in `New`. It doesn't go in `Deps`.
+
+## Handlers only translate
+
+```go
+// api/informd/internal/features/steps/handlers.go
+type Handlers struct {
+	ops *Operations
+}
+
+func NewHandlers(ops *Operations) *Handlers { return &Handlers{ops: ops} }
+```
+
+A handler method has the name and signature of the generated operation, like `CreateStep(ctx, openapi.CreateStepRequestObject)`. It copies the request into the operation's input, calls one operation, and wraps the result in a generated response. If you find a rule in a handler, it belongs in the operation.
+
+## Repos end in One or Many
+
+```go
+// api/informd/internal/features/steps/repo.go
+type Repo struct {
+	q   *sqlc.Queries
+	dbe database.ErrorHandler
+}
+
+var _ ports.StepRepo = (*Repo)(nil)
+
+func NewRepo(q *sqlc.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler(errs.ErrStepNotFound),
+	}
+}
+
+func (repo *Repo) List(ctx context.Context, formID uuid.UUID) ([]models.Step, error) {
+	sqlcForm, err := repo.db(ctx).ListStepsByFormID(ctx, formID)
+	return database.Many(sqlcForm, err, repo.dbe, mapStep)
+}
+```
+
+A repo method calls one sqlc query and finishes with `database.One` or `database.Many`. Those map the rows to `models` types and send errors through `dbe`. `dbe` turns "no rows" into `ErrStepNotFound`, and a constraint violation into the named error `app.Constraints()` maps it to. Any other driver error goes up unchanged and is answered as a 500.
+
+The `var _ ports.StepRepo = (*Repo)(nil)` line makes the build fail if the repo stops satisfying its interface.
+
+## Sharing between features
+
+Features don't import each other. Two leaf packages make that possible:
+
+- **`models/`** holds the domain types, like `models.Step`. Every layer uses them, and they import nothing from the backend.
+- **`ports/`** holds the repo interfaces, like `ports.StepRepo`. A feature that needs another feature's data asks for the port in its `Deps`. Informd's `steps` reads forms through `ports.FormsRepo` and never imports `forms`.
+
+When a feature needs another feature's *operations*, and not just its data, it declares a small interface for exactly what it calls:
+
+```go
+// api/univents/internal/features/checkouts/operations.go
+type Badges interface {
+	EmitForConfirmedRegistration(ctx context.Context, registrationID uuid.UUID) (*models.BadgeEmission, error)
+}
+```
+
+`Build` passes the badges feature's operations in as `Badges`. That way `checkouts` depends on a single method, not on the badges package.
+
+Code that several features share but that isn't a feature itself goes outside `features/`. Examples are Univents' `internal/notify` and Payssage's `internal/providers`.
+
+## Transactions
+
+An operation that has to write several things together uses `Tx` from its `Deps`:
+
+```go
+// api/informd/internal/features/fields/operations.go
+err = o.Tx.WithinTx(ctx, func(ctx context.Context) error {
+	created, err = o.Fields.Create(ctx, *field)
+	if err != nil {
+		return err
+	}
+	if payload.Type == models.FieldTypeSelect && payload.SelectConfig != nil {
+		_, err = o.Fields.CreateSelectConfig(ctx, models.FieldSelectConfig{ /* ... */ })
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+})
+```
+
+The transaction travels on the context. Every repo reads its queries through `database.Queries`, which uses the context's transaction when there is one:
+
+```go
+// api/informd/internal/features/steps/repo.go
+func (repo *Repo) db(ctx context.Context) *sqlc.Queries { return database.Queries(ctx, repo.q) }
+```
+
+So the repos don't need to know whether they're inside a transaction. If `fn` returns an error, everything rolls back. Nested transactions are refused instead of being silently flattened.
+
+## Testing a feature
+
+Since `Deps` is a plain struct, a unit test fills in only the fields the operation uses, with fakes from `ports`. Use `database.NoTx{}` for `Tx` when there's no database.
+
+Tests that need a real database use `lib/testdb`, which starts a disposable Postgres with the backend's migrations. Univents and IdentityX also have `internal/testrepos`, which builds every repo over one query handle for tests that seed data through several features:
+
+```go
+// api/univents/internal/features/checkouts/checkout_db_test.go
+pool := testdb.Postgres(t, "../../../db/migrations")
+// ...
+r := testrepos.New(q)
+```
+
+`testrepos` imports the features, so these tests live in the external test package (`package checkouts_test`). Otherwise the imports would go in a circle.

@@ -1,0 +1,68 @@
+# Libraries
+
+- **Order:** 8
+- **Summary:** Every package in lib/go, what it's for, and which ones a backend uses directly.
+
+`lib/go` is one Go module, named `lib`, shared by all four backends through `go.work`. A package is imported as `lib/<package>`, like `lib/database`. Before you write a helper, check whether it's already here.
+
+The SDKs in `sdk/go` (`sdk/identityx`, `sdk/payssage`) are separate. They are the clients one service uses to call another.
+
+## The kit
+
+These packages boot and serve every backend. You'll rarely change them, but you'll read them often.
+
+| Package | What it does |
+| --- | --- |
+| `lib/backend` | `backend.App`, `backend.Run`, `Module` and `Deps`. The whole process lifecycle. See [From main to the first request](/docs/backend/boot-walkthrough). |
+| `lib/backend/postgres` | Module: the pool and the transaction runner, plus the constraint registry |
+| `lib/backend/identityx` | Module: the IdentityX SDK client and the request authenticators built on it |
+| `lib/backend/email` | Module: the SMTP client |
+| `lib/backend/jobs` | Module: the jobs carrier, picked from `JOBS_URL` |
+| `lib/httpserver` | The router frame, the middleware stack, the strict middleware, the auth chains from the spec, and `WriteError` |
+| `lib/config` | The env blocks backends share (`Server`, `Postgres`, `IdentityX`, `CORS`, `Jobs`, `SMTP`) and `Load` |
+| `lib/openapispec` | Reads operations, security and extensions from a bundled spec |
+| `lib/errx` | `Exit`: log and stop the process. Only for `main`. |
+
+## Used in feature code
+
+| Package | Reach for it when |
+| --- | --- |
+| `lib/database` | Every repo: `One`, `Many`, `BatchExec`, `Queries(ctx, q)`, `NewErrorHandler`, `TxRunner`. Also `Notifier`, for Postgres LISTEN/NOTIFY. |
+| `lib/validator` | Validating a domain value in an operation (`validator.Validate`). Its errors are answered as the shared `validation` problem. |
+| `lib/fielderr` | Pointing an error at the request fields that caused it |
+| `lib/jobs` | Declaring, registering and enqueueing background jobs. `jobs/inprocess` and `jobs/httpjobs` are the carriers. |
+| `lib/httpcache` | `Tag` and `Purge` for responses cached at the edge (`x-cache: shared`) |
+| `lib/telemetry` | `Log()` and `StartSpan`, for the rare span worth adding by hand |
+| `lib/xslices` | `MapSlice`, for mapping rows to models and inputs to rows |
+| `lib/authz` | The role checks backends share. Each backend's access checks are built on it. |
+
+## Used by some backends
+
+| Package | Used by | What it does |
+| --- | --- | --- |
+| `lib/crypto` | IdentityX, Univents | HMAC, Argon2, key handling and sealing secrets |
+| `lib/apikeys` | IdentityX | Hashing and checking API keys |
+| `lib/oauth` | IdentityX | OAuth provider definitions and their credentials |
+| `lib/email` | IdentityX, Univents | Building and sending messages, with header injection checks |
+| `lib/jsonschema` | IdentityX, Payssage | Validating a JSON document against a JSON Schema |
+| `lib/objectstorage` | Univents | A thin S3-compatible client (R2) |
+
+## Build and test helpers
+
+| Package | What it does |
+| --- | --- |
+| `lib/edgeroutes` | Writes and checks the route list the API's Worker uses before waking the container |
+| `lib/testdb` | A disposable Postgres in a container for database tests, with the backend's migrations applied |
+
+## The generators
+
+Not in `lib/go`, but they're part of the same kit. They live in `tools/go` and run through `just gen`:
+
+| Tool | What it writes |
+| --- | --- |
+| `tools/go/problemgen` | The bundled spec, the problems package, the named errors and the Worker's route list |
+| `tools/go/strictmount` | `Mount` and the `server` type that embeds every feature's handlers |
+
+## Changing a library
+
+A change in `lib/go` reaches all four backends at once. Before you open the pull request, run `just test-all` and `just lint` with no target, so every backend is covered. Only TrieOH's own services use the SDKs and libraries, so breaking changes are fine if the four backends are updated in the same change.

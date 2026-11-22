@@ -5,7 +5,7 @@ import type { DocMeta } from "./types";
 // copied into the portal. Decisions are the ADRs; the other categories fill
 // in as reports and runbooks are converted (phase 4).
 
-export type DocCategoryId = "decisions" | "runbooks" | "incident-reports" | "onboarding";
+export type DocCategoryId = "decisions" | "runbooks" | "incident-reports" | "onboarding" | "backend";
 
 export interface DocCategory {
   id: DocCategoryId;
@@ -16,6 +16,7 @@ export interface DocCategory {
 // The order here is the order in the sidebar and on the Docs page.
 export const DOC_CATEGORIES: readonly DocCategory[] = [
   { id: "onboarding", label: "Onboarding", description: "Run TheTree locally and learn how we ship." },
+  { id: "backend", label: "Backend", description: "How every Go backend is built, from main to the database." },
   { id: "runbooks", label: "Runbooks", description: "How to deploy, roll back and fix the usual things." },
   { id: "decisions", label: "Decisions", description: "Architecture decision records: why things are this way." },
   { id: "incident-reports", label: "Incident reports", description: "What broke, why, and what changed after." },
@@ -51,15 +52,16 @@ const decisions: DocEntry[] = Object.entries(adrMeta)
   .sort((a, b) => b.slug.localeCompare(a.slug));
 
 // Written docs: docs/<folder>/*.md(x), titled by their `# Heading`.
-const guideMeta = import.meta.glob<DocMeta>("../../../../../docs/{onboarding,runbooks,incidents}/*.{md,mdx}", {
+const guideMeta = import.meta.glob<DocMeta>("../../../../../docs/{onboarding,backend,runbooks,incidents}/*.{md,mdx}", {
   eager: true,
   import: "meta",
 });
 const guideContent = import.meta.glob<Awaited<ReturnType<Loader>>>(
-  "../../../../../docs/{onboarding,runbooks,incidents}/*.{md,mdx}",
+  "../../../../../docs/{onboarding,backend,runbooks,incidents}/*.{md,mdx}",
 );
 const FOLDER: Record<string, DocCategoryId> = {
   onboarding: "onboarding",
+  backend: "backend",
   runbooks: "runbooks",
   incidents: "incident-reports",
 };
@@ -82,6 +84,7 @@ const DOCS: Record<DocCategoryId, readonly DocEntry[]> = {
   // Newest incident first; their files are named by date.
   "incident-reports": guides("incident-reports").toSorted((a, b) => b.slug.localeCompare(a.slug)),
   onboarding: guides("onboarding"),
+  backend: guides("backend"),
 };
 
 export function findCategory(id: string): DocCategory | undefined {
