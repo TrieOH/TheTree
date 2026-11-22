@@ -86,7 +86,7 @@ export function exampleBody(problem: ProblemDoc): string {
     type: problemType(problem),
     status: problem.status,
     title: problem.title,
-    detail: problem.message ?? (problem.description || problem.title),
+    detail: problem.detail ?? (problem.description || problem.title),
     instance: "/the/request/path",
     ...Object.fromEntries(problem.members.map((member) => [member.name, exampleValue(member)])),
   };
