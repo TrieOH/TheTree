@@ -1,0 +1,92 @@
+# Database
+
+- **Order:** 9
+- **Group:** Edge and data
+- **Summary:** Where the IdentityX database runs, how the schema changes, how the code reaches it, and the tables worth knowing.
+
+IdentityX keeps everything in one Postgres database: Neon in production, `identityx-db` in Docker locally.
+
+## Connections
+
+A pooler shares a few real database connections among many requests. The API connects through one in transaction mode, where a connection goes back to the pool after each transaction: Neon's pooled endpoint in production, and `identityx-pooler` (pgbouncer) locally ([ADR-0010](/docs/decisions/adr-0010)).
+
+Migrations connect straight to the database instead. goose, the migration tool, takes a lock that must stay on one connection for the whole run, which transaction mode can't give it.
+
+| Variables | Used by |
+| --- | --- |
+| `IDX_POSTGRES_HOST`, `_PORT`, `_DB`, `_USER`, `_PASSWORD` | The API, through the pooler |
+| `IDX_POSTGRES_DIRECT_HOST`, `_DIRECT_PORT` | `just migrate`, straight to the database |
+| `IDX_POSTGRES_MAX_CONNS` | The size of the API's own pool |
+
+A lock taken inside a transaction, like the setup lock, works through the pooler. A lock that must outlive a transaction does not.
+
+## Changing the schema
+
+Migrations are SQL files in `db/migrations`, numbered `001_actors.sql` to `013_drop_river.sql`, run by goose.
+
+<Steps>
+
+### Write the migration
+
+Add the next numbered file, with an `-- +goose Up` part and a `-- +goose Down` part. Give every constraint a name:
+
+```sql
+ALTER TABLE actors ADD COLUMN nickname TEXT;
+ALTER TABLE actors ADD CONSTRAINT uniq_actors_nickname UNIQUE (nickname);
+```
+
+### Run it locally
+
+`just migrate identityx` applies it, and `just migrate identityx status` shows what is applied. `just run identityx` also migrates before it starts the API.
+
+### Update the generated code
+
+Run `just gen identityx`, so sqlc reads the new schema.
+
+### Map the constraint to an error
+
+A constraint is a rule the database enforces, like "unique". Add each new one to `Constraints()` in `internal/app/constraints.go`, with the named error it should answer:
+
+```go
+"uniq_actors_nickname": errs.ErrNicknameTaken,
+```
+
+### Migrate production
+
+No deploy runs migrations. Run the same recipe by hand against Neon's direct endpoint, before the release that needs the change. The recipe reads `api/identityx/.env`, which overrides most values you export. Only `IDX_DB_HOST`, `IDX_DB_PORT` and `IDX_DB_NAME` win over it, so the production user and password have to be in that `.env` while you run it.
+
+</Steps>
+
+A migration must also work with the release that is running now, because the old release keeps serving while the new one starts. Add tables, and columns that are nullable or have a default, first. Drop or rename only in a later release, once no running code reads the old shape. Rolling back a release tag does not change the schema back.
+
+If a constraint is missing from `Constraints()`, the boot logs `constraint registry gap` as a warning and keeps starting. A violation of that constraint then answers `internal-server-error` instead of its own problem. No test catches a missing entry, so after a release that adds a constraint, check the boot log for that warning.
+
+## From the code to the database
+
+1. SQL queries live in `db/queries/*.sql`, one file per feature, each query with a `-- name: <Name> :one|:many|:exec` line.
+2. `just gen` runs sqlc, which writes typed Go functions into `internal/sqlc`. That folder is generated and not committed.
+3. Each feature's `repo.go` calls those functions and turns their rows into `models` types. The rest of the code only sees the repo, through its interface in `ports`.
+
+A repo reads its connection with `database.Queries(ctx, ...)`, which uses the transaction in `ctx` when there is one. To run several writes as one, wrap them in `o.Tx.WithinTx(ctx, func(ctx context.Context) error { ... })`. Every repo call made with that inner `ctx` joins the transaction. Creating a project with its keys, and resetting a password, both work this way.
+
+## Tables worth knowing
+
+| Table | Why it matters |
+| --- | --- |
+| `actors` | Platform actors and project actors in one table. `project_id` is `NULL` for platform actors. An email is unique per project and per sign-in method, so one person can be two actors. |
+| `actor_external_identities` | A Google or GitHub account linked to an actor |
+| `actor_profiles` | One profile per actor, with its schema version and an `outdated` flag |
+| `org_members`, `project_members` | Roles in organizations and projects. An organization role also counts in its projects, see [Authorization](/services/identityx/docs/authorization). |
+| `platform_roles` | Roles on IdentityX itself |
+| `crypto_keys` | Every signing and encryption key, sealed with the master key |
+| `blacklist_entries` | Ended tokens, and actors whose sessions were all ended |
+| `action_tokens` | One row per email link, so each link works once |
+| `api_keys`, `capabilities`, `api_key_capabilities`, `actor_capabilities` | API keys and what they may do |
+| `oauth_login_states` | Short-lived state while someone signs in with Google or GitHub |
+| `terms_of_service`, `tos_acceptances` | Each version of a project's terms, and who accepted which |
+
+## Tests
+
+Tests whose names end in `RealDB` start a Postgres in Docker with the migrations applied, through `lib/go/testdb`. `go test -short` skips them, and that is what the commit hook runs. Run them with `go test -run RealDB ./...` in `api/identityx`.
+
+`TestConstraintErrorsAreMapped` in `internal/app/errmap/problems_test.go` checks that every constraint in `Constraints()` answers a problem: `409` for a name starting with `uniq_`, and `400` for the rest.

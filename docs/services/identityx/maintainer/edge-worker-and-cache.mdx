@@ -1,0 +1,77 @@
+# Edge Worker and cache
+
+- **Order:** 8
+- **Group:** Edge and data
+- **Summary:** What the Worker in front of IdentityX answers by itself, what it caches, and how writes clear the cache.
+
+On Cloudflare, every request to `api.identityx.trieoh.com` reaches the `identityx-api` Worker first. A Worker is a small program Cloudflare runs close to the caller. It answers what it can, and wakes the Go container only for the rest. The code is `api/identityx/cloudflare/src/index.ts`. For Workers, containers and cold starts in general, see [Architecture](/docs/onboarding/architecture).
+
+## The container
+
+| Setting | Value | Where |
+| --- | --- | --- |
+| Size | `lite`, 256 MiB, with `GOMEMLIMIT=200MiB` | `cloudflare/wrangler.jsonc` |
+| Instances | 1 | `max_instances`, and `INSTANCES` in `index.ts` |
+| Region | South America (`SAM`) | `constraints.regions` |
+| Sleeps after | 2 minutes without requests | `sleepAfter` |
+
+IdentityX keeps no state in memory that another instance would need. To run more instances, raise `max_instances` and `INSTANCES` together.
+
+## What the Worker answers by itself
+
+- **A path IdentityX doesn't serve** gets `404` at once, so it never wakes the container. The list of first path parts is `cloudflare/src/routes.ts`, which `just gen` writes from the spec. `/_jobs` is refused the same way.
+- **`GET /.well-known/jwks.json`** is answered from its cache.
+- **A cached profile read** is answered by the edge cache.
+
+Everything else goes to the container.
+
+## The JWKS cache
+
+The JWKS is the list of public keys other APIs fetch to check IdentityX tokens. They fetch it often, so the Worker keeps a copy in two places:
+
+1. The edge cache, Cloudflare's copy close to the caller, for 5 minutes.
+2. Cloudflare KV, a key-value store shared by every location, for up to 7 days. The namespace is called `BUDGET` because it also holds the container budget counters. The JWKS keys start with `jwks:`.
+
+Each copy is kept per `project_id`, and the rest of the query string is dropped. The Worker deletes the KV copies when the container sends a `jwks.changed` job, and when a project is created. If an announcement is lost, the KV copy stays old for up to 7 days. [Signing and encryption keys](/services/identityx/docs/signing-and-encryption-keys) explains when keys change.
+
+To delete the KV copies by hand, from `api/identityx/cloudflare`:
+
+```sh
+pnpm wrangler kv key list --binding BUDGET --prefix jwks: --remote
+pnpm wrangler kv key delete --binding BUDGET "jwks:?project_id=<id>" --remote
+```
+
+The edge copy expires on its own within 5 minutes.
+
+## Cached profile reads
+
+Two routes are marked `x-cache: shared` in `internal/features/profiles/spec.yml`. That marker in the spec lets the edge keep their answers for up to a week ([ADR-0020](/docs/decisions/adr-0020)):
+
+- `GET /projects/{project_id}/actors/{actor_id}/profile`
+- `GET /profiles/by-handle/{handle}`
+
+A tag is a label on a cached answer. Each answer carries tags that say what it holds, and a write names the tags it changed. Once the write succeeds, Cloudflare drops every cached answer with those tags, so the next read goes to the container. For example, saving the profile of actor `A` clears `profile:A`.
+
+| Tag | Put on | Cleared by |
+| --- | --- | --- |
+| `profile:<actor id>` | Both reads of that actor's profile | Saving that profile |
+| `profiles:<project id>` | Profile reads in that project | Saving that project's profile schema |
+| `profiles:by-handle` | Every read by handle | Saving any profile schema |
+
+A schema change clears every profile in its project because profiles move to the new schema when they are read. A read by handle doesn't know the project before it runs, so a schema change clears all of them.
+
+The tags are named in `internal/cachetags`. The Go side sets `Cache-Tag` and `Cache-Purge-Tag`, along with `Cache-Control` and `CDN-Cache-Control` for the week at the edge. Cloudflare reads `Cache-Tag`. The Worker takes `Cache-Purge-Tag` off the response and clears those tags. If Cloudflare rejects a clear, usually because of its rate limit, the Worker retries it as a `cache.purge` job on the queue. That job is handled by the Worker, so it never reaches the container.
+
+To add a cached read:
+
+1. Mark the route `x-cache: shared` in its `spec.yml`.
+2. In the handler, call `httpcache.Tag` with what the answer holds.
+3. In every write that changes it, call `httpcache.Purge` with the same tags.
+
+Only a `200` is cached. A route without `x-cache: shared` is never cached.
+
+## Jobs, schedule and logs
+
+The Worker also carries the jobs on Cloudflare and starts the daily ones with its cron. See [Background jobs](/services/identityx/docs/background-jobs).
+
+Both the Worker and the container send logs and traces to Grafana. The Worker appears as `identityx-api` and the container as `identityx-container`.
