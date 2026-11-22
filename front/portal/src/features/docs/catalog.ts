@@ -108,6 +108,12 @@ export function neighboursOf(doc: DocEntry): { previous?: DocLink; next?: DocLin
   return at < 0 ? {} : { previous: link(docs[at - 1]), next: link(docs[at + 1]) };
 }
 
+/** An ADR by its number ("ADR-0011"), loader stripped. */
+export function decisionByNumber(number: string): DocLink | undefined {
+  const doc = decisions.find((entry) => entry.meta.number === number);
+  return doc && { category: doc.category, slug: doc.slug, meta: doc.meta };
+}
+
 /** "accepted; `repo/` amended …" → "accepted" */
 export function statusWord(status: string | undefined): string | undefined {
   return status?.match(/^[a-z]+/i)?.[0].toLowerCase();
