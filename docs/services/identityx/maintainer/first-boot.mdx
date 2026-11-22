@@ -1,0 +1,72 @@
+# First boot
+
+- **Order:** 2
+- **Group:** How it's built
+- **Summary:** How a new IdentityX gets its first account, and why every other route waits for it.
+
+A new IdentityX has an empty database. Its first account is made through `/auth/setup` and becomes the first super admin. Until then, every other route answers `setup-required`.
+
+<Callout type="warning" title="Run setup before the API is public">Whoever calls `POST /auth/setup` first on an empty database becomes super admin. Make the first account before anyone else can reach the API.</Callout>
+
+## What happens
+
+<Steps>
+
+### The API boots
+
+The boot creates the keys for the platform and every project, then starts serving.
+
+### The app asks if setup is done
+
+The IdentityX app calls `GET /auth/setup`. It answers `204` while setup is open, and `setup-complete` (409) once it is done. While setup is open, the app sends every page to its setup page.
+
+### Someone sends the first account
+
+`POST /auth/setup` takes an email and a password. In one transaction it:
+
+1. takes the setup lock
+2. checks again that no actor exists
+3. creates a `human` platform actor with that password
+4. gives it the `super_admin` platform role
+
+Then it logs that actor in and answers `201` with a token pair. No verification email is sent.
+
+### The guard opens
+
+From then on, the guard lets every request through. Another `POST /auth/setup` answers `setup-complete`.
+
+</Steps>
+
+The lock is for two setups sent at the same moment. Both can pass the first check, but only one gets the lock first and finds the database empty. The other answers `setup-complete`. The lock is a Postgres advisory lock (`LockSetup` in `db/queries/actors.sql`), held until the transaction ends.
+
+## How the API knows setup is done
+
+Setup is done once any actor exists in the database, of any kind and in any project. The database is the only record of it.
+
+The database decides because several containers can serve the same database. When one container finishes setup, the others see it on their next check.
+
+Once a container sees that setup is done, it keeps that answer in memory. Setup never goes back to open, so the answer stays true and the container stops asking the database.
+
+The code is in `internal/setup` (the state) and `internal/app/auth_guard.go` (the guard).
+
+## Locally
+
+<Steps>
+
+### Start the API and the app
+
+Run `just run identityx` for the API on port 8080, and `pnpm identityx dev` for the app on port 3001.
+
+### Open the app
+
+Open `localhost:3001`. With an empty database, the app takes you to its setup page. The account you make there is your local super admin.
+
+</Steps>
+
+To start over, stop everything with `just down` and delete the database volume, whose name ends in `identityx_db_data` (`docker volume ls` shows it). `just run identityx` then creates and migrates a new database, and setup opens again.
+
+## Problems
+
+<Problems service="identityx" only={["setup-required", "setup-check-failed", "setup-complete"]} description="inline" />
+
+`setup-check-failed` means the guard could not ask the database whether setup is done. Look at the database connection first: the `IDX_POSTGRES_*` settings and whether the database is up.

@@ -1,0 +1,87 @@
+# Authorization
+
+- **Order:** 3
+- **Group:** How it's built
+- **Summary:** The three checks a request passes, and how to add the access check to a new operation.
+
+Every request to IdentityX passes three checks, in this order:
+
+| Check | Question | Where |
+| --- | --- | --- |
+| Authentication | Who is calling? | IdentityX's own token and API key checks, in `internal/app/auth.go` |
+| Scope | May this kind of caller use this route at all? | `x-scope` in the route's spec, checked by `internal/authz` |
+| Access check | May this caller act on this organization, project or platform? | The feature's operation, calling `internal/authz` |
+
+The first two run before the handler. The access check runs inside the operation, because only the operation knows which project or organization the request is about.
+
+## Adding the check to an operation
+
+Call the check before the operation writes anything, and return its error as it is:
+
+```go
+// internal/features/projects/operations.go, in AddMember
+err = o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
+if err != nil {
+	return err
+}
+```
+
+The feature gets `Authz` through its `Deps` struct, set in `internal/app/build.go`. The mapper turns the error into `not-found` or `insufficient-role`.
+
+Nothing checks that an operation calls it. An operation without the check runs for any signed-in caller who passes the scope check. Every operation on an organization, project or the platform needs one.
+
+When one operation handles both a platform resource and a project resource, call the check that matches each case. `profile_schemas` does this: the platform schema needs `CheckPlatform(ctx, models.PlatformRoleAdmin)`, and a project's schema needs `CheckProject(ctx, projectID, models.ProjectRoleAdmin)`.
+
+### A new route, start to end
+
+1. Describe the route in its feature's `spec.yml`. Add `x-scope: platform-only` only if project actors must never call it.
+2. Run `just gen identityx`.
+3. Write the operation, with the access check.
+4. Write the handler that calls it.
+5. Add tests in the feature's folder.
+
+[Your first change](/docs/onboarding/first-change) walks through a whole example.
+
+## The access checks
+
+`authz.Service` has three. Each one reads the caller from the request context, so there is no caller to pass in.
+
+| Check | Passes when the caller has at least |
+| --- | --- |
+| `CheckOrg(ctx, orgID, minRole)` | `minRole` in the organization |
+| `CheckProject(ctx, projectID, minRole)` | `minRole` in the project, set on the project or coming from its organization |
+| `CheckPlatform(ctx, minRole)` | `minRole` as a platform role |
+
+Roles rank from low to high: `member`, `admin`, `owner` for organizations and projects, and `support`, `admin`, `super_admin` for the platform.
+
+### How `CheckProject` decides
+
+1. It loads the project. An unknown project answers `not-found` (404).
+2. If the caller has a role set on the project, that role decides.
+3. If not, and the project has an organization, the caller's organization role counts as the same project role.
+4. With no role at all, it answers `insufficient-role` (403).
+
+A role set on the project wins even when it is lower. An organization owner added to a project as `member` is only a `member` there. Removing them from the project gives them their organization role back.
+
+Step 3 is what lets an organization owner manage a project they created: they have no `project_members` row, so their organization role counts.
+
+`CheckOrg` does not load the organization first, so an unknown organization answers `insufficient-role`, the same as one the caller isn't in. Only `CheckProject` answers `not-found`.
+
+## The scope check
+
+A route that only platform actors may call says so in its feature's `spec.yml`:
+
+```yaml
+# internal/features/organizations/spec.yml
+post:
+  operationId: createOrganization
+  x-scope: platform-only
+```
+
+`requirePlatformClient` in `internal/authz` checks it: the caller must have no `project_id`. A project actor gets the `platform-only` problem, status 401.
+
+`ScopeCheckers` in `internal/authz/authz.go` maps each `x-scope` value to its check. The boot fails if a route names a scope that isn't in the map. To add a scope, add the `x-scope` line to the spec and one entry to `ScopeCheckers`. [ADR-0005](/docs/decisions/adr-0005) explains why it works this way.
+
+## Tests
+
+`internal/authz/authz_test.go` has a test for each rule on this page, such as "a role set on the project wins over the organization role". Add a case there when you change a rule.

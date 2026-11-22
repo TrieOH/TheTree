@@ -1,0 +1,94 @@
+# Token internals
+
+- **Order:** 5
+- **Group:** Keys and tokens
+- **Summary:** How IdentityX signs, checks, renews and ends session tokens, and how the single-use tokens in emails work.
+
+IdentityX makes two kinds of tokens. Both are JWTs: signed JSON with a header and claims. Three claims matter here: `kid` in the header names the signing key, `jti` is the token's own id, and `iat` and `exp` say when it was signed and when it expires.
+
+| Kind | Signed with | Lives in production | Code |
+| --- | --- | --- | --- |
+| Session tokens: access and refresh | The project's or platform's Ed25519 signing key | 1 hour and 7 days | `tokens.Manager` in `internal/tokens/manager.go` |
+| Action tokens: the links in verify and reset emails | `HMAC_SECRET` | 10 minutes | `tokens.ActionTokenManager` in `internal/tokens/action_tokens.go` |
+
+[Sessions and tokens](/services/identityx/docs/sessions-and-tokens) describes session tokens from the caller's side.
+
+## Session tokens
+
+`tokens.Manager` is the only code that touches session tokens:
+
+| Method | Called by | Does |
+| --- | --- | --- |
+| `Mint` | Login, setup, the OAuth callback | Signs a new pair with the active key |
+| `Verify` | The auth check on every request, and `Rotate` | Checks a token fully |
+| `Rotate` | `POST /auth/refresh` | Ends the old pair and mints a new one |
+| `Revoke` | `POST /auth/logout` | Ends the access token, and the refresh token if it still checks |
+| `EndSessions` | Password reset | Ends every token the actor has |
+| `JWKS` | `GET /.well-known/jwks.json` | Lists the public keys |
+
+### How the pair is linked
+
+Both tokens carry the actor's `id` and `project_id` under `subject`. The refresh token also carries `subject.access_jti`, the `jti` of the access token minted with it.
+
+- `Rotate` reads `access_jti` from the refresh token, so it can blacklist the access token too.
+- Both tokens are signed with the same key, so `access_jti` is the only way to tell them apart. `Verify` refuses a refresh token where an access token is expected, and an access token at refresh.
+
+### What `Verify` checks
+
+| Step | Fails with |
+| --- | --- |
+| 1. The token can be read and its header has a valid `kid` | `invalid-token`, `missing-kid`, `invalid-kid` |
+| 2. A key with that id exists | `outdated-token` |
+| 3. The key is not `retired` or `revoked` | `signing-key-retired`, `signing-key-revoked` |
+| 4. The signature and `exp` are good | `invalid-token` |
+| 5. The token is the kind the caller asked for | `invalid-token` |
+| 6. Its `jti` is not on the blacklist | `token-revoked` |
+| 7. It was signed after the actor's sessions were last ended | `token-revoked` |
+
+The key statuses in step 3 are described in [Signing and encryption keys](/services/identityx/docs/signing-and-encryption-keys).
+
+### The blacklist
+
+Ending one token adds a row to `blacklist_entries` with type `token`, the token's `jti` as the target, `refresh` or `logout` as the reason, and the token's own `exp` as its end. A row only has to last as long as its token, and the `cleanup_blacklist` job deletes expired rows once a day.
+
+Ending all of an actor's tokens adds one row of type `actor`, with the actor's id as the target. Its `created_at` is the cutoff: `Verify` refuses every token whose `iat` is earlier. The row lasts one refresh token lifetime, after which every token it covers has expired. A second reset moves the cutoff forward. `iat` has whole seconds, so a token signed in the same second as the cutoff passes, and a login right after a reset works.
+
+The table also allows the types `api_key`, `email` and `ip`. Nothing uses them yet.
+
+### Renewing, logging out, resetting
+
+**Refresh.** `Rotate` blacklists the old refresh token first, and that row is also its claim on the token. If two refreshes with the same token arrive together, both pass `Verify`, but only the first one adds the row. The second answers `token-revoked` and mints nothing. If a blacklist insert fails, `Rotate` returns the error and mints nothing.
+
+**Logout.** `Revoke` blacklists the access token by its own `jti`, then the refresh token by its own `jti` if that token still checks. A refresh token that no longer checks doesn't fail the logout. The auth check runs before `Revoke`, so the access token was already checked in full.
+
+**Password reset.** `authn` changes the hash and calls `EndSessions`, in one transaction. Every token signed before the reset stops working at IdentityX. Other APIs check tokens on their own, so they accept an old access token until it expires, at most an hour later.
+
+## Action tokens
+
+An action token is a JWT signed with `HMAC_SECRET`. It holds the actor, the project, a `jti`, and a purpose: `email_verify` or `password_reset`.
+
+<Steps>
+
+### Mint
+
+`emails.Sender` calls `Mint` when it sends a verify or reset email. `Mint` signs the token and stores a row in `action_tokens` with its `jti`, purpose and end time.
+
+### Redeem
+
+`authn` calls `Redeem` when someone opens the link. It checks the signature and the purpose, finds the row, and marks it used in the same step.
+
+### Clean up
+
+The `cleanup_action_tokens` job deletes old rows once a day.
+
+</Steps>
+
+The row is what makes a link single-use. A used link answers `action-token-used`, an old one `action-token-expired`, and anything else `action-token-invalid`. When two requests use the same link at once, only one marks the row, and the other gets `action-token-used`.
+
+Verifying an email twice succeeds when the account is already verified. `Redeem` returns the actor's id together with `action-token-used`, so `authn` loads the actor, sees it is verified, and answers success.
+
+`EMAIL_VERIFY_TOKEN_TTL` and `EMAIL_RESET_TOKEN_TTL` set the two lifetimes. Both default to `10m`.
+
+## Tests
+
+`internal/tokens/manager_test.go` and `action_tokens_test.go` test these rules with a fixed clock. Use `WithClock` or `WithActionTokenClock` to test a lifetime without sleeping.

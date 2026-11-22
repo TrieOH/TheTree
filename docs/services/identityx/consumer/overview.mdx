@@ -1,0 +1,53 @@
+# Overview
+
+- **Order:** 1
+- **Group:** Start here
+- **Summary:** What IdentityX does, what it leaves to other services, and where it runs.
+
+IdentityX is the sign-in service for TrieOH. People create an account and log in with it. After login, IdentityX gives the app a token, a signed proof of who the person is.
+
+The other TrieOH APIs accept these tokens: Payssage (payments), Univents (events) and Informd (forms).
+
+## What it does
+
+People sign up with an email and password, or with Google or GitHub. IdentityX sends the email that verifies the address, and the link that resets a password.
+
+After login it issues the tokens, renews them, and ends them at logout. It also keeps:
+
+- organizations and projects, and the role each person has in them
+- API keys, for services that call an API with no person behind them
+- profiles: a handle, a picture, and the fields the project defines
+- each project's settings: login providers, email templates and terms of service
+
+## What other services decide
+
+IdentityX tells a service who is calling. The service decides what that caller may do.
+
+For example, Univents keeps its own list of staff for each event, and Payssage records who owns each wallet. They read the caller's id from the token and keep their own records about that caller. Roles from IdentityX are not in the token.
+
+## Who calls it
+
+| Caller | How it talks to IdentityX |
+| --- | --- |
+| An app in `front/` | Through its own Worker, the BFF in `@trieoh/front-core`. The Worker keeps the session in a cookie and renews the tokens. See [Fronts](/docs/onboarding/fronts). |
+| A Go backend | Through `lib/go/backend/identityx`. It checks each token's signature itself, with no call to IdentityX. |
+| A caller with an API key | Sends the key in the `X-API-KEY` header. Only a backend that turns on `AcceptAPIKeys()` takes it, and that backend asks IdentityX who owns the key. Today that is Payssage. |
+
+## Where it runs
+
+| What | Address | Use it for |
+| --- | --- | --- |
+| API | `https://api.identityx.trieoh.com` | Every API call |
+| App | `https://dev.identityx.com.br` | Signing in to IdentityX, and managing organizations and projects |
+| Issuer | `https://identityx.com.br` | Nothing to call. It is the `iss` value inside every token. |
+
+Locally, the API runs on `http://localhost:8080`. The code is in `api/identityx`.
+
+## Read next
+
+<Cards>
+  <Card title="Concepts" href="/services/identityx/docs/concepts">Actors, organizations, projects, roles and API keys.</Card>
+  <Card title="Sessions and tokens" href="/services/identityx/docs/sessions-and-tokens">What a login gives you, and how a backend checks a token.</Card>
+  <Card title="API reference" href="/services/identityx/api">The request and response of each route.</Card>
+  <Card title="Problems" href="/problems/identityx">The errors IdentityX can answer.</Card>
+</Cards>

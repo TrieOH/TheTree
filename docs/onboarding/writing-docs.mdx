@@ -11,6 +11,19 @@ Portal docs are Markdown or MDX files in the repo. They're built with the portal
 | `docs/runbooks/` | Docs → Runbooks |
 | `docs/incidents/` | Docs → Incident reports |
 | `docs/adr/` | Docs → Decisions |
+| `docs/services/<service>/consumer/` | The service's docs, under Consumer |
+| `docs/services/<service>/maintainer/` | The service's docs, under Maintainer |
+
+## Service docs
+
+Each service has its own docs page, opened from the Docs button on the service or from Services in the Docs menu. Pages are split in two:
+
+- **Consumer** pages are for the apps and services that call it.
+- **Maintainer** pages are for whoever changes the service itself.
+
+Inside each half, `**Group:** Signing in` lists a page under that heading, and `**Order:**` sets the reading order. A group shows up where its first page sits in that order. Each page's slug comes from its file name, so keep file names unique across both folders of a service.
+
+The service's docs page also lists, on its own, the decisions whose `scope` names the service and the incident reports whose `services` include it.
 
 ## Shape of a doc
 

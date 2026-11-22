@@ -1,0 +1,150 @@
+# Sessions and tokens
+
+- **Order:** 5
+- **Group:** Signing in
+- **Summary:** What a login gives you, how to keep the session going, and how a backend checks a token.
+
+A login gives you two tokens. The access token proves who is calling. The refresh token gets you a new pair when the access token expires.
+
+Both are JWTs: short signed texts that anyone can read and anyone can check against IdentityX's public keys.
+
+## Logging in
+
+```http
+POST /auth/login?project_id=<project id>
+Content-Type: application/json
+
+{ "email": "user@example.com", "password": "S3curePassw0rd!" }
+```
+
+To find a project id, open the project in the IdentityX app: the id is in the page address, after `/projects/`. Leave out `project_id` to log in a platform actor (see [Concepts](/services/identityx/docs/concepts)).
+
+The answer:
+
+```json
+{
+  "access_token": "<a JWT>",
+  "refresh_token": "<a JWT>",
+  "access_expires_at": "2026-01-01T13:00:00Z",
+  "refresh_expires_at": "2026-01-08T12:00:00Z",
+  "domain": "https://identityx.com.br"
+}
+```
+
+| Token | Lasts in production | Send it to |
+| --- | --- | --- |
+| Access token | 1 hour | Every API call, as `Authorization: Bearer <access token>` |
+| Refresh token | 7 days | Only `POST /auth/refresh` and `POST /auth/logout` |
+
+`ACCESS_TOKEN_LIFETIME` and `REFRESH_TOKEN_LIFETIME` in `api/identityx/.env` set both. The `.example.env` sets the access token to 15 minutes, so a local session expires sooner.
+
+## Keeping the session going
+
+<Callout type="tip">Apps in `front/` get all of this from the BFF in `@trieoh/front-core`. Read this part when you call IdentityX yourself.</Callout>
+
+<Steps>
+
+### Refresh when the access token is about to expire
+
+Send the refresh token in the `Refresh-Token` header to `POST /auth/refresh`. You get a new pair back. Refresh again when a call answers `token-expired`, then retry that call once.
+
+### Keep only the new pair
+
+A refresh ends the old pair at IdentityX. Save the new refresh token and use it next time. An old refresh token answers `token-revoked`.
+
+Run one refresh at a time. If two requests refresh with the same refresh token, only the first gets a new pair. The second gets `token-revoked`, and if it saves nothing the person is logged out.
+
+### Log out with both tokens
+
+`POST /auth/logout` takes the access token in `Authorization` and the refresh token in `Refresh-Token`. IdentityX refuses both from then on.
+
+</Steps>
+
+After a refresh, a logout or a password reset, IdentityX refuses the old access token at once. A password reset ends every session the person had. Other backends check tokens on their own, so they accept it until it expires. If a call has to be sure, see [Asking IdentityX](#asking-identityx).
+
+## What is inside an access token
+
+The token keeps the actor under `subject`:
+
+```json
+{
+  "subject": {
+    "id": "6f1c...",
+    "project_id": "0b7e...",
+    "email": "user@example.com",
+    "type": "human",
+    "verified_at": "2026-01-01T12:00:00Z",
+    "capabilities": null,
+    "metadata": null
+  },
+  "iss": "https://identityx.com.br",
+  "jti": "a41d...",
+  "iat": 1767268800,
+  "exp": 1767272400
+}
+```
+
+| Claim | What it is |
+| --- | --- |
+| `subject.id` | The actor's id |
+| `subject.project_id` | The actor's project, or `null` for a platform actor |
+| `subject.type` | `human`, `service` or `machine` |
+| `subject.verified_at` | When the email was verified, or `null` |
+| `subject.capabilities`, `subject.metadata` | Always `null` today |
+| `jti` | The token's own id |
+| `iat`, `exp` | When it was signed, and when it expires (Unix seconds) |
+
+There is no `aud` claim and no role.
+
+## Checking a token in a backend
+
+IdentityX publishes its public keys as a JWKS, a JSON list of keys:
+
+```
+GET https://api.identityx.trieoh.com/.well-known/jwks.json?project_id=<project id>
+```
+
+Use your own project's id. Each project signs with its own keys, so a token from another project fails the check. Leave out `project_id` for the platform's keys.
+
+The token header names its key in `kid`, and the JWKS lists each key under the same id. When a token names a `kid` you don't have, fetch the JWKS again once before you refuse it. New keys come out about every 6 days, and this is all it takes to pick them up.
+
+<Tabs labels={["Go backend", "Any other language"]}>
+<Tab>
+
+Add the IdentityX module where the backend starts. Informd does it in `api/informd/cmd/informd/main.go`:
+
+```go
+import "lib/backend/identityx"
+
+identityx.Module(cfg.IdentityX),
+```
+
+`cfg.IdentityX` reads `IDENTITY_X_URL`, `IDENTITY_X_PROJECT_ID` and `IDENTITY_X_API_KEY` from the environment. The module keeps the keys for an hour.
+
+Options:
+
+- `identityx.RequireVerifiedEmail(true)` refuses callers whose email is not verified.
+- `identityx.AcceptAPIKeys()` lets callers use an API key too.
+
+</Tab>
+<Tab>
+
+1. Fetch the JWKS for your project and keep it for an hour.
+2. Find the key whose id matches the token's `kid`.
+3. Check the signature. The algorithm is EdDSA with Ed25519 keys.
+4. Check that `iss` is `https://identityx.com.br` and that `exp` is in the future.
+
+</Tab>
+</Tabs>
+
+## Asking IdentityX
+
+Send the token to `GET /auth/introspect`, as `Authorization: Bearer <access token>`. IdentityX checks the token fully, including logout and refresh, and answers with the actor and how the caller signed in (`token` or `api_key`).
+
+Each call wakes the IdentityX container, so keep it for the calls that need it, like changing a password or moving money.
+
+## Errors you may see
+
+Besides `unauthenticated`, `invalid-token` and `token-expired`, which every service can answer:
+
+<Problems service="identityx" only={["token-revoked", "outdated-token", "signing-key-retired"]} description="inline" />

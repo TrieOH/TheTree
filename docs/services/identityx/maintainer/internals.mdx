@@ -1,0 +1,73 @@
+# How IdentityX is built
+
+- **Order:** 1
+- **Group:** How it's built
+- **Summary:** What IdentityX does differently from the other backends, the path of a request, and where each part lives.
+
+IdentityX is the sign-in service. It keeps the accounts and signs the tokens that Payssage, Univents and Informd accept.
+
+In most ways it is a Go backend like those three: the same harness, one folder per feature, and errors declared as problems in the spec. [Architecture](/docs/onboarding/architecture) explains the harness, the Worker and the container, and [Repo tour](/docs/onboarding/repo-tour) explains the layout.
+
+## What IdentityX does differently from the other backends
+
+IdentityX checks its own tokens. The other backends add `identityx.Module` and check token signatures on their own. IdentityX signs the tokens, so it builds its checks from its own token manager in `internal/app/auth.go`. Those checks also read the blacklist, so a token ended by logout or refresh fails at IdentityX at once.
+
+Keys come first. At boot, `keysMgr.EnsureAll` gives the platform and every project their keys, and `CheckMasterKey` proves `ENCRYPTION_KEY` can open them. If either step fails, the boot stops. See [Signing and encryption keys](/services/identityx/docs/signing-and-encryption-keys).
+
+A setup guard sits in front of every route except `/auth/setup`, until the first account exists. See [First boot](/services/identityx/docs/first-boot).
+
+IdentityX has two secrets the other backends don't:
+
+| Secret | What it protects | If it changes |
+| --- | --- | --- |
+| `ENCRYPTION_KEY` | The master key. It seals every private key and every project's OAuth client secret before they reach the database. | The stored keys can't be opened, and the boot fails. |
+| `HMAC_SECRET` | Signs the links in verify and reset emails, and hashes API keys. | Every API key and every open email link stops working. |
+
+`cmd/identityx/main.go` lists three modules: Postgres, email and jobs. Migrations run separately, with `just migrate identityx`.
+
+## The path of a request
+
+1. **The Worker** in `api/identityx/cloudflare` answers the JWKS from its cache and passes every other request to the container.
+2. **The setup guard** refuses everything until setup is done.
+3. **Authentication** reads the `Authorization: Bearer` token or the `X-API-KEY` header.
+4. **The scope check** refuses project actors on `platform-only` routes.
+5. **The handler** in the feature folder is called by the generated server in `internal/openapi`, and calls the feature's operations.
+6. **The operation** holds the rules. It runs the access check, then calls the repo, which calls the sqlc queries from `db/queries`.
+
+Steps 3, 4 and 6 are covered in [Authorization](/services/identityx/docs/authorization).
+
+When something fails, the code returns a named error from `errs/`. `internal/problems` and `internal/app/errmap` turn it into its problem. For a named error, the problem's `detail` is the error's own message.
+
+## Where things are
+
+| Path | What it holds |
+| --- | --- |
+| `internal/app` | The wiring: `build.go` builds every part, `auth.go` and `auth_guard.go` add the checks above. |
+| `internal/features/<name>` | One folder per feature: `spec.yml` (its routes and problems), `handlers.go`, `operations.go`, `repo.go`. |
+| `internal/authz` | The access check and the `platform-only` scope. |
+| `internal/keys` | Signing and encryption keys: creating, rotating, retiring. |
+| `internal/tokens` | Access and refresh tokens, and the single-use tokens in emails. |
+| `internal/setup` | Whether the first setup is done. |
+| `internal/emails`, `internal/jobs` | Email content and the background jobs. |
+| `internal/cachetags` | Names for the profile reads cached at the edge. |
+| `internal/openapi`, `internal/problems`, `internal/sqlc` | Generated code. `just gen identityx` writes them. |
+| `models`, `ports`, `errs` | Shared types, the repo interfaces, and the named errors. |
+| `db/migrations`, `db/queries` | The schema and the SQL. |
+| `cloudflare` | The Worker in front of the container. |
+
+## The features
+
+| Feature | What it does |
+| --- | --- |
+| `authn` | Setup, sign up, email verification, login, refresh, logout, password reset |
+| `oauth_providers` | Google and GitHub login, and each project's login providers |
+| `organizations` | Organizations, their members and their projects |
+| `projects` | Projects and their members |
+| `actors` | Listing and creating a project's actors |
+| `api_keys` | Creating API keys, and checking a key on each request |
+| `capabilities` | What an API key may do |
+| `profiles`, `profile_schemas` | Profiles, and the schema each project's profiles follow |
+| `email_templates` | A project's own versions of the auth emails |
+| `tos` | Terms of service and who accepted them |
+
+Four more folders hold only a repo and have no routes: `action_tokens`, `blacklist`, `crypto_keys` and `platform_roles`.
