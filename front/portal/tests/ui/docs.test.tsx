@@ -1,6 +1,6 @@
 import { render } from "@solidjs/testing-library";
 import { describe, expect, it } from "vitest";
-import { docsIn, findDoc } from "../../src/features/docs/catalog";
+import { docsIn, findDoc, neighboursOf } from "../../src/features/docs/catalog";
 
 describe("docs catalog", () => {
   it("collects every ADR from the repo's docs/adr, newest first", () => {
@@ -22,5 +22,19 @@ describe("docs catalog", () => {
     expect(container.querySelector("code")).not.toBeNull();
     expect(container).not.toHaveTextContent("ADR-0019 —");
     expect(container).not.toHaveTextContent("Status:");
+  });
+});
+
+describe("doc neighbours", () => {
+  it("links each doc to the ones beside it in its category", () => {
+    const decisions = docsIn("decisions");
+    const middle = decisions[1];
+
+    expect(neighboursOf(middle)).toEqual({
+      previous: { category: "decisions", slug: decisions[0].slug, meta: decisions[0].meta },
+      next: { category: "decisions", slug: decisions[2].slug, meta: decisions[2].meta },
+    });
+    expect(neighboursOf(decisions[0]).previous).toBeUndefined();
+    expect(neighboursOf(decisions.at(-1)!).next).toBeUndefined();
   });
 });
