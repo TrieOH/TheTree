@@ -13,11 +13,12 @@ export interface DocCategory {
   description: string;
 }
 
+// The order here is the order in the sidebar and on the Docs page.
 export const DOC_CATEGORIES: readonly DocCategory[] = [
-  { id: "decisions", label: "Decisions", description: "Architecture decision records: why things are this way." },
-  { id: "runbooks", label: "Runbooks", description: "How to deploy, roll back and fix the usual things." },
-  { id: "incident-reports", label: "Incident reports", description: "What broke, why, and what changed after." },
   { id: "onboarding", label: "Onboarding", description: "Run TheTree locally and learn how we ship." },
+  { id: "runbooks", label: "Runbooks", description: "How to deploy, roll back and fix the usual things." },
+  { id: "decisions", label: "Decisions", description: "Architecture decision records: why things are this way." },
+  { id: "incident-reports", label: "Incident reports", description: "What broke, why, and what changed after." },
 ];
 
 type Loader = () => Promise<{ default: Component<{ components?: Record<string, unknown> }> }>;
