@@ -3,7 +3,7 @@
 - **Order:** 3
 - **Summary:** Where a backend's spec lives, what just gen builds from it and from the SQL, and which files you write by hand.
 
-A backend has two sources of truth: its OpenAPI spec and its SQL. Most of the code between them is generated from those two. You change the spec or the SQL, run `just gen`, and the Go compiler shows you everything that has to follow.
+A backend has two sources of truth: its OpenAPI spec and its SQL. Most of the code between them is generated. You change the spec or the SQL, run `just gen`, and the Go compiler shows you everything that has to follow.
 
 ## Where the spec lives
 
@@ -12,7 +12,7 @@ Each backend's `api-spec.yml` holds what's shared: the API's description, its se
 ```yaml
 # api/informd/api-spec.yml
 paths:
-  # …
+  # ...
   /forms/{form_id}/steps:
     $ref: './internal/features/steps/spec.yml#/paths/~1forms~1{form_id}~1steps'
 ```
@@ -32,18 +32,18 @@ paths:
       parameters:
         - $ref: '../../../api-spec.yml#/components/parameters/FormID'
       requestBody:
-        # …
+        # ...
       x-problems: [400, 401, 403, 404, 500]
       responses:
         '201':
-          # …
+          # ...
 ```
 
 A feature's spec also holds the schemas and problems that only it uses. Problems used by several features of one backend go in that backend's `problems.yml`, and the ones every backend shares are in `api/problems.yml`.
 
 ## The extensions we use
 
-The kit reads more from the spec than plain OpenAPI does. These are the extensions you'll run into:
+The kit reads a few extensions that plain OpenAPI doesn't have:
 
 | Extension | Where | What it does |
 | --- | --- | --- |
@@ -84,7 +84,7 @@ flowchart LR
 
 Step by step:
 
-1. **sqlc** reads `db/migrations` as the schema and `db/queries/*.sql` as the queries, and writes typed Go into `internal/sqlc`. A query named `-- name: CreateStep :one` becomes `q.CreateStep(ctx, sqlc.CreateStepParams{…})`.
+1. **sqlc** reads `db/migrations` as the schema and `db/queries/*.sql` as the queries, and writes typed Go into `internal/sqlc`. A query named `-- name: CreateStep :one` becomes `q.CreateStep(ctx, sqlc.CreateStepParams{...})`.
 2. **problemgen** merges `api-spec.yml`, every feature's `spec.yml` and both `problems.yml` files into one file, `api-spec.gen.yml`. It writes the problems package (one constructor per problem, `Docs` and the `Mapper`) and the named errors in `errs/errs.gen.go`. It also writes the list of path prefixes the Worker checks before waking the container. That list is committed, and a test fails when it no longer matches the spec.
 3. **oapi-codegen** reads the bundle and writes the request and response types, the chi routes and the strict server interface into `internal/openapi`.
 4. **strictmount** writes `Mount`, which serves the strict server through the harness, and `internal/app/server.gen.go`, which embeds every feature's `Handlers` into one `server` type.
@@ -106,4 +106,4 @@ Git ignores all of this except the Worker's route list. CI and the Dockerfiles r
 
 Since the generated server is an interface, adding an operation to a spec breaks the build until some feature's `Handlers` has a method for it. Renaming a column breaks every repo that reads it. Removing an `x-problem` removes its Go error, so every place that returns it stops compiling.
 
-That's the point of all this generation. The spec and the SQL are the contract, and the compiler checks the code against them, so you don't have to remember to.
+The spec and the SQL are the contract. The compiler checks the code against them, so you don't have to remember to.

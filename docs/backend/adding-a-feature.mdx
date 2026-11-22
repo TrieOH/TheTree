@@ -3,7 +3,7 @@
 - **Order:** 9
 - **Summary:** A new feature folder from the table to the route: every file you touch, in order.
 
-[Your first change](/docs/onboarding/first-change) adds one endpoint to a feature that already exists. This page goes one step further: it adds a feature that doesn't exist yet. The example is a made-up `labels` feature in Informd, which lets you put labels on a form. The code is a sketch that follows the real patterns, so copy from `internal/features/steps` when you write the real thing.
+[Your first change](/docs/onboarding/first-change) adds one endpoint to a feature that already exists. This page adds a new feature. The example is a made-up `labels` feature in Informd, which lets you put labels on a form. The code is a sketch that follows the real patterns. When you write the real thing, copy from `internal/features/steps`.
 
 You touch these files, in this order:
 
@@ -60,7 +60,7 @@ Create `internal/features/labels/spec.yml` with the paths, the request schemas, 
 ```yaml
 # api/informd/api-spec.yml
 paths:
-  # …
+  # ...
   /forms/{form_id}/labels:
     $ref: './internal/features/labels/spec.yml#/paths/~1forms~1{form_id}~1labels'
 ```
@@ -71,7 +71,7 @@ The not-found error goes under `x-shared-errors` in `api/informd/problems.yml`. 
 # api/informd/problems.yml
 x-shared-errors:
   not-found:
-    # …
+    # ...
     ErrLabelNotFound: "label not found"
 ```
 
@@ -81,7 +81,7 @@ x-shared-errors:
 just gen informd
 ```
 
-You now have `sqlc.CreateLabel`, the `openapi` request and response types, and `errs.ErrLabelNotFound`. The build fails from here on, because the generated server wants handlers that don't exist yet. That's expected, and the next steps fix it.
+You now have `sqlc.CreateLabel`, the `openapi` request and response types, and `errs.ErrLabelNotFound`. The build fails from here on, because the generated server wants handlers that don't exist yet. This is expected. The next steps fix it.
 
 ### Add the model and the port
 
@@ -177,9 +177,9 @@ The method names and types come from `internal/openapi`. If you're not sure of a
 ```go
 // api/informd/internal/app/build.go
 labelsRepo := labels.NewRepo(q)
-// …
+// ...
 srv := &server{
-	// …
+	// ...
 	labelsHandlers: labels.NewHandlers(labels.New(labels.Deps{
 		Labels: labelsRepo, Authz: az,
 	})),

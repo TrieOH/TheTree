@@ -5,7 +5,7 @@
 
 IdentityX, Payssage, Informd and Univents do different jobs, but they're built the same way. Each one is a small `main` that describes the backend, and a shared kit in `lib/go` that boots it, serves it and shuts it down. If you understand one backend, you can find your way around the other three.
 
-These pages cover that shared shape. What a single service does lives in its own docs, under Services. How a request gets from the browser to a container is in [Architecture](/docs/onboarding/architecture), and the folder layout is in [Repo tour](/docs/onboarding/repo-tour). Those pages explain the infrastructure. These ones explain the Go code that runs inside the container.
+These pages cover that shared shape. What a single service does is in its own docs, under Services. How a request gets from the browser to a container is in [Architecture](/docs/onboarding/architecture), and the folder layout is in [Repo tour](/docs/onboarding/repo-tour). Those pages explain the infrastructure. These ones explain the Go code that runs inside the container.
 
 ## The whole thing in one picture
 
@@ -17,7 +17,7 @@ flowchart TD
   run --> router["Router frame (lib/httpserver)"]
   deps --> build["app.Build"]
   router --> build
-  build --> features["Features: repo → operations → handlers"]
+  build --> features["Features: repo -> operations -> handlers"]
   build --> mount["openapi.Mount"]
   mount --> serve["Serving requests"]
 ```

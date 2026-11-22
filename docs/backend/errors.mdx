@@ -3,7 +3,7 @@
 - **Order:** 6
 - **Summary:** Code returns named Go errors. The spec declares which problem answers each one, and one generated mapper writes it as RFC 9457.
 
-The rule fits in one sentence: **code returns a named error, and only the mapper knows about HTTP.** An operation never picks a status code. It returns `errs.ErrStepsAcrossForms`, and the mapper knows that's a 400 (ADR-0016, ADR-0019, ADR-0022).
+The rule: **code returns a named error, and only the mapper knows about HTTP.** An operation never picks a status code. It returns `errs.ErrStepsAcrossForms`, and the mapper knows that's a 400 (ADR-0016, ADR-0019, ADR-0022).
 
 ## Declare it in the spec first
 
@@ -29,7 +29,7 @@ StepsAcrossForms:
 ErrStepsAcrossForms = errors.New("a bulk edit changes the steps of one form, and the request mixes steps from several; send one request per form")
 ```
 
-The operation just returns it:
+The operation returns it:
 
 ```go
 // api/informd/internal/features/steps/operations.go
@@ -40,7 +40,7 @@ for _, p := range payload {
 }
 ```
 
-And the client gets this:
+The client gets this:
 
 ```json
 {
@@ -48,11 +48,11 @@ And the client gets this:
   "status": 400,
   "title": "Steps Across Forms",
   "detail": "a bulk edit changes the steps of one form, and the request mixes steps from several; send one request per form",
-  "instance": "/forms/3f6c…/steps"
+  "instance": "/forms/3f6c.../steps"
 }
 ```
 
-The `detail` is written for the person reading it, so say what went wrong and what to do about it. The `type` URL works: the harness serves each problem's docs at `/problems/{slug}`, and the portal's Problems pages are built from the same declarations.
+A person reads the `detail`, so say what went wrong and what to do about it. The `type` URL is a real page: the harness serves each problem's docs at `/problems/{slug}`, and the portal's Problems pages are built from the same declarations.
 
 ## Where a problem is declared
 

@@ -31,7 +31,7 @@ type Operations struct{ Deps }
 func New(d Deps) *Operations { return &Operations{Deps: d} }
 ```
 
-`Deps` lists everything the feature needs, as exported fields. `Operations` embeds it, so an operation reads `o.Steps` or `o.Tx` directly. `Build` fills it with a struct literal, which means you can see the whole dependency graph in one file.
+`Deps` lists everything the feature needs, as exported fields. `Operations` embeds it, so an operation reads `o.Steps` or `o.Tx` directly. `Build` fills it with a struct literal, so you can see the whole dependency graph in one file.
 
 When an operation needs state it works out for itself, like a retry budget or a WebSocket hub, that goes in an unexported field on `Operations`, set in `New`. It doesn't go in `Deps`.
 
@@ -72,7 +72,7 @@ func (repo *Repo) List(ctx context.Context, formID uuid.UUID) ([]models.Step, er
 }
 ```
 
-A repo method calls one sqlc query and finishes with `database.One` or `database.Many`. Those map the rows to `models` types, and send errors through `dbe`. That turns "no rows" into `ErrStepNotFound`, and a constraint violation into the named error `app.Constraints()` maps it to. Any other driver error goes up unchanged and is answered as a 500.
+A repo method calls one sqlc query and finishes with `database.One` or `database.Many`. Those map the rows to `models` types and send errors through `dbe`. `dbe` turns "no rows" into `ErrStepNotFound`, and a constraint violation into the named error `app.Constraints()` maps it to. Any other driver error goes up unchanged and is answered as a 500.
 
 The `var _ ports.StepRepo = (*Repo)(nil)` line makes the build fail if the repo stops satisfying its interface.
 
@@ -108,7 +108,7 @@ err = o.Tx.WithinTx(ctx, func(ctx context.Context) error {
 		return err
 	}
 	if payload.Type == models.FieldTypeSelect && payload.SelectConfig != nil {
-		_, err = o.Fields.CreateSelectConfig(ctx, models.FieldSelectConfig{ /* … */ })
+		_, err = o.Fields.CreateSelectConfig(ctx, models.FieldSelectConfig{ /* ... */ })
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ Tests that need a real database use `lib/testdb`, which starts a disposable Post
 ```go
 // api/univents/internal/features/checkouts/checkout_db_test.go
 pool := testdb.Postgres(t, "../../../db/migrations")
-// …
+// ...
 r := testrepos.New(q)
 ```
 

@@ -32,7 +32,7 @@ func Registry(d Deps) *libjobs.Registry {
 	reg := libjobs.NewRegistry()
 	libjobs.Register(reg, webhooks.NewDeliverWebhookWorker(d.Deliveries, d.Events, d.Endpoints, d.HTTPClient).Work,
 		libjobs.GiveUpWith(webhooks.FailDelivery))
-	// …
+	// ...
 	return reg
 }
 ```
@@ -41,7 +41,7 @@ func Registry(d Deps) *libjobs.Registry {
 
 ```go
 // api/payssage/internal/app/build.go
-d.Jobs.Serve(jobs.Registry(jobs.Deps{ /* … */ Enqueuer: d.Jobs }), jobs.Periodic()...)
+d.Jobs.Serve(jobs.Registry(jobs.Deps{ /* ... */ Enqueuer: d.Jobs }), jobs.Periodic()...)
 ```
 
 ```go
@@ -60,7 +60,7 @@ The jobs module picks a carrier from `JOBS_URL`:
 | empty | `jobs/inprocess`: a worker pool and timers inside the process | Locally |
 | set | `jobs/httpjobs`: the job is POSTed to the API Worker, which puts it on a Cloudflare Queue and later delivers it back to the container's `/_jobs` | Production |
 
-Whichever carrier it is, `lib/jobs` decides what happens to a job that fails: retry after a backoff, or give up and run its give-up function. The carrier only applies that decision. Periodic jobs run on timers in-process, and on Cloudflare the Worker's cron triggers fire them, so the two schedules have to stay in step.
+With either carrier, `lib/jobs` decides what happens to a job that fails: retry after a backoff, or give up and run its give-up function. The carrier only applies that decision. Locally, periodic jobs run on timers in-process. On Cloudflare, the Worker's cron triggers fire them. The two schedules have to stay in step.
 
 ## Caching at the edge
 
@@ -71,16 +71,16 @@ Every response is `private, no-store` by default. A public GET can opt in to bei
 x-cache: shared
 ```
 
-The response then has to say what it contains, and any write that changes that data has to say what it made stale. Both are a single call in the handler, using tag names from the backend's `internal/cachetags`:
+The response then has to say what it contains, and any write that changes that data has to say what it made stale. Each is one call in the handler, using tag names from the backend's `internal/cachetags`:
 
 ```go
 // api/univents/internal/features/editions/handlers.go
 httpcache.Tag(ctx, cachetags.EventEditions(req.EventId))    // in ListPublicEditions
-// …
+// ...
 httpcache.Purge(ctx, cachetags.EventEditions(edition.EventID)) // in PatchEdition
 ```
 
-The edge reads those headers, removes them, and purges on writes. A cached response never includes data from other entities. Univents' edition list carries no ticket stock, for example, so a purge never has to reach past the data it names. `d.Chains` refuses `x-cache` on anything other than a public GET, because a cached response is the same for every caller.
+The edge reads those headers, removes them, and purges on writes. A cached response never includes data from other entities. For example, Univents' edition list carries no ticket stock, so a purge never has to reach past the data it names. `d.Chains` refuses `x-cache` on anything other than a public GET, because a cached response is the same for every caller.
 
 ## Telemetry
 

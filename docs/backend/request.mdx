@@ -89,9 +89,9 @@ Any layer can return an error instead. Every one of them ends up in `httpserver.
 Because the harness opens the spans, every request has the same shape in Grafana:
 
 ```
-POST /forms/{form_id}/steps      ← otelhttp, renamed by route
-└─ CreateStep                    ← TraceMiddleware
-   └─ pgx queries                ← the database tracer, one span per query
+POST /forms/{form_id}/steps      <- otelhttp, renamed by route
+`-- CreateStep                   <- TraceMiddleware
+    `-- pgx queries              <- the database tracer, one span per query
 ```
 
 Repos and operations don't open spans. A manual span is only worth adding for a single step you want to see on its own, like a call to a payment provider.

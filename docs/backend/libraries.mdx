@@ -5,7 +5,7 @@
 
 `lib/go` is one Go module, named `lib`, shared by all four backends through `go.work`. A package is imported as `lib/<package>`, like `lib/database`. Before you write a helper, check whether it's already here.
 
-The SDKs in `sdk/go` (`sdk/identityx`, `sdk/payssage`) are a separate thing: they're the clients one service uses to call another.
+The SDKs in `sdk/go` (`sdk/identityx`, `sdk/payssage`) are separate. They are the clients one service uses to call another.
 
 ## The kit
 
@@ -65,4 +65,4 @@ Not in `lib/go`, but they're part of the same kit. They live in `tools/go` and r
 
 ## Changing a library
 
-A change in `lib/go` reaches all four backends at once. That's the point, but it also means you should run `just test-all` and `just lint` (with no target, so every backend is covered) before opening the pull request. SDKs and libraries are only used by TrieOH's own services, so breaking changes are fine, as long as the four backends are updated in the same change.
+A change in `lib/go` reaches all four backends at once. Before you open the pull request, run `just test-all` and `just lint` with no target, so every backend is covered. Only TrieOH's own services use the SDKs and libraries, so breaking changes are fine if the four backends are updated in the same change.
