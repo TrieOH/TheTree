@@ -21,7 +21,7 @@
 // operation's error responses from its x-problems list (a slug, or a status
 // for every problem declared with it), which the bundle keeps as slugs. The
 // bundle is the Backend's one spec: codegen, orval and /docs/openapi.yml
-// read it.
+// read it. Its info.version comes from the release tags (specVersion).
 // The package gets one constructor per problem, with the extensions as
 // typed parameters, the docs the harness serves at /problems/{slug}, and
 // Mapper.
@@ -38,10 +38,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -70,6 +72,9 @@ func run(specPath, specOut, goOut string) error {
 		return err
 	}
 	b.module = module
+	if v := specVersion(filepath.Dir(specPath)); v != "" {
+		set(ensure(b.root, "info"), "version", node(v))
+	}
 	spec, err := b.bundle()
 	if err != nil {
 		return err
@@ -99,6 +104,29 @@ func run(specPath, specOut, goOut string) error {
 		return err
 	}
 	return writeRoutes(specPath)
+}
+
+// specVersion is the release the bundle's info.version names: the tags are
+// its one source, so api-spec.yml only holds a placeholder. SPEC_VERSION
+// wins (the Dockerfiles get it from the release tag, the front pipeline
+// from the remote's tags); without it, the Backend's latest <svc>/v* tag in
+// the local repo; with neither (no git), "" keeps the placeholder.
+func specVersion(dir string) string {
+	if v := os.Getenv("SPEC_VERSION"); v != "" {
+		return strings.TrimPrefix(v, "v")
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return ""
+	}
+	svc := filepath.Base(abs)
+	//nolint:gosec // codegen step; svc is the Backend's own directory name
+	out, err := exec.CommandContext(context.Background(), "git", "-C", abs, "tag", "-l", svc+"/v*", "--sort=-v:refname").Output()
+	if err != nil {
+		return ""
+	}
+	latest, _, _ := strings.Cut(string(out), "\n")
+	return strings.TrimPrefix(latest, svc+"/v")
 }
 
 // writeErrs writes the generated errs file, or removes it when the Backend

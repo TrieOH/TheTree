@@ -35,6 +35,9 @@ COPY api/univents/db/ ./api/univents/db/
 COPY api/payssage/ ./api/payssage/
 COPY api/problems.yml ./api/problems.yml
 WORKDIR /app/api/payssage
+# The release tag's version, stamped into the bundled spec's info.version
+# (tools/go/problemgen); compose leaves it empty, keeping the placeholder.
+ARG SPEC_VERSION
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     sqlc generate -f /app/sqlc.yaml && \
     rm -rf /app/api/identityx/db /app/api/identityx/internal /app/api/informd/db /app/api/informd/internal /app/api/univents/db /app/api/univents/internal && \

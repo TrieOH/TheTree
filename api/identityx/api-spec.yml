@@ -58,7 +58,7 @@ info:
     burst of 20, keyed by client IP (`RemoteAddr`). Exceeded requests
     receive `429 TOO_MANY_REQUESTS`.
   termsOfService: https://identityx.com.br/terms
-  version: 0.22.0
+  version: 0.0.0-dev # set from the release tag when bundled (tools/go/problemgen)
   contact:
     name: TrieOH
     url: https://trieoh.com/support
