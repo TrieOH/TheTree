@@ -6,6 +6,8 @@ import { findCategory, findDoc, neighboursOf } from "@/features/docs/catalog";
 import { docComponents } from "@/features/docs/components";
 import { DocPager } from "@/features/docs/DocPager";
 import { DocStatus } from "@/features/docs/DocStatus";
+import { formatDate } from "@/features/docs/adr";
+import { AdrFacts, SupersededNotice } from "@/features/docs/ui/AdrFacts";
 
 export const Route = createFileRoute("/docs/$category/$slug")({
   loader: async ({ params }) => {
@@ -33,10 +35,24 @@ function DocPage() {
           </Show>
           <DocStatus status={data().meta.status} />
           <Show when={data().meta.date}>
-            <span class="tabular-nums">{data().meta.date}</span>
+            <span>
+              {data().category.id === "decisions" ? "Decided " : ""}
+              <time datetime={data().meta.date}>{formatDate(data().meta.date)}</time>
+            </span>
+          </Show>
+          <Show when={data().meta.updated}>
+            <span>
+              Updated <time datetime={data().meta.updated}>{formatDate(data().meta.updated)}</time>
+            </span>
           </Show>
         </div>
       </PageHeader>
+      <Show when={data().category.id === "decisions"}>
+        <div class="max-w-[68ch]">
+          <SupersededNotice meta={data().meta} />
+          <AdrFacts meta={data().meta} />
+        </div>
+      </Show>
       <article class="prose-doc">
         {/* Dynamic, so moving to another doc swaps the body, not just the header. */}
         <Dynamic component={data().Content} components={docComponents} />

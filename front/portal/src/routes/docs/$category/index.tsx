@@ -4,6 +4,7 @@ import { NotConnected } from "@/widgets/shell/NotConnected";
 import { For, Show } from "solid-js";
 import { docsIn, findCategory } from "@/features/docs/catalog";
 import { DocStatus } from "@/features/docs/DocStatus";
+import { DecisionLog } from "@/features/docs/ui/DecisionLog";
 
 export const Route = createFileRoute("/docs/$category/")({
   loader: ({ params }) => {
@@ -26,6 +27,7 @@ function CategoryPage() {
         when={docs().length > 0}
         fallback={<NotConnected source="docs/">Nothing here yet. These pages arrive as the docs are converted.</NotConnected>}
       >
+        <Show when={category().id !== "decisions"} fallback={<DecisionLog docs={docs()} />}>
         <ul class="divide-y divide-border border-y border-border">
           <For each={docs()}>
             {(doc) => (
@@ -48,6 +50,7 @@ function CategoryPage() {
             )}
           </For>
         </ul>
+        </Show>
       </Show>
     </>
   );
