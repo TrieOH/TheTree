@@ -188,7 +188,7 @@ export function AppShell(props: { children: JSX.Element }) {
   // The API reference lays out its own floating columns.
   const wide = () => /^\/services\/[^/]+\/api\/?$/.test(location().pathname);
   // Dashboards compare across columns and need more room than reading pages.
-  const dashboard = () => /^\/(metrics|delivery)\/?$/.test(location().pathname);
+  const dashboard = () => /^\/(metrics|delivery|services\/[^/]+)\/?$/.test(location().pathname);
   createEffect(
     () => location().pathname,
     () => {
