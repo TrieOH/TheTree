@@ -158,7 +158,9 @@ jobs:
         with:
           context: .
           file: api/${{ env.SERVICE }}/Dockerfile
-          build-args: GO_VERSION=${{ env.GO_VERSION }}
+          build-args: |
+            GO_VERSION=${{ env.GO_VERSION }}
+            SPEC_VERSION=${{ env.VERSION }}
           tags: ${{ env.IMAGE }}
           push: true
 

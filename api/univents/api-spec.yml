@@ -120,7 +120,7 @@ info:
     The harness applies a fixed rate limit of 400 requests/second with a
     burst of 20, keyed by client IP. Exceeded requests receive
     `429 TOO_MANY_REQUESTS`.
-  version: 0.1.0
+  version: 0.0.0-dev # set from the release tag when bundled (tools/go/problemgen)
   contact:
     name: TrieOH
     url: https://trieoh.com/support

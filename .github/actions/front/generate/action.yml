@@ -18,6 +18,11 @@ runs:
       run: |
         set -euo pipefail
         for svc in identityx informd payssage univents; do
+          # The shallow checkout has no tags: each spec's info.version is the
+          # service's latest release tag, read from the remote.
+          SPEC_VERSION=$(git ls-remote --tags --refs origin "refs/tags/$svc/v*" \
+            | sed "s|.*refs/tags/$svc/||" | sort -V | tail -1)
+          export SPEC_VERSION
           (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
         done
         pnpm orval
