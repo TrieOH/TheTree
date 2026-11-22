@@ -14,12 +14,15 @@ import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as IssuesRouteImport } from './routes/issues'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsServicesRouteImport } from './routes/docs/services'
 import { Route as DocsCategoryIndexRouteImport } from './routes/docs/$category/index'
 import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category/$slug'
 import { Route as ProblemsSetIndexRouteImport } from './routes/problems/$set/index'
 import { Route as ProblemsSetSlugRouteImport } from './routes/problems/$set/$slug'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service/index'
 import { Route as ServicesServiceApiRouteImport } from './routes/services/$service/api'
+import { Route as ServicesServiceDocsIndexRouteImport } from './routes/services/$service/docs/index'
+import { Route as ServicesServiceDocsSlugRouteImport } from './routes/services/$service/docs/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -44,6 +47,11 @@ const MetricsRoute = MetricsRouteImport.update({
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsServicesRoute = DocsServicesRouteImport.update({
+  id: '/docs/services',
+  path: '/docs/services',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsCategoryIndexRoute = DocsCategoryIndexRouteImport.update({
@@ -76,12 +84,24 @@ const ServicesServiceApiRoute = ServicesServiceApiRouteImport.update({
   path: '/services/$service/api',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesServiceDocsIndexRoute =
+  ServicesServiceDocsIndexRouteImport.update({
+    id: '/services/$service/docs/',
+    path: '/services/$service/docs/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesServiceDocsSlugRoute = ServicesServiceDocsSlugRouteImport.update({
+  id: '/services/$service/docs/$slug',
+  path: '/services/$service/docs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
+  '/docs/services': typeof DocsServicesRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
@@ -89,12 +109,15 @@ export interface FileRoutesByFullPath {
   '/docs/$category/': typeof DocsCategoryIndexRoute
   '/problems/$set/': typeof ProblemsSetIndexRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
+  '/services/$service/docs/$slug': typeof ServicesServiceDocsSlugRoute
+  '/services/$service/docs/': typeof ServicesServiceDocsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
+  '/docs/services': typeof DocsServicesRoute
   '/docs': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
@@ -102,6 +125,8 @@ export interface FileRoutesByTo {
   '/docs/$category': typeof DocsCategoryIndexRoute
   '/problems/$set': typeof ProblemsSetIndexRoute
   '/services/$service': typeof ServicesServiceIndexRoute
+  '/services/$service/docs/$slug': typeof ServicesServiceDocsSlugRoute
+  '/services/$service/docs': typeof ServicesServiceDocsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,6 +134,7 @@ export interface FileRoutesById {
   '/delivery': typeof DeliveryRoute
   '/issues': typeof IssuesRoute
   '/metrics': typeof MetricsRoute
+  '/docs/services': typeof DocsServicesRoute
   '/docs/': typeof DocsIndexRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
   '/problems/$set/$slug': typeof ProblemsSetSlugRoute
@@ -116,6 +142,8 @@ export interface FileRoutesById {
   '/docs/$category/': typeof DocsCategoryIndexRoute
   '/problems/$set/': typeof ProblemsSetIndexRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
+  '/services/$service/docs/$slug': typeof ServicesServiceDocsSlugRoute
+  '/services/$service/docs/': typeof ServicesServiceDocsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -124,6 +152,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/issues'
     | '/metrics'
+    | '/docs/services'
     | '/docs/'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
@@ -131,12 +160,15 @@ export interface FileRouteTypes {
     | '/docs/$category/'
     | '/problems/$set/'
     | '/services/$service/'
+    | '/services/$service/docs/$slug'
+    | '/services/$service/docs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/delivery'
     | '/issues'
     | '/metrics'
+    | '/docs/services'
     | '/docs'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
@@ -144,12 +176,15 @@ export interface FileRouteTypes {
     | '/docs/$category'
     | '/problems/$set'
     | '/services/$service'
+    | '/services/$service/docs/$slug'
+    | '/services/$service/docs'
   id:
     | '__root__'
     | '/'
     | '/delivery'
     | '/issues'
     | '/metrics'
+    | '/docs/services'
     | '/docs/'
     | '/docs/$category/$slug'
     | '/problems/$set/$slug'
@@ -157,6 +192,8 @@ export interface FileRouteTypes {
     | '/docs/$category/'
     | '/problems/$set/'
     | '/services/$service/'
+    | '/services/$service/docs/$slug'
+    | '/services/$service/docs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +201,7 @@ export interface RootRouteChildren {
   DeliveryRoute: typeof DeliveryRoute
   IssuesRoute: typeof IssuesRoute
   MetricsRoute: typeof MetricsRoute
+  DocsServicesRoute: typeof DocsServicesRoute
   DocsIndexRoute: typeof DocsIndexRoute
   DocsCategorySlugRoute: typeof DocsCategorySlugRoute
   ProblemsSetSlugRoute: typeof ProblemsSetSlugRoute
@@ -171,6 +209,8 @@ export interface RootRouteChildren {
   DocsCategoryIndexRoute: typeof DocsCategoryIndexRoute
   ProblemsSetIndexRoute: typeof ProblemsSetIndexRoute
   ServicesServiceIndexRoute: typeof ServicesServiceIndexRoute
+  ServicesServiceDocsSlugRoute: typeof ServicesServiceDocsSlugRoute
+  ServicesServiceDocsIndexRoute: typeof ServicesServiceDocsIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -208,6 +248,13 @@ declare module '@tanstack/solid-router' {
       path: '/docs'
       fullPath: '/docs/'
       preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/services': {
+      id: '/docs/services'
+      path: '/docs/services'
+      fullPath: '/docs/services'
+      preLoaderRoute: typeof DocsServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$category/': {
@@ -252,6 +299,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ServicesServiceApiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/$service/docs/': {
+      id: '/services/$service/docs/'
+      path: '/services/$service/docs'
+      fullPath: '/services/$service/docs/'
+      preLoaderRoute: typeof ServicesServiceDocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$service/docs/$slug': {
+      id: '/services/$service/docs/$slug'
+      path: '/services/$service/docs/$slug'
+      fullPath: '/services/$service/docs/$slug'
+      preLoaderRoute: typeof ServicesServiceDocsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -260,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeliveryRoute: DeliveryRoute,
   IssuesRoute: IssuesRoute,
   MetricsRoute: MetricsRoute,
+  DocsServicesRoute: DocsServicesRoute,
   DocsIndexRoute: DocsIndexRoute,
   DocsCategorySlugRoute: DocsCategorySlugRoute,
   ProblemsSetSlugRoute: ProblemsSetSlugRoute,
@@ -267,6 +329,8 @@ const rootRouteChildren: RootRouteChildren = {
   DocsCategoryIndexRoute: DocsCategoryIndexRoute,
   ProblemsSetIndexRoute: ProblemsSetIndexRoute,
   ServicesServiceIndexRoute: ServicesServiceIndexRoute,
+  ServicesServiceDocsSlugRoute: ServicesServiceDocsSlugRoute,
+  ServicesServiceDocsIndexRoute: ServicesServiceDocsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
