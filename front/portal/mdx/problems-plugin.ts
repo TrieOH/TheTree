@@ -27,10 +27,11 @@ export interface ProblemDoc {
   title: string;
   description: string;
   /**
-   * The detail it always answers with: its named error's message. Problems
-   * whose detail comes from the error that matched have none.
+   * The detail it answers with, from x-problem's detail: fixed for a named
+   * error, a template over the members ({provider}) for a typed one.
+   * Problems whose detail comes from a hand-written error have none.
    */
-  message?: string;
+  detail?: string;
   /** Extension members the problem adds to the standard ones. */
   members: ProblemMember[];
 }
@@ -45,7 +46,7 @@ interface Property {
 }
 
 interface Schema {
-  "x-problem"?: { slug: string; status: number; title: string; description?: string; message?: string };
+  "x-problem"?: { slug: string; status: number; title: string; description?: string; detail?: string };
   properties?: Record<string, Property>;
 }
 
@@ -72,7 +73,7 @@ function problemsIn(files: readonly string[]): ProblemDoc[] {
       status: schema["x-problem"]!.status,
       title: schema["x-problem"]!.title,
       description: schema["x-problem"]!.description ?? "",
-      ...(schema["x-problem"]!.message ? { message: schema["x-problem"]!.message } : {}),
+      ...(schema["x-problem"]!.detail ? { detail: schema["x-problem"]!.detail } : {}),
       members: Object.entries(schema.properties ?? {}).map(([name, property]) => ({
         name,
         type: property.type ?? (property.$ref ? "object" : "string"),
