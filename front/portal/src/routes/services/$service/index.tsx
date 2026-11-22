@@ -66,6 +66,9 @@ function ServicePage() {
     <>
       <PageHeader title={service().name} description={service().description}>
         <div class="flex flex-wrap gap-2 pt-3">
+          <Link to="/services/$service/docs" params={{ service: service().id }} class={action}>
+            Docs
+          </Link>
           <Link to="/services/$service/api" params={{ service: service().id }} class={action}>
             API reference
           </Link>

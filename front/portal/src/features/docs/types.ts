@@ -29,4 +29,6 @@ export interface DocMeta {
   services?: string[];
   /** Reading order within a folder, e.g. "1". Docs without one come after, by title. */
   order?: string;
+  /** Service docs: the heading the doc is listed under, e.g. "Signing in". */
+  group?: string;
 }

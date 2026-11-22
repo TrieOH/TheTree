@@ -1,0 +1,81 @@
+# Signing and encryption keys
+
+- **Order:** 4
+- **Group:** Keys and tokens
+- **Summary:** Which keys exist, how they rotate, and how the published JWKS follows them.
+
+The platform and every project each have their own keys. At any moment each of them has one active key of each type:
+
+| Type | Algorithm | Used for |
+| --- | --- | --- |
+| Signing | Ed25519 | Signing access and refresh tokens |
+| Encryption | RSA-4096 | Nothing yet |
+
+Nothing uses the encryption keys today. Project OAuth secrets are sealed with the master key instead. The keys exist so a future feature that needs per-project encryption finds them ready ([ADR-0006](/docs/decisions/adr-0006)).
+
+Private keys never reach the database in the clear. The vault in `lib/go/crypto` seals each one with the master key, `ENCRYPTION_KEY`, before it is stored.
+
+Only `internal/keys` creates, rotates or retires a key.
+
+## The life of a key
+
+| Status | Signs new tokens | Checks tokens | In the JWKS |
+| --- | --- | --- | --- |
+| `active` | Yes | Yes | Yes |
+| `retiring` | No | Yes | Yes |
+| `retired` | No | No, answers `signing-key-retired` | No |
+| `revoked` | No | No, answers `signing-key-revoked` | No |
+
+A rotated key goes from `active` to `retiring`. It stays `retiring` for one refresh token lifetime. After that, every token it signed has expired, and it becomes `retired`.
+
+Nothing in the code sets `revoked`. It is for a key that must stop working at once, and someone sets it by hand in the database. That stops IdentityX accepting the key, but the other APIs keep it until their cached JWKS changes. After setting `revoked`, delete the `jwks:` entries from the Worker's `BUDGET` KV namespace, then wait 5 minutes for the edge cache.
+
+## When keys change
+
+| When | What happens |
+| --- | --- |
+| Boot | `EnsureAll` runs before the API takes traffic. Then `CheckMasterKey` opens the platform's signing key, so a wrong `ENCRYPTION_KEY` fails the boot. |
+| A project is created | `Ensure` gives the new project its keys, in the same transaction. |
+| On a schedule | The `keys.rotate` job runs `EnsureAll`. On Cloudflare the Worker's cron starts it every day at 03:00 UTC. Locally it runs every `ROTATE_KEYS_JOB_DURATION`. |
+
+`EnsureAll` does three things for the platform and each project:
+
+- creates a key of any type that is missing
+- rotates an active key that has less than one `ROTATE_KEYS_JOB_DURATION` of life left, or has no end date
+- moves `retiring` keys whose grace period is over to `retired`
+
+With the production settings a key lives 7 days and rotation starts one day early, so a new key arrives about every 6 days. There is never a moment with no active key.
+
+`EnsureAll` costs the same no matter how many projects there are: it reads every project and every active key in two queries.
+
+Two runs at the same time can't both rotate the same key, because a key moves to `retiring` only if it is still `active`. Two runs that both find a key missing can each create one, though. The database has no rule for one active key of each type yet, and adding it needs a migration.
+
+## The JWKS
+
+`GET /.well-known/jwks.json?project_id=<id>` lists that project's `active` and `retiring` signing keys. Without `project_id`, it lists the platform's. The SQL is `GetActiveSigningKeys` in `db/queries/crypto_keys.sql`.
+
+The Worker caches the JWKS so the other APIs don't wake the container to check a token:
+
+1. The edge cache keeps it for 5 minutes.
+2. Cloudflare KV keeps it for up to 7 days.
+3. Only when both miss does the request reach the container.
+
+Each copy is kept per `project_id`. The Worker drops every other part of the query string, so no other query can wake the container.
+
+When `internal/keys` creates, rotates or retires a key, it sends a `jwks.changed` job. The Worker catches the job and deletes the KV copies, so the next fetch reads the new keys. Creating a project also deletes them.
+
+The jobs start before the boot runs `EnsureAll`, so a key the boot creates is announced too. A failed announcement is logged as an error, because the KV copy then stays old for up to 7 days.
+
+<Callout type="warning" title="The first 5 minutes after a rotation">After a rotation, the edge cache can still serve the old list for up to 5 minutes. During that time another API that meets the new key's id fetches again, gets the old list, and refuses the token. This is a known delay, and it ends when the edge copy expires.</Callout>
+
+## Settings
+
+| Variable | Production | What it sets |
+| --- | --- | --- |
+| `IDENTITY_X_KEY_LIFETIME` | `168h` | How long a new key lives |
+| `ROTATE_KEYS_JOB_DURATION` | `24h` | How early rotation starts, and how often the job runs locally |
+| `REFRESH_TOKEN_LIFETIME` | `168h` | How long a key stays `retiring` |
+
+The boot refuses a `ROTATE_KEYS_JOB_DURATION` that is not shorter than `IDENTITY_X_KEY_LIFETIME`, because every run would rotate every key.
+
+On Cloudflare the job runs when the cron in `cloudflare/wrangler.jsonc` says (`0 3 * * *`, once a day), whatever `ROTATE_KEYS_JOB_DURATION` is. Keep `ROTATE_KEYS_JOB_DURATION` at `24h` or more there. With less, a key can pass its end date before the next daily run rotates it.

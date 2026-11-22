@@ -166,7 +166,15 @@ function SidebarContent() {
         <NavLink to="/metrics" icon={ChartIcon}>Metrics</NavLink>
         <NavGroup label="Docs" icon={BookIcon} prefix="/docs">
           <For each={DOC_CATEGORIES}>
-            {(category) => <NavLink to={`/docs/${category.id}`}>{category.label}</NavLink>}
+            {(category) => (
+              <>
+                <NavLink to={`/docs/${category.id}`}>{category.label}</NavLink>
+                {/* Service docs come right after onboarding. */}
+                <Show when={category.id === "onboarding"}>
+                  <NavLink to="/docs/services">Services</NavLink>
+                </Show>
+              </>
+            )}
           </For>
         </NavGroup>
       </nav>

@@ -34,7 +34,12 @@ export function ProblemDetails(props: { problem: ProblemDoc }) {
         </Member>
         <Member name="title">{props.problem.title}</Member>
         <Member name="detail">
-          <span class="text-muted-foreground">varies: the message of the error that matched</span>
+          <Show
+            when={props.problem.message}
+            fallback={<span class="text-muted-foreground">varies: the message of the error that matched</span>}
+          >
+            {(message) => message()}
+          </Show>
         </Member>
         <Member name="instance">
           <span class="text-muted-foreground">the request's path</span>
