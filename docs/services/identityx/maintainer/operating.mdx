@@ -1,0 +1,90 @@
+# Operating
+
+- **Order:** 10
+- **Group:** Operating
+- **Summary:** Running IdentityX locally, where its settings live, how to release it, where to watch it, and the usual problems.
+
+## Running it locally
+
+[Local setup](/docs/onboarding/local-setup) covers the whole repo. For IdentityX alone:
+
+| Command | What it does |
+| --- | --- |
+| `just run identityx` | Starts the database and the pooler, migrates, and runs the API on `localhost:8080` |
+| `pnpm identityx dev` | Runs the IdentityX app on `localhost:3001` |
+| `just migrate identityx` | Applies new migrations |
+| `just gen identityx` | Writes the generated code after a spec or SQL change |
+
+Emails land in Mailpit at `localhost:8025`. The first time, the app sends you to its setup page; see [First boot](/services/identityx/docs/first-boot).
+
+## Settings
+
+| Where | What goes there |
+| --- | --- |
+| `api/identityx/.env` | Everything, locally. Copy it from `.example.env`. |
+| `vars` in `cloudflare/wrangler.jsonc` | Settings that aren't secret, in production. They are reviewed with the code. |
+| Worker secrets | Database credentials, `ENCRYPTION_KEY`, `HMAC_SECRET`, the Google and GitHub client secrets, the SMTP login, the Grafana auth header (`OTEL_EXPORTER_OTLP_HEADERS`), and `JOBS_SECRET` when it is set. Set one at a time with `wrangler secret put NAME`. They stay across deploys. |
+
+Settings that change behavior:
+
+| Variable | Value | Effect |
+| --- | --- | --- |
+| `ACCESS_TOKEN_LIFETIME`, `REFRESH_TOKEN_LIFETIME` | Must be set; `1h` and `168h` in production | Token lifetimes |
+| `IDENTITY_X_KEY_LIFETIME` | Must be set; `168h` in production | How long a signing key lives |
+| `ROTATE_KEYS_JOB_DURATION` | Must be set; `24h` in production | A key is rotated once less than this much of its life is left. Locally it is also how often `keys.rotate` runs. On Cloudflare the daily cron runs it instead. It must be shorter than `IDENTITY_X_KEY_LIFETIME`. |
+| `CORS_ALLOWED_ORIGINS` | Must be set | Which apps may call the API from a browser |
+| `RATE_LIMIT_RPS`, `RATE_LIMIT_BURST` | `400`, `20` | The rate limit for each container |
+| `DISABLE_RATE_LIMIT` | `false` | Turns the rate limit off |
+| `PROFILE_PORT` | `6060` in `.example.env` and production | Serves Go's pprof on that port. Empty turns it off. |
+| `GOOGLE_*`, `GITHUB_*` | Empty | Platform sign in with Google or GitHub. A provider with no client id or secret is not offered. |
+
+## Releasing
+
+IdentityX deploys from a tag on `main`, like every service. See [Shipping](/docs/onboarding/shipping) for the full flow.
+
+<Steps>
+
+### Merge, then update main
+
+Tag the commit that is on `main`, never a branch.
+
+### Pick the version
+
+Find the last tag with `git tag -l 'identityx/v*' --sort=-v:refname | head -1`. The team adds one to the patch number for a fix, and to the minor number for a feature or a breaking change, while versions are still below `1.0`.
+
+### Push the tag on its own
+
+Run `git tag identityx/vX.Y.Z`, then `git push origin identityx/vX.Y.Z`. Push each tag in its own push, so each one starts its own deploy.
+
+### Release IdentityX first
+
+Payssage, Univents and Informd sign in against IdentityX. When a change also touches `sdk/go/IdentityX` or `lib/go/backend/identityx`, release those three after IdentityX, so they build with the new code.
+
+</Steps>
+
+The deploy shows on the portal's Delivery page. A schema change is not part of the deploy; see [Database](/services/identityx/docs/database).
+
+## Watching it
+
+| Where | What it shows |
+| --- | --- |
+| The portal's IdentityX page | Status, success rate, slowest routes, error answers and cold starts |
+| The portal's Metrics page | The container budget left this month |
+| Grafana, the `trieoh` folder | `trieoh-services`, `trieoh-logs`, `trieoh-traces` and `trieoh-edge` |
+
+Nothing pings IdentityX to check that it is up, because each call would wake the container.
+
+## Usual problems
+
+| What you see | What to do |
+| --- | --- |
+| Every route except `/auth/setup` answers `setup-required` | The database has no actor yet. Run setup: [First boot](/services/identityx/docs/first-boot). |
+| The boot fails with `ENCRYPTION_KEY can't open the stored keys` | `ENCRYPTION_KEY` is not the key the stored keys were sealed with. Set the right one. |
+| The boot fails on `ROTATE_KEYS_JOB_DURATION` | It is not shorter than `IDENTITY_X_KEY_LIFETIME`. Fix the two values. |
+| Other APIs refuse new tokens right after a rotation | Wait up to 5 minutes for the edge copy. If the errors last longer: [Edge Worker and cache](/services/identityx/docs/edge-worker-and-cache). |
+| A verify or reset email never arrives | [Email delivery](/services/identityx/docs/email-delivery) |
+| The log says `constraint registry gap` | [Database](/services/identityx/docs/database) |
+| A browser call fails with a CORS error | The app's origin is not in `CORS_ALLOWED_ORIGINS`. Add it in `cloudflare/wrangler.jsonc` and release. |
+| No container starts at all | The month's container budget is used up. The Metrics page shows it. Containers start again in the next billing cycle. The cap is `LIMIT_GIB_SECONDS` in `lib/ts/container-budget/src/index.ts`. Jobs queued meanwhile are lost, see [Background jobs](/services/identityx/docs/background-jobs). |
+
+Incident reports that name IdentityX are listed on its docs page, after the decisions.

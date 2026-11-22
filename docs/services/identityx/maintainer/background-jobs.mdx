@@ -1,0 +1,106 @@
+# Background jobs
+
+- **Order:** 6
+- **Group:** Jobs and email
+- **Summary:** The jobs IdentityX runs after a response or on a schedule, how they travel, and what a retry repeats.
+
+Some work runs after the response, like sending an email, or on a schedule, like rotating keys. Each piece of that work is a job: a small Go struct with a `Kind`, and one registered function, its handler, that does the work.
+
+## The jobs
+
+| Kind | What it does | Started by |
+| --- | --- | --- |
+| `auth_email.send` | Sends a verify or reset email | Sign up, resend, forgot password |
+| `tos_update_email.send` | Tells every human in a project that its terms changed | Creating or updating terms of service |
+| `keys.rotate` | Runs `EnsureAll` on every key | The schedule |
+| `cleanup_blacklist` | Deletes expired blacklist rows | The schedule |
+| `cleanup_action_tokens` | Deletes old action token rows | The schedule |
+| `jwks.changed` | Tells the Worker the keys changed | A key change, through the hook in `internal/app/build.go` |
+
+They are registered in `internal/jobs/jobs.go`, with one file per job next to it.
+
+## How a job travels
+
+The code puts a job on the list of work the same way everywhere. What carries it depends on where IdentityX runs.
+
+Locally, `JOBS_URL` is empty and the API process runs jobs itself, with a pool of workers and a timer for each scheduled job.
+
+On Cloudflare, the Worker sets `JOBS_URL`. The container sends each job to the Worker, the Worker puts it on the `identityx-jobs` queue, and the queue hands it back to the container's `/_jobs` route. People outside can't reach `/_jobs`, because the Worker refuses that path. When `JOBS_SECRET` is set, the container also refuses a delivery without it.
+
+## Retries
+
+The retry rules live in `lib/go/jobs` and are the same locally and on Cloudflare ([ADR-0023](/docs/decisions/adr-0023)).
+
+A failing handler runs at most 10 times in total: the first run and 9 retries. The waits between runs are 30 seconds, 1 minute, 2 minutes and so on, doubling up to 1 hour. The last run is about 3 hours after the first. After that, the job is dropped.
+
+A job is dropped at once in three cases: its handler returns an error wrapped in `jobs.Permanent`, its kind is unknown, or its arguments can't be read.
+
+A retry runs the whole handler again from the start. So a handler has to be safe to run twice.
+
+Each step is logged with the job's kind: `job failed, retrying` (a warning, with the attempt and the wait), `job given up` after the last run, and `job dropped` for the three cases above. The handler's error is in that line.
+
+Locally, a job waiting for its next try lives only in memory, so restarting the API loses it.
+
+On Cloudflare the Worker has one rule of its own: when the container doesn't answer at all, the queue tries again after 30 seconds. After 10 such tries, about 5 minutes, the job moves to `identityx-jobs-dlq`. That is a dead-letter queue, where jobs go when nothing could run them. Nothing replays it. When containers can't start, for example because the month's budget is used up, the emails queued in that time end there and are lost.
+
+## The schedule
+
+| Job | Locally | On Cloudflare |
+| --- | --- | --- |
+| `cleanup_blacklist`, `cleanup_action_tokens` | Every 24 hours, and once at start | Daily at 03:00 UTC |
+| `keys.rotate` | Every `ROTATE_KEYS_JOB_DURATION` | Daily at 03:00 UTC |
+
+The schedule is written in two places, so change both together:
+
+- `jobs.Periodic` in `internal/jobs/jobs.go` is what runs locally.
+- On Cloudflare a cron, a timer that runs at fixed times, starts the same three kinds. It is `0 3 * * *` in `cloudflare/wrangler.jsonc`, and `PERIODIC` in `cloudflare/src/index.ts` says which jobs it starts.
+
+On Cloudflare the container sleeps between requests, so the cron is the only thing that wakes it for these jobs, once a day.
+
+## What each job repeats
+
+`auth_email.send`: the request stores the action token before it queues the job, so every retry sends the same link. The link lasts 10 minutes by default. Retries go on for about 3 hours, so a retry after the 5th run, about 7 minutes in, sends a link that has already expired. A template that can't be read or rendered is retried the same way, though no retry can fix it. See [Email delivery](/services/identityx/docs/email-delivery).
+
+`tos_update_email.send`: one job sends the notice to every human actor with an email. A failed address is logged and skipped, so the others still go out. If the whole job runs again, everyone gets the notice again, because nothing records who was already sent one.
+
+`keys.rotate`: two runs at the same time can't both rotate the same key. They can both create a key that was missing, though. See [Signing and encryption keys](/services/identityx/docs/signing-and-encryption-keys).
+
+`cleanup_blacklist`, `cleanup_action_tokens`: the checks already ignore expired rows, so these only keep the tables small. Running them twice does no harm.
+
+`jwks.changed`: the Worker takes it before it reaches the queue and deletes the cached JWKS, the list of public keys other APIs fetch to check tokens. Locally nothing caches the JWKS, so its handler does nothing.
+
+## Adding a job
+
+```go
+// internal/jobs/notify_admins.go
+type NotifyAdminsArgs struct {
+	ProjectID uuid.UUID `json:"project_id"`
+}
+
+func (NotifyAdminsArgs) Kind() string { return "admins.notify" }
+
+func workNotifyAdmins(ctx context.Context, args NotifyAdminsArgs) error {
+	// Wrap an error no retry can fix, so the job is dropped at once.
+	return jobs.Permanent(errors.New("not built yet"))
+}
+```
+
+<Steps>
+
+### Write the job
+
+Write the struct, its `Kind` and its handler in a new file in `internal/jobs`. Make the handler safe to run twice.
+
+### Register it
+
+Add `libjobs.Register(reg, workNotifyAdmins)` to `Registry` in `internal/jobs/jobs.go`. If the handler needs something new, like a repo, add it to `jobs.Deps` and pass it in `internal/app/build.go`.
+
+### Enqueue it
+
+Enqueue it from the code that starts the work, through the `Enqueue` the feature gets in its `Deps`, like `emails.Sender` does.
+
+### Schedule it, if it repeats
+
+Add it to `jobs.Periodic`. On Cloudflare, add it to `PERIODIC` under an existing cron. A new time in `triggers.crons` in `cloudflare/wrangler.jsonc` wakes the container one more time each day.
+
+</Steps>

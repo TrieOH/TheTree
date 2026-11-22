@@ -1,0 +1,85 @@
+# Email delivery
+
+- **Order:** 7
+- **Group:** Jobs and email
+- **Summary:** The three emails IdentityX sends, how a project changes them, and how they reach an inbox.
+
+IdentityX sends three emails:
+
+| Kind | Sent when | Has a link |
+| --- | --- | --- |
+| `verify` | Someone signs up, or asks for the email again | Yes, to verify the address |
+| `reset` | Someone asks to reset their password | Yes, to set a new password |
+| `tos` | A project creates or changes its terms of service | No |
+
+The code is in `internal/emails`. The templates a project saves are in the `email_templates` feature.
+
+## From request to inbox
+
+<Steps>
+
+### Creating the token and queuing the job
+
+For `verify` and `reset`, `emails.Sender` mints the action token and stores it (see [Token internals](/services/identityx/docs/token-internals)). Then it queues an `auth_email.send` job with the token, the address and where the link must point. For `tos`, the terms feature queues a `tos_update_email.send` job.
+
+### Rendering and sending the email
+
+The job picks the template, renders it, and sends it over SMTP. [Background jobs](/services/identityx/docs/background-jobs) explains retries.
+
+</Steps>
+
+The API responds before the email is sent, so a slow mail server doesn't delay a sign-up.
+
+## Templates
+
+Every kind has a built-in subject in `internal/emails/emails.go` and a built-in body in the `assets` package. A project can save its own version of any kind with `PUT /projects/{project_id}/email-templates/{kind}`. When a job sends an email, it uses the project's version if there is one, and the built-in one if not. Platform actors, the people who use IdentityX itself, always get the built-in one.
+
+Templates are Go `html/template` text, for the subject and for the body. They can use:
+
+| Variable | Holds |
+| --- | --- |
+| `{{.ActionURL}}` | The link, for `verify` and `reset` |
+| `{{.ProjectName}}`, `{{.ProjectDomain}}` | The project's name, and its domain without `https://` |
+| `{{.Email}}` | The address the email goes to |
+| `{{.Expiry}}` | How many minutes the link works |
+| `{{.TosVersion}}`, `{{.EffectiveDate}}`, `{{.TosContent}}` | The new terms, for `tos` |
+
+Before a project's template is saved, `Validate` checks two rules:
+
+- A `verify` or `reset` body must contain `{{.ActionURL}}`. Otherwise the save answers `validation`.
+- The template must render with sample values. Otherwise the save answers `template-render`.
+
+The first rule protects the link. IdentityX writes the link itself, so a project can change the wording around it but not where it points.
+
+## The link
+
+```
+https://app.example.com/auth/verify?project_id=0b7e...&token=eyJ...
+https://dev.identityx.com.br/auth/reset?token=eyJ...
+```
+
+- The start of the link is the project's `domain` for someone who signed up to a project, and `APP_URL` for a platform actor. Platform actor links have no `project_id`.
+- A project with no domain can't send these emails. The request fails, so no email goes out with a broken link.
+
+The app at that address reads the link: `/auth/verify` and `/auth/reset` send the browser on to the pages that use the token.
+
+## Settings
+
+| Variable | Locally | In production |
+| --- | --- | --- |
+| `SMTP_HOST`, `SMTP_PORT` | `mailpit`, `1025` | `mail.trieoh.com`, `587` |
+| `SMTP_FROM` | `noreply@identityx.dev` | `identityx@trieoh.com` |
+| `SMTP_TLS` | `false` | `true` |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | empty | Worker secrets |
+
+`EMAIL_VERIFY_TOKEN_TTL` and `EMAIL_RESET_TOKEN_TTL` set how long each link works. Both default to `10m`.
+
+Locally, emails go to Mailpit at `localhost:8025` and are not sent on.
+
+## When an email doesn't arrive
+
+1. Search the logs for the job's kind, `auth_email.send` or `tos_update_email.send`.
+2. A failed send is logged as `failed to send auth email`, with the kind and the address. Look at SMTP first.
+3. A template that can't be read or rendered has no line of its own. It shows in the job's `job failed, retrying` line, then `job given up` about 3 hours later. Fix the project's template, or delete it with `DELETE /projects/{project_id}/email-templates/{kind}` so the built-in one is used. Emails for that project and kind fail until then.
+4. A retry sends the same link, which lasts 10 minutes. If the email arrived late, the link may already have expired, and the person needs to ask for a new one.
+5. For `tos`, every failed address is logged and skipped, and the rest are still sent.
