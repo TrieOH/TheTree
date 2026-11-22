@@ -73,5 +73,5 @@ runs:
             echo "::error title=$SERVICE rollout not done::after ${TIMEOUT}s the container is not on $VERSION (rollout status $status, target ${target##*:}, app image ${image##*:})"
             exit 1
           fi
-          sleep 15
+          sleep 5
         done
