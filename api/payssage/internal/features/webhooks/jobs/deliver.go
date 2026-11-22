@@ -31,10 +31,9 @@ type DeliverWebhookArgs struct {
 func (DeliverWebhookArgs) Kind() string { return "webhook.deliver" }
 
 // DeliverWebhookWorker POSTs one delivery to its tenant endpoint. Retries
-// belong to the job carrier (the Cloudflare Queue's retry policy, or the
-// in-process runner's backoff): a failed attempt is recorded and returned
-// as an error so the carrier tries again. When the carrier gives up, the
-// webhook.fail job marks the delivery failed. The row is the source of
+// follow the jobs registry's policy, on every carrier: a failed attempt is
+// recorded and returned as an error so the job is retried. When the retries
+// run out, its give-up (webhook.fail) marks the delivery failed. The row is the source of
 // truth, so a duplicate or stale job is a no-op.
 type DeliverWebhookWorker struct {
 	deliveries ports.WebhookDeliveryRepo
@@ -177,9 +176,9 @@ func (w *DeliverWebhookWorker) recordSuccess(
 	return nil
 }
 
-// recordAttempt records a failed attempt and returns an error, so the
-// carrier retries the job. The delivery stays pending: when the carrier's
-// retries run out, the webhook.fail job marks it failed.
+// recordAttempt records a failed attempt and returns an error, so the job
+// is retried. The delivery stays pending: when the retries run out, the
+// webhook.fail give-up marks it failed.
 func (w *DeliverWebhookWorker) recordAttempt(
 	ctx context.Context,
 	delivery *models.WebhookDelivery,

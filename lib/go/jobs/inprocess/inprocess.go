@@ -17,12 +17,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Options tunes the runner; zero values take the defaults.
+// Options tunes the runner; zero values take the defaults. Retries follow
+// the registry's policy, as with every carrier.
 type Options struct {
-	Workers     int           // default 4
-	QueueSize   int           // default 1024
-	MaxAttempts int           // default 5
-	BaseBackoff time.Duration // default 1s, doubled per attempt
+	Workers   int // default 4
+	QueueSize int // default 1024
 }
 
 func (o Options) withDefaults() Options {
@@ -31,12 +30,6 @@ func (o Options) withDefaults() Options {
 	}
 	if o.QueueSize <= 0 {
 		o.QueueSize = 1024
-	}
-	if o.MaxAttempts <= 0 {
-		o.MaxAttempts = 5
-	}
-	if o.BaseBackoff <= 0 {
-		o.BaseBackoff = time.Second
 	}
 	return o
 }
@@ -173,26 +166,19 @@ func (r *Runner) work() {
 	}
 }
 
-// run dispatches env, retrying failures with exponential backoff. A job
-// that exhausts its attempts is logged and dropped.
+// run hands env to the registry until it stops asking for a retry. The
+// wait between attempts is held here, so a retrying job keeps its worker.
 func (r *Runner) run(env jobs.Envelope) {
-	backoff := r.opts.BaseBackoff
 	for attempt := 1; ; attempt++ {
-		err := r.registry.Dispatch(r.ctx, env)
-		if err == nil {
+		res := r.registry.Handle(r.ctx, jobs.Delivery{Envelope: env, Attempt: attempt})
+		if res.Outcome != jobs.Retry {
 			return
 		}
-		if errors.Is(err, jobs.ErrUnknownKind) || attempt >= r.opts.MaxAttempts || r.ctx.Err() != nil {
-			telemetry.Log().ErrorContext(r.ctx, "job failed",
-				slog.String("kind", env.Kind), slog.Int("attempts", attempt), telemetry.Err(err))
-			return
-		}
-		telemetry.Log().WarnContext(r.ctx, "job failed, retrying",
-			slog.String("kind", env.Kind), slog.Int("attempt", attempt), slog.Duration("backoff", backoff), telemetry.Err(err))
 		select {
-		case <-time.After(backoff):
-			backoff *= 2
+		case <-time.After(res.After):
 		case <-r.ctx.Done():
+			telemetry.Log().ErrorContext(r.ctx, "job lost on shutdown", slog.String("kind", env.Kind), slog.Int("attempts", attempt))
+			return
 		}
 	}
 }

@@ -138,8 +138,7 @@ export default {
 	},
 
 	async queue(batch, env, ctx) {
-		// No retryDelay: failed jobs retry on the queue's own delay.
-		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)) });
+		await runJobs(batch, ctx, { deliver: async (job, delivery) => deliver(await instance(env), job, delivery, jobsSecret(env)) });
 	},
 
 	async scheduled(controller, env) {

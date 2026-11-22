@@ -15,8 +15,45 @@ type ping struct{}
 
 func (ping) Kind() string { return "ping" }
 
+var fast = jobs.WithPolicy(jobs.Policy{MaxAttempts: 3, Backoff: jobs.Exponential(time.Millisecond, 10*time.Millisecond)})
+
+type giveUp struct{}
+
+func (giveUp) Kind() string { return "ping.give_up" }
+
+// A job out of attempts runs its give-up, as on any carrier.
+func TestGivesUpAfterTheAttempts(t *testing.T) {
+	reg := jobs.NewRegistry(fast)
+	var calls atomic.Int32
+	gaveUp := make(chan struct{})
+	jobs.Register(reg, func(context.Context, ping) error {
+		calls.Add(1)
+		return errors.New("down")
+	}, jobs.GiveUpWith(func(ping) jobs.Job { return giveUp{} }))
+	jobs.Register(reg, func(context.Context, giveUp) error {
+		close(gaveUp)
+		return nil
+	})
+	r := inprocess.New(reg, inprocess.Options{})
+	r.Start()
+	defer func() { _ = r.Stop(context.Background()) }()
+
+	err := r.Enqueue(context.Background(), ping{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-gaveUp:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("no give-up; calls = %d", calls.Load())
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("calls = %d, want 3", got)
+	}
+}
+
 func TestRetriesUntilSuccess(t *testing.T) {
-	reg := jobs.NewRegistry()
+	reg := jobs.NewRegistry(fast)
 	var calls atomic.Int32
 	done := make(chan struct{})
 	jobs.Register(reg, func(context.Context, ping) error {
@@ -26,7 +63,7 @@ func TestRetriesUntilSuccess(t *testing.T) {
 		close(done)
 		return nil
 	})
-	r := inprocess.New(reg, inprocess.Options{BaseBackoff: time.Millisecond})
+	r := inprocess.New(reg, inprocess.Options{})
 	r.Start()
 	defer func() { _ = r.Stop(context.Background()) }()
 

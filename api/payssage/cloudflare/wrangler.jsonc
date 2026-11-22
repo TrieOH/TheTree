@@ -40,10 +40,12 @@
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["PayssageContainer"] }],
 
 	// Background jobs: the container enqueues through the producer, the
-	// consumer delivers each job back to the container's /events. Retries
-	// back off per message (src/index.ts); a job out of retries lands on the
-	// dead-letter queue, whose consumer runs the give-up job for it
-	// (webhook.deliver → webhook.fail).
+	// consumer delivers each job back to the container's /_jobs and applies
+	// the outcome it answers. Retries and give-ups (webhook.deliver →
+	// webhook.fail) are the container's (internal/jobs, 10 attempts);
+	// max_retries stays above that. A job the container never answered for
+	// lands on the dead-letter queue, whose consumer delivers it dead, so the
+	// container still runs its give-up.
 	"queues": {
 		"producers": [{ "queue": "payssage-jobs", "binding": "JOBS" }],
 		"consumers": [

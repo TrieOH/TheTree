@@ -40,14 +40,17 @@
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["IdentityXContainer"] }],
 
 	// Background jobs: the container enqueues through the producer, the
-	// consumer delivers each job back to the container's /events.
+	// consumer delivers each job back to the container's /_jobs and applies
+	// the outcome it answers. Retries and give-ups are the container's
+	// (lib/jobs.DefaultPolicy, 10 attempts); max_retries stays above that so
+	// the dead-letter queue only catches jobs the container never answered.
 	"queues": {
 		"producers": [{ "queue": "identityx-jobs", "binding": "JOBS" }],
 		"consumers": [
 			{
 				"queue": "identityx-jobs",
 				"max_batch_size": 10,
-				"max_retries": 5,
+				"max_retries": 10,
 				"dead_letter_queue": "identityx-jobs-dlq"
 			}
 		]

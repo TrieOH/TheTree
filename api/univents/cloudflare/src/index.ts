@@ -3,7 +3,6 @@ import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
 import { CachedEntrypoint, gateway, type PurgeJob } from "@trieoh/container-budget/edge";
 import {
 	type Job,
-	backoff,
 	containerEnv,
 	deliver,
 	jobsOutbound,
@@ -63,6 +62,6 @@ export default {
 	},
 
 	async queue(batch, env, ctx) {
-		await runJobs(batch, ctx, { deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)), retryDelay: backoff });
+		await runJobs(batch, ctx, { deliver: async (job, delivery) => deliver(await instance(env), job, delivery, jobsSecret(env)) });
 	},
 } satisfies ExportedHandler<Env, Job>;

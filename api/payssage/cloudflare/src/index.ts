@@ -3,7 +3,6 @@ import { BudgetedContainer, isRoute, notFound } from "@trieoh/container-budget";
 import { CachedEntrypoint, gateway } from "@trieoh/container-budget/edge";
 import {
 	type Job,
-	backoff,
 	containerEnv,
 	deliver,
 	enqueue,
@@ -23,23 +22,15 @@ export { ContainerProxy } from "@cloudflare/containers";
 // is a per-instance backstop), so any instance can serve any request.
 const INSTANCES = 1;
 
-// Queue names, as in wrangler.jsonc.
+// Queue names, as in wrangler.jsonc. Retries, backoff and the give-up of a
+// dead webhook.deliver are the container's (internal/jobs); the dead-letter
+// queue only catches jobs the container never answered for.
 const DEAD_LETTER_QUEUE = "payssage-jobs-dlq";
-
-// Failed jobs retry with backoff (30s, doubling, capped at an hour). With
-// the consumer's max_retries a tenant endpoint gets a few hours to come back
-// before the delivery is marked failed.
 
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
 	"0 */6 * * *": ["webhook.redrive"],
-};
-
-// Jobs whose retries ran out, mapped to the job that records the give-up.
-// A dead job with no entry here is logged and dropped.
-const ON_DEAD: Record<string, string> = {
-	"webhook.deliver": "webhook.fail",
 };
 
 // webhook.redrive only finds deliveries whose enqueue was lost, and a
@@ -118,9 +109,8 @@ export default {
 	async queue(batch, env, ctx) {
 		if (batch.messages.some((m) => m.body.kind !== REDRIVE_KIND)) markWrite(env, ctx);
 		await runJobs(batch, ctx, {
-			deliver: async (job) => deliver(await instance(env), job, jobsSecret(env)),
-			retryDelay: backoff,
-			deadLetter: { queue: DEAD_LETTER_QUEUE, onDead: ON_DEAD },
+			deliver: async (job, delivery) => deliver(await instance(env), job, delivery, jobsSecret(env)),
+			deadLetterQueue: DEAD_LETTER_QUEUE,
 		});
 	},
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -33,33 +34,48 @@ func registry() *jobs.Registry {
 	return reg
 }
 
-func post(t *testing.T, method, body string) int {
+func post(t *testing.T, method, body string, headers map[string]string) (int, httpjobs.Outcome) {
 	t.Helper()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(context.Background(), method, httpjobs.Path, strings.NewReader(body))
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 	httpjobs.Handler(registry(), "").ServeHTTP(rec, req)
-	return rec.Code
+	var out httpjobs.Outcome
+	if rec.Code == http.StatusOK {
+		err := json.Unmarshal(rec.Body.Bytes(), &out)
+		if err != nil {
+			t.Fatalf("body %q: %v", rec.Body.String(), err)
+		}
+	}
+	return rec.Code, out
 }
 
-func TestHandlerStatuses(t *testing.T) {
+func TestHandlerOutcomes(t *testing.T) {
+	last := strconv.Itoa(jobs.DefaultPolicy.MaxAttempts)
 	cases := []struct {
-		name   string
-		method string
-		body   string
-		want   int
+		name    string
+		method  string
+		body    string
+		headers map[string]string
+		status  int
+		want    httpjobs.Outcome
 	}{
-		{"success", http.MethodPost, `{"kind":"work","args":{"fail":false}}`, http.StatusNoContent},
-		{"failure is retryable", http.MethodPost, `{"kind":"work","args":{"fail":true}}`, http.StatusInternalServerError},
-		{"unknown kind is final", http.MethodPost, `{"kind":"nope"}`, http.StatusBadRequest},
-		{"missing kind", http.MethodPost, `{}`, http.StatusBadRequest},
-		{"bad json", http.MethodPost, `{`, http.StatusBadRequest},
-		{"wrong method", http.MethodGet, ``, http.StatusMethodNotAllowed},
+		{"success", http.MethodPost, `{"kind":"work","args":{"fail":false}}`, nil, http.StatusOK, httpjobs.Outcome{Outcome: jobs.Done}},
+		{"failure retries after the backoff", http.MethodPost, `{"kind":"work","args":{"fail":true}}`, map[string]string{httpjobs.AttemptHeader: "2"}, http.StatusOK, httpjobs.Outcome{Outcome: jobs.Retry, RetryAfterSeconds: 60}},
+		{"last attempt drops", http.MethodPost, `{"kind":"work","args":{"fail":true}}`, map[string]string{httpjobs.AttemptHeader: last}, http.StatusOK, httpjobs.Outcome{Outcome: jobs.Drop}},
+		{"dead only gives up", http.MethodPost, `{"kind":"work","args":{"fail":true}}`, map[string]string{httpjobs.DeadHeader: "true"}, http.StatusOK, httpjobs.Outcome{Outcome: jobs.Drop}},
+		{"unknown kind drops", http.MethodPost, `{"kind":"nope"}`, nil, http.StatusOK, httpjobs.Outcome{Outcome: jobs.Drop}},
+		{"missing kind", http.MethodPost, `{}`, nil, http.StatusBadRequest, httpjobs.Outcome{}},
+		{"bad json", http.MethodPost, `{`, nil, http.StatusBadRequest, httpjobs.Outcome{}},
+		{"wrong method", http.MethodGet, ``, nil, http.StatusMethodNotAllowed, httpjobs.Outcome{}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := post(t, c.method, c.body)
-			if got != c.want {
-				t.Fatalf("status = %d, want %d", got, c.want)
+			status, out := post(t, c.method, c.body, c.headers)
+			if status != c.status || out != c.want {
+				t.Fatalf("got %d %+v, want %d %+v", status, out, c.status, c.want)
 			}
 		})
 	}
@@ -180,7 +196,7 @@ func TestHandlerRequiresTheSecretWhenSet(t *testing.T) {
 		name, sent string
 		want       int
 	}{
-		{"right secret", "jobs-secret", http.StatusNoContent},
+		{"right secret", "jobs-secret", http.StatusOK},
 		{"wrong secret", "nope", http.StatusUnauthorized},
 		{"no secret", "", http.StatusUnauthorized},
 	} {

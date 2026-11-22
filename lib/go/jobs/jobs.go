@@ -10,7 +10,11 @@
 //     the periodic jobs there (Cloudflare Queues and Cron Triggers).
 //
 // The Envelope is the only wire format, so every carrier delivers the same
-// bytes to the same Registry.
+// bytes to the same Registry. The job semantics live here too: a carrier
+// hands each delivery to Registry.Handle, which runs it and says what to do
+// next (done, retry after a backoff, drop, give up), and the carrier only
+// maps that onto its own ack, delayed redelivery or terminate. A message
+// broker (NATS JetStream, RabbitMQ) is one more carrier of the same shape.
 package jobs
 
 import (
@@ -98,40 +102,93 @@ var ErrUnknownKind = errors.New("unknown job kind")
 
 type handler func(ctx context.Context, args json.RawMessage) error
 
-// Registry maps job kinds to their handlers.
-type Registry struct {
-	handlers map[string]handler
+// kind is one registered kind: its work, and the job that records its
+// give-up.
+type kind struct {
+	work   handler
+	giveUp func(args json.RawMessage) (Envelope, error)
 }
 
-func NewRegistry() *Registry {
-	return &Registry{handlers: make(map[string]handler)}
+// Registry maps job kinds to their handlers, and holds the retry policy
+// Handle applies to them.
+type Registry struct {
+	kinds  map[string]*kind
+	policy Policy
+}
+
+// RegistryOption tunes a Registry.
+type RegistryOption func(*Registry)
+
+// WithPolicy replaces DefaultPolicy.
+func WithPolicy(p Policy) RegistryOption {
+	return func(r *Registry) { r.policy = p }
+}
+
+func NewRegistry(opts ...RegistryOption) *Registry {
+	r := &Registry{kinds: make(map[string]*kind), policy: DefaultPolicy}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
+// Option tunes one kind at Register.
+type Option[T Job] func(*kind)
+
+// GiveUpWith declares the job that records the give-up of a T whose retries
+// ran out: Handle runs giveUp(job) in its place before dropping it. The
+// give-up's kind must be registered too.
+func GiveUpWith[T Job](giveUp func(job T) Job) Option[T] {
+	return func(k *kind) {
+		k.giveUp = func(args json.RawMessage) (Envelope, error) {
+			job, err := decode[T](args)
+			if err != nil {
+				return Envelope{}, err
+			}
+			return Encode(context.Background(), giveUp(job))
+		}
+	}
 }
 
 // Register binds work to the kind of T. Registering a kind twice panics:
 // it is a wiring bug, caught at boot.
-func Register[T Job](r *Registry, work func(ctx context.Context, job T) error) {
+func Register[T Job](r *Registry, work func(ctx context.Context, job T) error, opts ...Option[T]) {
 	var zero T
-	kind := zero.Kind()
-	if _, dup := r.handlers[kind]; dup {
-		panic("jobs: kind registered twice: " + kind)
+	name := zero.Kind()
+	if _, dup := r.kinds[name]; dup {
+		panic("jobs: kind registered twice: " + name)
 	}
-	r.handlers[kind] = func(ctx context.Context, args json.RawMessage) error {
-		var job T
-		if len(args) > 0 {
-			err := json.Unmarshal(args, &job)
-			if err != nil {
-				return fmt.Errorf("decode job %s: %w", kind, err)
-			}
+	k := &kind{work: func(ctx context.Context, args json.RawMessage) error {
+		job, err := decode[T](args)
+		if err != nil {
+			return err
 		}
 		return work(ctx, job)
+	}}
+	for _, opt := range opts {
+		opt(k)
 	}
+	r.kinds[name] = k
+}
+
+// decode reads a T's args. Args that don't decode never will, so the error
+// is permanent.
+func decode[T Job](args json.RawMessage) (T, error) {
+	var job T
+	if len(args) > 0 {
+		err := json.Unmarshal(args, &job)
+		if err != nil {
+			return job, Permanent(fmt.Errorf("decode job %s: %w", job.Kind(), err))
+		}
+	}
+	return job, nil
 }
 
 // Kinds lists the registered kinds.
 func (r *Registry) Kinds() []string {
-	kinds := make([]string, 0, len(r.handlers))
-	for kind := range r.handlers {
-		kinds = append(kinds, kind)
+	kinds := make([]string, 0, len(r.kinds))
+	for name := range r.kinds {
+		kinds = append(kinds, name)
 	}
 	return kinds
 }
@@ -140,7 +197,7 @@ func (r *Registry) Kinds() []string {
 // a trace in env the span is a child of the code that enqueued the job, and
 // links to whatever delivered it (the /_jobs request).
 func (r *Registry) Dispatch(ctx context.Context, env Envelope) error {
-	h, ok := r.handlers[env.Kind]
+	k, ok := r.kinds[env.Kind]
 	if !ok {
 		return fmt.Errorf("%w: %q", ErrUnknownKind, env.Kind)
 	}
@@ -156,7 +213,7 @@ func (r *Registry) Dispatch(ctx context.Context, env Envelope) error {
 	ctx, span := telemetry.StartSpan(ctx, "job "+env.Kind, opts...)
 	defer span.End()
 	span.SetAttributes(attribute.String("job.kind", env.Kind))
-	err := h(ctx, env.Args)
+	err := k.work(ctx, env.Args)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
