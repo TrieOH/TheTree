@@ -1,20 +1,27 @@
 name: Deploy container
 description: >
-  Ships a backend to Cloudflare: the SAME image just pushed to GHCR (pulled by
-  digest) → Cloudflare's registry → Worker + Container rollout. Config is the
+  Ships a backend to Cloudflare in two calls. mode=push starts, in the
+  background, pushing the image just built (loaded in the job's Docker, the
+  one also pushed to GHCR) to Cloudflare's registry, so it overlaps the boot
+  smoke test; it first waits for setup/node's background install
+  (install: background), which brings wrangler. mode=deploy waits for that
+  push and runs `wrangler deploy`: Worker + Container rollout. Config is the
   Worker's wrangler.jsonc vars; credentials are Worker secrets set with
-  `wrangler secret put`, kept across deploys. Requires setup/node with
-  api/<service>/cloudflare installed.
+  `wrangler secret put`, kept across deploys.
 inputs:
+  mode:
+    description: push or deploy
+    required: true
   service:
     description: the service, e.g. identityx
     required: true
   version:
     description: the tag's version, e.g. v0.48.0
     required: true
-  digest:
-    description: the GHCR image digest (sha256:...)
-    required: true
+  image:
+    description: the built image in the job's Docker, e.g. ghcr.io/trieoh/identityx:v0.48.0 (push)
+    required: false
+    default: ''
   api-token:
     description: Cloudflare API token (Workers, Containers, Queues)
     required: true
@@ -23,29 +30,44 @@ inputs:
     required: true
 outputs:
   version-id:
-    description: the Worker Version ID now in production
+    description: the Worker Version ID now in production (deploy)
     value: ${{ steps.ship.outputs.version-id }}
 runs:
   using: composite
   steps:
-    - name: Ship
-      id: ship
+    - name: Start push
+      if: inputs.mode == 'push'
       shell: bash
       working-directory: api/${{ inputs.service }}/cloudflare
       env:
         SERVICE: ${{ inputs.service }}
         VERSION: ${{ inputs.version }}
-        DIGEST: ${{ inputs.digest }}
+        IMAGE: ${{ inputs.image }}
         CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
       run: |
         set -euo pipefail
-        SRC="ghcr.io/trieoh/$SERVICE@$DIGEST"
+        [ -n "$IMAGE" ] || { echo "::error::deploy/container mode=push needs image"; exit 1; }
         LOCAL="$SERVICE-api:$VERSION"
-        docker pull "$SRC"
-        docker tag "$SRC" "$LOCAL"
-        pnpm exec wrangler containers push "$LOCAL"
-        IMAGE="registry.cloudflare.com/$CLOUDFLARE_ACCOUNT_ID/$LOCAL"
+        docker tag "$IMAGE" "$LOCAL"
+        BG="$GITHUB_WORKSPACE/.github/scripts/bg"
+        export BG LOCAL
+        "$BG" start cf-push bash -c '"$BG" wait pnpm-install && pnpm exec wrangler containers push "$LOCAL"'
+
+    - name: Ship
+      id: ship
+      if: inputs.mode == 'deploy'
+      shell: bash
+      working-directory: api/${{ inputs.service }}/cloudflare
+      env:
+        SERVICE: ${{ inputs.service }}
+        VERSION: ${{ inputs.version }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account-id }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/.github/scripts/bg" wait cf-push
+        IMAGE="registry.cloudflare.com/$CLOUDFLARE_ACCOUNT_ID/$SERVICE-api:$VERSION"
         # deploy the pushed image instead of rebuilding from the Dockerfile
         sed -i -E "s|\"image\": \"[^\"]*\"|\"image\": \"$IMAGE\"|; /\"image_build_context\"/d" wrangler.jsonc
         grep -n '"image"' wrangler.jsonc

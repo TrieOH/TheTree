@@ -7,18 +7,29 @@ description: >
   is the stub, and telemetry is off. Needs setup/versions (GOOSE_VERSION).
 inputs:
   service:
-    description: the service, e.g. identityx
-    required: true
+    description: the service, e.g. identityx (boot)
+    required: false
   image:
-    description: the image to boot, e.g. ghcr.io/trieoh/identityx:v0.48.14
-    required: true
+    description: the image to boot, e.g. ghcr.io/trieoh/identityx:v0.48.14 (boot)
+    required: false
   timeout:
     description: seconds to wait for /health
     default: '60'
+  mode:
+    description: >
+      boot (default), or prefetch: start pulling the Postgres image in the
+      background early in the job, so boot finds it local
+    default: boot
 runs:
   using: composite
   steps:
+    - name: Prefetch Postgres
+      if: inputs.mode == 'prefetch'
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/.github/scripts/bg" start postgres-pull docker pull -q postgres:18'
+
     - name: Boot ${{ inputs.service }}
+      if: inputs.mode == 'boot'
       shell: bash
       env:
         SERVICE: ${{ inputs.service }}
@@ -35,6 +46,10 @@ runs:
         }
         trap cleanup EXIT
 
+        # a failed prefetch only means docker run pulls it itself
+        if [ -f "$RUNNER_TEMP/bg/postgres-pull.log" ]; then
+          "$GITHUB_WORKSPACE/.github/scripts/bg" wait --soft postgres-pull
+        fi
         docker network create "$NET" >/dev/null
         docker run -d --name smoke-db --network "$NET" -p 127.0.0.1:55432:5432 \
           -e POSTGRES_DB=smoke -e POSTGRES_USER=smoke -e POSTGRES_PASSWORD=smoke postgres:18 >/dev/null

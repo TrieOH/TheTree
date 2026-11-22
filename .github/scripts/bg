@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# bg start NAME CMD [ARG...]   run CMD in the background, output to a log
+# bg wait NAME [NAME...]       wait for each, print its log, fail if it failed
+# bg wait --soft NAME...       same, but a failed task is only a warning
+#
+# For work a job can overlap with its next steps (pnpm install during the
+# image build, the Cloudflare push during the smoke test). A background task
+# outlives the step that starts it and inherits that step's env. `wait`
+# records how long it blocked (metric bg/waited_seconds), so the portal shows
+# whether a task was hidden behind the steps in between or not.
+
+set -u
+DIR="${RUNNER_TEMP:-/tmp}/bg"
+MAX_WAIT=${BG_MAX_WAIT:-900}
+
+case "${1:-}" in
+start)
+  name=${2:?bg start NAME CMD...}
+  shift 2
+  mkdir -p "$DIR"
+  rm -f "$DIR/$name.rc"
+  : > "$DIR/$name.log"
+  # BG_NESTED: a `bg wait` inside a task prints without a log group, since
+  # the task's own log is printed inside one and groups don't nest
+  BG_NESTED=1 nohup bash -c '"$@" >>"$0.log" 2>&1; echo $? >"$0.rc"' "$DIR/$name" "$@" >/dev/null 2>&1 &
+  echo "[bg] $name started"
+  ;;
+wait)
+  shift
+  rc=0 level=error
+  if [ "${1:-}" = "--soft" ]; then level=warning; shift; fi
+  for name in "$@"; do
+    if [ ! -f "$DIR/$name.log" ]; then
+      echo "::error::bg task $name was never started"
+      rc=1
+      continue
+    fi
+    SECONDS=0
+    until [ -f "$DIR/$name.rc" ]; do
+      if [ "$SECONDS" -ge "$MAX_WAIT" ]; then
+        echo "::$level::bg task $name still running after ${MAX_WAIT}s"
+        cat "$DIR/$name.log"
+        rc=1
+        continue 2
+      fi
+      sleep 0.5
+    done
+    code=$(cat "$DIR/$name.rc")
+    if [ -n "${BG_NESTED:-}" ]; then
+      echo "[bg] $name: exit $code, waited ${SECONDS}s"
+      cat "$DIR/$name.log"
+    else
+      echo "::group::[bg] $name: exit $code, waited ${SECONDS}s"
+      cat "$DIR/$name.log"
+      echo "::endgroup::"
+    fi
+    "$(dirname "$0")/metric" bg waited_seconds "$SECONDS" "task=$name"
+    if [ "$code" != 0 ]; then
+      echo "::$level::bg task $name failed (exit $code)"
+      rc=1
+    fi
+  done
+  [ "$level" = warning ] && exit 0
+  exit "$rc"
+  ;;
+*)
+  echo "usage: bg start NAME CMD... | bg wait NAME..." >&2
+  exit 2
+  ;;
+esac
