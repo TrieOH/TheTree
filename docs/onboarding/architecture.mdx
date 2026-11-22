@@ -53,7 +53,7 @@ Some work runs after the response, like sending an email. Locally, jobs run insi
 2. The Worker puts it on a Cloudflare Queue.
 3. The queue hands it back to the Worker, which sends it to the container's `/_jobs` endpoint.
 
-A job that keeps failing ends up in a dead-letter queue, a separate queue for failed jobs. Scheduled jobs, like the daily key rotation, are started by a cron on the API Worker.
+The container decides what happens to each job, wherever it runs: `lib/jobs` retries a failing job with a backoff, and after its last attempt runs the job's give-up, such as marking a webhook delivery failed. The Worker only carries jobs and applies that decision, so a message broker such as NATS or RabbitMQ can take its place with a new carrier and no change to the jobs. Scheduled jobs, like the daily key rotation, are started by a cron on the API Worker.
 
 ## Errors and telemetry
 

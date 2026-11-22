@@ -27,7 +27,8 @@ type Deps struct {
 // Registry registers every Payssage job kind.
 func Registry(d Deps) *libjobs.Registry {
 	reg := libjobs.NewRegistry()
-	libjobs.Register(reg, webhooks.NewDeliverWebhookWorker(d.Deliveries, d.Events, d.Endpoints, d.HTTPClient).Work)
+	libjobs.Register(reg, webhooks.NewDeliverWebhookWorker(d.Deliveries, d.Events, d.Endpoints, d.HTTPClient).Work,
+		libjobs.GiveUpWith(webhooks.FailDelivery))
 	libjobs.Register(reg, webhooks.NewFailWebhookDeliveryWorker(d.Deliveries).Work)
 	libjobs.Register(reg, webhooks.NewRedriveWebhookDeliveriesWorker(d.Deliveries, d.Enqueuer).Work)
 	return reg
