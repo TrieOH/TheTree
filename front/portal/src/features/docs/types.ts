@@ -18,6 +18,15 @@ export interface DocMeta {
   amends?: string[];
   amended_by?: string[];
   superseded_by?: string;
+  /** Incident reports: high, medium or low. */
+  severity?: string;
+  /** Incident reports: when it started, was noticed, contained and over (date or ISO time, UTC). */
+  started?: string;
+  detected?: string;
+  mitigated?: string;
+  ended?: string;
+  /** Incident reports: what was affected. */
+  services?: string[];
   /** Reading order within a folder, e.g. "1". Docs without one come after, by title. */
   order?: string;
 }
