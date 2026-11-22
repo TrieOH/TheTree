@@ -27,7 +27,7 @@ export const SERVICES: readonly Service[] = [
   {
     id: "identityx",
     name: "IdentityX",
-    description: "Multi-tenant authentication and authorization.",
+    description: "Login, accounts, organizations, projects and API keys.",
     apiUrl: "https://api.identityx.trieoh.com",
     front: "https://dev.identityx.com.br",
     dir: "api/identityx",
@@ -42,7 +42,7 @@ export const SERVICES: readonly Service[] = [
   {
     id: "payssage",
     name: "Payssage",
-    description: "Payment routing on top of MercadoPago.",
+    description: "Payments through MercadoPago.",
     apiUrl: "https://api.payssage.trieoh.com",
     front: "https://dev.payssage.trieoh.com",
     dir: "api/payssage",
@@ -57,7 +57,7 @@ export const SERVICES: readonly Service[] = [
   {
     id: "univents",
     name: "Univents",
-    description: "Events and ticketing for universities.",
+    description: "Events: tickets, check-in, badges and certificates.",
     apiUrl: "https://api.univents.com.br",
     front: "https://dev.univents.com.br",
     dir: "api/univents",
@@ -72,7 +72,7 @@ export const SERVICES: readonly Service[] = [
   {
     id: "informd",
     name: "Informd",
-    description: "Embeddable form builder.",
+    description: "Forms and their responses.",
     apiUrl: "https://api.informd.trieoh.com",
     front: "https://dev.informd.trieoh.com",
     dir: "api/informd",
