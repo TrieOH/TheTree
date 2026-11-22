@@ -70,8 +70,9 @@ func NewManager(cryptoKeys ports.CryptoKeysRepo, blacklist ports.BlacklistRepo, 
 }
 
 // Verify opens tokenStr, resolves the signing key by kid (revoked keys are
-// rejected), verifies the signature, and rejects blacklisted tokens. The
-// parsed claims are populated into claims.
+// rejected), verifies the signature, and rejects blacklisted tokens and
+// tokens signed before their actor's sessions were ended. The parsed
+// claims are populated into claims.
 func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims) error {
 	token, err := crypto.OpenUnverified(tokenStr, claims)
 	if err != nil {
@@ -88,7 +89,50 @@ func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims
 		return errs.ErrInvalidToken
 	}
 
-	return m.ensureNotBlacklisted(ctx, tokenJTI(claims))
+	err = ensureKind(tokenStr, claims)
+	if err != nil {
+		return err
+	}
+
+	err = m.ensureNotBlacklisted(ctx, tokenJTI(claims))
+	if err != nil {
+		return err
+	}
+	return m.ensureSessionsNotEnded(ctx, claims)
+}
+
+// kindProbe reads the one claim that tells the two token kinds apart: a
+// refresh token always carries subject.access_jti, an access token never
+// does. Both are signed by the same key, so the signature can't tell them
+// apart, and each decodes into the other's claims without error.
+type kindProbe struct {
+	jwt.RegisteredClaims
+
+	Sub struct {
+		AccessJTI *string `json:"access_jti"`
+	} `json:"subject"`
+}
+
+// ensureKind rejects a refresh token presented where an access token is
+// expected, and the other way round. Call it only on a verified token.
+func ensureKind(tokenStr string, claims jwt.Claims) error {
+	probe := &kindProbe{}
+	_, err := crypto.OpenUnverified(tokenStr, probe)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errs.ErrInvalidToken, err)
+	}
+	isRefresh := probe.Sub.AccessJTI != nil
+	switch claims.(type) {
+	case *models.AccessClaims:
+		if isRefresh {
+			return fmt.Errorf("%w: a refresh token is not an access token", errs.ErrInvalidToken)
+		}
+	case *models.RefreshClaims:
+		if !isRefresh {
+			return fmt.Errorf("%w: an access token is not a refresh token", errs.ErrInvalidToken)
+		}
+	}
+	return nil
 }
 
 // Mint signs a fresh access/refresh pair for the actor with the active
@@ -142,7 +186,9 @@ func (m *Manager) Mint(ctx context.Context, actor *models.Actor) (*models.UserTo
 // refresh token, blacklists it and the access token it anchors (the jti
 // linkage), re-reads the actor, and mints a new pair. Fail-closed: if
 // either blacklist append fails, the old pair survives and the rotation
-// errors instead of minting on top of it.
+// errors instead of minting on top of it. Blacklisting the refresh token is
+// also the claim on it: of two rotations of the same token, only the one
+// that adds the entry mints, and the other answers token-revoked.
 func (m *Manager) Rotate(ctx context.Context, refreshToken string) (*models.UserTokensOutput, error) {
 	ctx, span := telemetry.StartSpan(ctx, "tokens.Rotate")
 	defer span.End()
@@ -153,11 +199,14 @@ func (m *Manager) Rotate(ctx context.Context, refreshToken string) (*models.User
 		return nil, err
 	}
 
-	err = m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.ID, "refresh"))
+	claimed, err := m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.ID, "refresh"))
 	if err != nil {
 		return nil, err
 	}
-	err = m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.Sub.AccessJTI.String(), "refresh"))
+	if !claimed {
+		return nil, errs.ErrTokenRevoked
+	}
+	_, err = m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.Sub.AccessJTI.String(), "refresh"))
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +240,7 @@ func (m *Manager) Revoke(ctx context.Context, accessToken, refreshToken string) 
 		return err
 	}
 
-	err = m.blacklist.Append(ctx, m.tokenEntry(accessClaims, accessClaims.ID, "logout"))
+	_, err = m.blacklist.Append(ctx, m.tokenEntry(accessClaims, accessClaims.ID, "logout"))
 	if err != nil {
 		return err
 	}
@@ -204,7 +253,46 @@ func (m *Manager) Revoke(ctx context.Context, accessToken, refreshToken string) 
 	if err != nil {
 		return nil
 	}
-	return m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.ID, "logout"))
+	_, err = m.blacklist.Append(ctx, m.tokenEntry(refreshClaims, refreshClaims.ID, "logout"))
+	return err
+}
+
+// EndSessions ends every session the actor has: every token signed for it
+// before now stops verifying, while tokens minted afterwards work. One
+// actor entry does it, kept for a refresh token lifetime, after which every
+// token it covers has expired. Calling it again restarts the entry.
+func (m *Manager) EndSessions(ctx context.Context, actor *models.Actor, reason string) error {
+	expires := m.now().Add(m.cfg.RefreshTTL)
+	return m.blacklist.Put(ctx, models.BlacklistEntry{
+		CreatedByActorID: &actor.ID,
+		ProjectID:        actor.ProjectID,
+		Type:             models.BlacklistEntryTypeActor,
+		Target:           actor.ID.String(),
+		Reason:           &reason,
+		ExpiresAt:        &expires,
+	})
+}
+
+// ensureSessionsNotEnded rejects a token signed before EndSessions ran for
+// its actor. iat holds whole seconds, so the cutoff is rounded down: a token
+// signed in the same second as the cutoff passes, and a login right after a
+// password reset works.
+func (m *Manager) ensureSessionsNotEnded(ctx context.Context, claims jwt.Claims) error {
+	actorID, issuedAt := tokenSubject(claims)
+	if issuedAt == nil {
+		return errs.ErrInvalidToken
+	}
+	entry, err := m.blacklist.GetByTargetAndType(ctx, actorID.String(), models.BlacklistEntryTypeActor)
+	if errors.Is(err, database.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if issuedAt.Before(entry.CreatedAt.Truncate(time.Second)) {
+		return errs.ErrTokenRevoked
+	}
+	return nil
 }
 
 // JWKS publishes the public signing keys of a scope as a JWKS document, so
@@ -308,6 +396,23 @@ func (m *Manager) ensureNotBlacklisted(ctx context.Context, jti string) error {
 		return err
 	}
 	return nil
+}
+
+// tokenSubject extracts the actor id and iat from the two claim types
+// IdentityX signs.
+func tokenSubject(claims jwt.Claims) (uuid.UUID, *time.Time) {
+	var id uuid.UUID
+	var issued *jwt.NumericDate
+	switch c := claims.(type) {
+	case *models.AccessClaims:
+		id, issued = c.Sub.ID, c.IssuedAt
+	case *models.RefreshClaims:
+		id, issued = c.Sub.ID, c.IssuedAt
+	}
+	if issued == nil {
+		return id, nil
+	}
+	return id, &issued.Time
 }
 
 // tokenJTI extracts the jti (RegisteredClaims.ID) from the two claim types

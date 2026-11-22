@@ -138,9 +138,11 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 
 // ResetPassword redeems a single-use reset link through the token module:
 // validates the HMAC JWT (signature, purpose, expiry), consumes the jti
-// anti-replay record, and replaces the actor's password hash. Unlike
-// verification, reset is never idempotent — a consumed token is dead, and
-// the user requests a new link if they need another reset.
+// anti-replay record, replaces the actor's password hash, and ends every
+// session the actor had, in one transaction: whoever held the old password
+// may hold a session too. Unlike verification, reset is never idempotent —
+// a consumed token is dead, and the user requests a new link if they need
+// another reset.
 func (o *Operations) ResetPassword(ctx context.Context, in models.ResetPasswordInput) error {
 	actorID, err := o.ActionTokens.Redeem(ctx, models.PasswordResetActionTokenPurpose, in.Token)
 	if err != nil {
@@ -151,7 +153,17 @@ func (o *Operations) ResetPassword(ctx context.Context, in models.ResetPasswordI
 	if err != nil {
 		return err
 	}
-	return o.Actors.UpdatePasswordHash(ctx, actorID, hashed)
+	return o.Tx.WithinTx(ctx, func(ctx context.Context) error {
+		err := o.Actors.UpdatePasswordHash(ctx, actorID, hashed)
+		if err != nil {
+			return err
+		}
+		actor, err := o.Actors.GetByID(ctx, actorID)
+		if err != nil {
+			return err
+		}
+		return o.Tokens.EndSessions(ctx, actor, "password_reset")
+	})
 }
 
 // Refresh rotates the session: the tokens module verifies the old refresh
@@ -242,6 +254,20 @@ func (o *Operations) Setup(ctx context.Context, in models.SetupInput) error {
 
 	var actor *models.Actor
 	err = o.Tx.WithinTx(ctx, func(ctx context.Context) error {
+		// The handler checked setup already, but two first setups can both
+		// pass that check. Under the lock only the first one finds the
+		// database empty.
+		err := o.Actors.LockSetup(ctx)
+		if err != nil {
+			return err
+		}
+		done, err := o.Actors.HasAny(ctx)
+		if err != nil {
+			return err
+		}
+		if done {
+			return errs.ErrSetupComplete
+		}
 		actor, err = o.Actors.Register(ctx, models.Actor{
 			AuthMethod:   models.PasswordAuthMethod,
 			PasswordHash: &hashedPassword,

@@ -16,6 +16,7 @@ package keys
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 	"uuid"
 
@@ -175,6 +176,22 @@ func (m *Manager) EnsureAll(ctx context.Context) error {
 	}
 	if changed || swept > 0 {
 		m.notify(ctx)
+	}
+	return nil
+}
+
+// CheckMasterKey opens the platform's active signing key with the vault. A
+// wrong ENCRYPTION_KEY passes crypto.NewVault, which checks only its format,
+// and nothing else opens a private key until the first login; checking at
+// boot turns that first failed login into a failed boot.
+func (m *Manager) CheckMasterKey(ctx context.Context) error {
+	key, err := m.keys.GetActive(ctx, models.SigningCryptoKeyType, nil)
+	if err != nil {
+		return err
+	}
+	_, err = m.cfg.Vault.DecryptPrivateKey(key.EncryptedPrivateKey)
+	if err != nil {
+		return fmt.Errorf("ENCRYPTION_KEY can't open the stored keys, so it isn't the key they were sealed with: %w", err)
 	}
 	return nil
 }

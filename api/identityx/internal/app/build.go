@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	"IdentityX/internal/sqlc"
 	"IdentityX/internal/tokens"
 	"lib/backend"
-	carrier "lib/backend/jobs"
 	"lib/crypto"
 	"lib/oauth"
 	"lib/telemetry"
@@ -63,6 +61,13 @@ func Build(cfg config.Config) backend.BuildFunc {
 		projectsRepo := projects.NewRepo(q)
 		tosRepo := tos.NewRepo(q)
 
+		// Rotation starts one interval before a key expires, so an interval
+		// as long as the lifetime would rotate every key on every run.
+		if cfg.RotateKeysJobDuration >= cfg.KeyLifetime {
+			return fmt.Errorf("ROTATE_KEYS_JOB_DURATION (%s) must be shorter than IDENTITY_X_KEY_LIFETIME (%s)",
+				cfg.RotateKeysJobDuration, cfg.KeyLifetime)
+		}
+
 		// The master key seals every private key and OAuth secret at rest.
 		vault, err := crypto.NewVault(cfg.EncryptionKey)
 		if err != nil {
@@ -84,11 +89,27 @@ func Build(cfg config.Config) backend.BuildFunc {
 			RotateInterval: cfg.RotateKeysJobDuration,
 			Vault:          vault,
 		}, keys.WithOnChange(announceJWKSChange(d.Jobs)))
+
+		// Jobs are served before the keys are checked: a key EnsureAll
+		// creates or rotates at boot is announced through a job, and an
+		// enqueue before Serve is dropped, which left the Worker's cached
+		// JWKS without the new key.
+		d.Jobs.Serve(jobs.Registry(jobs.Deps{
+			Queries:      q,
+			ActionTokens: actionTokens,
+			Keys:         keysMgr,
+			Email:        d.Email,
+		}), jobs.Periodic(cfg.RotateKeysJobDuration)...)
+
 		// Every scope has keys before the router accepts traffic; the
 		// periodic RotateKeys job keeps them fresh afterwards.
 		err = keysMgr.EnsureAll(ctx)
 		if err != nil {
 			return fmt.Errorf("ensure crypto keys: %w", err)
+		}
+		err = keysMgr.CheckMasterKey(ctx)
+		if err != nil {
+			return err
 		}
 
 		tokensMgr := tokens.NewManager(cryptoKeysRepo, blacklistRepo, actorsRepo, projectsRepo, tokens.Config{
@@ -100,13 +121,6 @@ func Build(cfg config.Config) backend.BuildFunc {
 
 		// Setup is complete once any actor exists.
 		setupState := setup.NewState(q.HasAnyActor)
-
-		d.Jobs.Serve(jobs.Registry(jobs.Deps{
-			Queries:      q,
-			ActionTokens: actionTokens,
-			Keys:         keysMgr,
-			Email:        d.Email,
-		}), jobs.Periodic(cfg.RotateKeysJobDuration)...)
 
 		authzSvc := authz.New(organizationsRepo, projectsRepo, platformRolesRepo)
 		sender := emails.NewSender(actionTokens, cfg.AppURL, cfg.AppName, d.Jobs)
@@ -169,13 +183,14 @@ func Build(cfg config.Config) backend.BuildFunc {
 
 // announceJWKSChange tells whoever caches the JWKS that the keys changed: on
 // Cloudflare the Worker in front of the container drops its copy. In-process
-// nothing caches it, and an enqueue before Serve has nowhere to go, so that
-// failure is expected and dropped.
+// nothing caches it. Build serves the jobs before any key can change, so a
+// failed enqueue is a real loss: the Worker can keep the old key list for up
+// to a week, and other APIs refuse tokens signed with the new key.
 func announceJWKSChange(j backend.Jobs) func(context.Context) {
 	return func(ctx context.Context) {
 		err := j.Enqueue(ctx, jobs.JWKSChangedArgs{})
-		if err != nil && !errors.Is(err, carrier.ErrNotServing) {
-			telemetry.Log().WarnContext(ctx, "could not announce a JWKS change", telemetry.Err(err))
+		if err != nil {
+			telemetry.Log().ErrorContext(ctx, "could not announce a JWKS change; the Worker's cached JWKS is stale", telemetry.Err(err))
 		}
 	}
 }

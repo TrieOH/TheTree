@@ -174,6 +174,7 @@ func TestResetPasswordSuccess(t *testing.T) {
 	actors := mock.Mock[ports.ActorRepo]()
 	captor := mock.Captor[string]()
 	_ = mock.When(actors.UpdatePasswordHash(mock.AnyContext(), mock.Equal(actor.ID), captor.Capture())).ThenReturn(nil)
+	_ = mock.When(actors.GetByID(mock.AnyContext(), mock.Equal(actor.ID))).ThenReturn(&actor, nil)
 
 	_ = mock.When(repo.GetByJTI(mock.AnyContext(), mock.Equal(rec.JTI))).ThenReturn(&rec, nil)
 	used := rec
@@ -181,7 +182,12 @@ func TestResetPasswordSuccess(t *testing.T) {
 	used.UsedAt = &now
 	_ = mock.When(repo.Consume(mock.AnyContext(), mock.Equal(rec.JTI))).ThenReturn(&used, nil)
 
+	blacklist := mock.Mock[ports.BlacklistRepo]()
+	ended := mock.Captor[models.BlacklistEntry]()
+	_ = mock.When(blacklist.Put(mock.AnyContext(), ended.Capture())).ThenReturn(nil)
+
 	ops := emailOps(t, actors, mgr)
+	ops.Tokens = tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), blacklist, actors, mock.Mock[ports.ProjectRepo](), tokens.Config{RefreshTTL: time.Hour})
 	newPassword := "NewPassword123!"
 	err := ops.ResetPassword(context.Background(), models.ResetPasswordInput{Token: token, NewPassword: newPassword})
 	if err != nil {
@@ -196,6 +202,12 @@ func TestResetPasswordSuccess(t *testing.T) {
 		t.Fatalf("stored hash does not verify against new password: %v", verifyErr)
 	}
 	_, _ = mock.Verify(repo, mock.Times(1)).Consume(mock.AnyContext(), mock.Equal(rec.JTI))
+
+	// The reset ends every session the actor had.
+	entries := ended.Values()
+	if len(entries) != 1 || entries[0].Type != models.BlacklistEntryTypeActor || entries[0].Target != actor.ID.String() {
+		t.Fatalf("want one actor entry ending the actor's sessions, got %+v", entries)
+	}
 }
 
 func TestResetPasswordRejectsUsedToken(t *testing.T) {

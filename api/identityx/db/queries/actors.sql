@@ -41,6 +41,11 @@ WHERE id = @actor_id;
 -- name: HasAnyActor :one
 SELECT EXISTS (SELECT 1 FROM actors LIMIT 1) AS exists;
 
+-- name: LockSetup :exec
+-- Holds the setup lock until the transaction ends, so two setups can't both
+-- see an empty database. The key is any fixed number only setup uses.
+SELECT pg_advisory_xact_lock(7151209001);
+
 -- name: GetExternalIdentityByProviderAndSubject :one
 -- Scoped by the identity's actor project: a platform login (NULL project)
 -- only sees platform identities, a project login only sees identities whose

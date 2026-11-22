@@ -67,6 +67,22 @@ func (repo *Repo) List(ctx context.Context, projectID uuid.UUID) ([]models.Actor
 	return database.Many(sqlcActors, err, repo.dbe, mapActor)
 }
 
+func (repo *Repo) LockSetup(ctx context.Context) error {
+	err := repo.db(ctx).LockSetup(ctx)
+	if err != nil {
+		return repo.dbe(err)
+	}
+	return nil
+}
+
+func (repo *Repo) HasAny(ctx context.Context) (bool, error) {
+	exists, err := repo.db(ctx).HasAnyActor(ctx)
+	if err != nil {
+		return false, repo.dbe(err)
+	}
+	return exists, nil
+}
+
 func (repo *Repo) Register(ctx context.Context, toRegister models.Actor) (*models.Actor, error) {
 	sqlcActor, err := repo.db(ctx).RegisterActor(ctx, sqlc.RegisterActorParams{
 		ProjectID:    toRegister.ProjectID,

@@ -86,18 +86,26 @@ async function instance(env: Env) {
 }
 
 async function jwks(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	// One copy per keyset. Only project_id picks a keyset, so any other query
+	// string is dropped: it would otherwise get its own copy and wake the
+	// container to fill it.
+	const url = new URL(request.url);
+	const canonical = new URL(JWKS_PATH, url.origin);
+	const projectID = url.searchParams.get("project_id");
+	if (projectID) canonical.searchParams.set("project_id", projectID);
+
 	const cache = caches.default;
-	const cacheKey = new Request(request.url, { method: "GET" });
+	const cacheKey = new Request(canonical.toString(), { method: "GET" });
 	const hit = await cache.match(cacheKey);
 	if (hit) return hit;
 
-	const kvKey = JWKS_KV_PREFIX + new URL(request.url).search;
+	const kvKey = JWKS_KV_PREFIX + canonical.search;
 	let body = await env.BUDGET.get(kvKey);
 	if (body === null) {
 		// Fill KV even when the caller gives up during a slow cold start, so
 		// the next cold start elsewhere does not wake the container again.
 		const fill = (async () => {
-			const res = await (await instance(env)).fetch(request);
+			const res = await (await instance(env)).fetch(new Request(canonical.toString(), request));
 			if (!res.ok) return res;
 			const text = await res.text();
 			await env.BUDGET.put(kvKey, text, { expirationTtl: JWKS_KV_TTL_SECONDS });
