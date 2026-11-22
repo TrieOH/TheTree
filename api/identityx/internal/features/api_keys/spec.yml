@@ -32,7 +32,7 @@ paths:
               name: checkout-prod
               env: production
               expires_at: '2027-01-01T00:00:00Z'
-      x-problems: [400, 401, 404, 500, 503]
+      x-problems: [400, 401, 403, 404, 500, 503]
       responses:
         '201':
           description: API key created
