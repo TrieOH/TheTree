@@ -90,6 +90,10 @@ type SMTP struct {
 	Password string `env:"SMTP_PASSWORD"`
 	From     string `env:"SMTP_FROM,required"`
 	TLS      bool   `env:"SMTP_TLS"           envDefault:"true"`
+	// MonthlyLimit caps the recipients this service mails per calendar
+	// month; 0 means no cap (local dev). The services' limits together stay
+	// under Cloudflare's included 3,000 a month.
+	MonthlyLimit int `env:"SMTP_MONTHLY_LIMIT"`
 }
 
 // EmailConfig assembles the SMTP client config from the shared block.

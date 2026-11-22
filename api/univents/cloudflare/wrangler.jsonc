@@ -85,6 +85,7 @@
 		"SMTP_PORT": "465",
 		"SMTP_FROM": "univents@trieoh.com",
 		"SMTP_TLS": "true",
+		"SMTP_MONTHLY_LIMIT": "1000",
 		// Grafana Cloud OTLP gateway; the container appends /v1/<signal> (lib/go/telemetry).
 		"OTEL_EXPORTER_OTLP_ENDPOINT": "https://otlp-gateway-prod-sa-east-1.grafana.net/otlp",
 		// <svc>-container in Grafana, next to the <svc>-api Worker and the <svc> front; APP_NAME stays the product name (emails, UI)
