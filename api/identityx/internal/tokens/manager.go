@@ -79,6 +79,15 @@ func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims
 		return fmt.Errorf("%w: %w", errs.ErrInvalidToken, err)
 	}
 
+	// Expiry first: a key is retired one RefreshTTL after rotation, so every
+	// token it signed has expired by then, and "expired" is the answer that
+	// tells the caller what happened. Reading exp before the signature only
+	// picks which refusal a forged token gets; it never accepts one.
+	exp, err := claims.GetExpirationTime()
+	if err == nil && exp != nil && !m.now().Before(exp.Time) {
+		return errs.ErrTokenExpired
+	}
+
 	key, err := m.keyForToken(ctx, token)
 	if err != nil {
 		return err

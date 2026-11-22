@@ -33,6 +33,8 @@ func Problem(err error) *fp.Problem {
 		return problems.Unauthenticated(errs.ErrNoIdentity.Error())
 	case errors.Is(err, errs.ErrInvalidToken):
 		return problems.InvalidToken(errs.ErrInvalidToken.Error())
+	case errors.Is(err, errs.ErrTokenExpired):
+		return problems.TokenExpired(errs.ErrTokenExpired.Error())
 
 	// api keys
 	case errors.Is(err, errs.ErrInvalidAPIKey):

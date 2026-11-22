@@ -65,6 +65,7 @@ func TestAuthErrorsAreMapped(t *testing.T) {
 		errs.ErrSigningKeyRevoked,
 		errs.ErrSigningKeyRetired,
 		errs.ErrTokenRevoked,
+		errs.ErrTokenExpired,
 		errs.ErrInvalidAPIKey,
 		errs.ErrAPIKeyExpired,
 	} {
