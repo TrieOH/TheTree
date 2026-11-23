@@ -353,3 +353,5 @@ x-shared-errors:
     ErrInvalidAcceptanceSource: "terms acceptance source must be clickwrap or continued_use"
     ErrInvalidActionTokenPurpose: "action token purpose must be one of: email_verify, password_reset"
     ErrInvalidBlacklistType: "blacklist entry type must be one of: actor, token, api_key, email, ip"
+  token-expired:
+    ErrTokenExpired: "the token has expired; refresh it, or sign in again if the refresh token expired too"
