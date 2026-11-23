@@ -25,13 +25,13 @@ interface IssueData {
   identifier: string;
   title: string;
   priority: number;
-  estimate: number | null;
+  estimate?: number | null;
   url: string;
-  cycleId: string | null;
-  projectId: string | null;
+  cycleId?: string | null;
+  projectId?: string | null;
   createdAt: string;
   updatedAt: string;
-  completedAt: string | null;
+  completedAt?: string | null;
   archivedAt: string | null;
   trashed: boolean | null;
   state: Named & { type: string };
@@ -44,14 +44,14 @@ interface CycleData {
   number: number;
   startsAt: string;
   endsAt: string;
-  completedAt: string | null;
+  completedAt?: string | null;
   archivedAt: string | null;
 }
 
 interface ProjectData {
   id: string;
   name: string;
-  targetDate: string | null;
+  targetDate?: string | null;
   updatedAt: string;
   archivedAt: string | null;
   trashed: boolean | null;
@@ -79,14 +79,14 @@ export function statementsFor(db: D1Database, payload: Payload): D1PreparedState
         state: issue.state.name,
         stateType: issue.state.type,
         priority: issue.priority,
-        estimate: issue.estimate,
+        estimate: issue.estimate ?? null,
         assignee: issue.assignee?.name ?? null,
         labels: (issue.labels ?? []).map((label) => label.name),
-        cycleId: issue.cycleId,
-        projectId: issue.projectId,
+        cycleId: issue.cycleId ?? null,
+        projectId: issue.projectId ?? null,
         url: issue.url,
         createdAt: issue.createdAt,
-        completedAt: issue.completedAt,
+        completedAt: issue.completedAt ?? null,
         updatedAt: issue.updatedAt,
       }),
     ];
@@ -101,7 +101,7 @@ export function statementsFor(db: D1Database, payload: Payload): D1PreparedState
         number: cycle.number,
         startsAt: cycle.startsAt,
         endsAt: cycle.endsAt,
-        completedAt: cycle.completedAt,
+        completedAt: cycle.completedAt ?? null,
       }),
     ];
   }
@@ -114,7 +114,7 @@ export function statementsFor(db: D1Database, payload: Payload): D1PreparedState
         id: project.id,
         name: project.name,
         state: project.status?.type ?? null,
-        targetDate: project.targetDate,
+        targetDate: project.targetDate ?? null,
         updatedAt: project.updatedAt,
       }),
     ];

@@ -101,6 +101,27 @@ describe("POST /webhooks/linear", () => {
     expect(projects).toEqual([expect.objectContaining({ name: "Payssage", total: 1, done: 0 })]);
   });
 
+  it("stores events whose unset fields Linear leaves out", async () => {
+    const omit = (data: Record<string, unknown>, keys: string[]) =>
+      Object.fromEntries(Object.entries(data).filter(([key]) => !keys.includes(key)));
+    const issue = omit(issueData(), ["estimate", "cycleId", "projectId", "completedAt"]);
+    const project = omit(payssage, ["targetDate"]);
+    const cycle = {
+      id: "cycle-1",
+      number: 1,
+      startsAt: "2026-11-01T00:00:00.000Z",
+      endsAt: "2026-11-15T00:00:00.000Z",
+      archivedAt: null,
+    };
+
+    expect((await deliver({ type: "Issue", action: "create", data: issue })).status).toBe(204);
+    expect((await deliver({ type: "Project", action: "create", data: project })).status).toBe(204);
+    expect((await deliver({ type: "Cycle", action: "create", data: cycle })).status).toBe(204);
+    expect(await count("issues")).toBe(1);
+    expect(await count("projects")).toBe(1);
+    expect(await count("cycles")).toBe(1);
+  });
+
   it("rejects a bad signature and writes nothing", async () => {
     const response = await deliver(
       { type: "Issue", action: "create", data: issueData() },
