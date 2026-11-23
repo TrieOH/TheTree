@@ -450,8 +450,22 @@ func TestRotateRejectsExpiredRefresh(t *testing.T) {
 	f := newFixture(t)
 
 	_, err := f.mgr.Rotate(context.Background(), f.mintExpiredRefresh(t))
-	if !errors.Is(err, errs.ErrInvalidToken) {
-		t.Fatalf("want unauthorized for an expired refresh token, got %v", err)
+	if !errors.Is(err, errs.ErrTokenExpired) {
+		t.Fatalf("want token expired for an expired refresh token, got %v", err)
+	}
+}
+
+// A key is retired only after every token it signed has expired, so an
+// expired token signed by one answers "expired", not "key retired".
+func TestRotateCallsAnExpiredRefreshUnderARetiredKeyExpired(t *testing.T) {
+	f := newFixture(t)
+	retired := f.key
+	retired.Status = models.CryptoKeyStatusRetired
+	f.stubKey(&retired)
+
+	_, err := f.mgr.Rotate(context.Background(), f.mintExpiredRefresh(t))
+	if !errors.Is(err, errs.ErrTokenExpired) {
+		t.Fatalf("want token expired, got %v", err)
 	}
 }
 
