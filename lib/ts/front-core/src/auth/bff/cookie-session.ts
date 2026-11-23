@@ -106,6 +106,16 @@ function serializeCookie(
   return attributes.join("; ");
 }
 
+/**
+ * The cookie lives no longer than the refresh token it carries: past that the
+ * session can't be renewed, so the browser should drop it.
+ */
+function cookieLifetime(tokens: AuthTokens, maxAge: number): number {
+  const expiry = new Date(tokens.refresh_expires_at).getTime();
+  if (!Number.isFinite(expiry)) return maxAge;
+  return Math.max(0, Math.min(maxAge, Math.floor((expiry - Date.now()) / 1000)));
+}
+
 export interface CookieSessionOptions {
   /** Stable random secret of at least 32 characters. */
   password: string;
@@ -156,6 +166,7 @@ export async function createCookieBffSession(
 
   /** `undefined` = untouched, `null` = cleared, string = sealed value. */
   let staged: string | null | undefined;
+  let stagedMaxAge = maxAge;
 
   return {
     session: {
@@ -163,6 +174,7 @@ export async function createCookieBffSession(
       write: async (tokens) => {
         data = { tokens };
         staged = await seal(options.password, JSON.stringify({ tokens }));
+        stagedMaxAge = cookieLifetime(tokens, maxAge);
       },
       clear: () => {
         data = null;
@@ -176,7 +188,7 @@ export async function createCookieBffSession(
       headers.append(
         "Set-Cookie",
         serializeCookie(name, staged ?? "", {
-          maxAge: staged === null ? 0 : maxAge,
+          maxAge: staged === null ? 0 : stagedMaxAge,
           secure,
           sameSite,
         }),
