@@ -80,6 +80,7 @@ const deadSessionProblems = new Set([
   "outdated-token",
   "signing-key-retired",
   "signing-key-revoked",
+  "token-expired",
 ]);
 
 /** The slug of a problem answer: the last segment of its `type`. */
